@@ -1,0 +1,131 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { background-color: #fdf8f8; color: #1c1b1b; font-family: 'Hanken Grotesk', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #f1edec; }
+  ::-webkit-scrollbar-thumb { background: #9E896A; border-radius: 2px; }
+}
+
+@layer utilities {
+  .btn-primary { background: #1A1A1A; color: #fff; font-size: 14px; letter-spacing: 0.05em; font-weight: 600; padding: 16px 40px; text-transform: uppercase; transition: opacity 0.2s; }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-rent { background: #9E896A; color: #fff; font-size: 14px; letter-spacing: 0.05em; font-weight: 600; padding: 16px 40px; text-transform: uppercase; transition: opacity 0.2s; }
+  .btn-rent:hover { opacity: 0.88; }
+  .btn-ghost { background: transparent; border: 1px solid #1A1A1A; color: #1A1A1A; font-size: 14px; letter-spacing: 0.05em; font-weight: 600; padding: 16px 40px; text-transform: uppercase; transition: all 0.2s; }
+  .btn-ghost:hover { background: #1A1A1A; color: #fff; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — greift auf Inline-Style Patterns via Klassen
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Tablet & Mobile (≤ 900px) */
+@media (max-width: 900px) {
+  /* Grids die 2-4 Spalten haben → 2 oder 1 Spalte */
+  .responsive-grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
+  .responsive-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
+  .responsive-grid-2 { grid-template-columns: 1fr !important; }
+
+  /* Padding reduzieren */
+  .responsive-section { padding-left: 20px !important; padding-right: 20px !important; }
+}
+
+/* Mobile (≤ 640px) */
+@media (max-width: 640px) {
+  /* Alle Multi-Spalten Grids → 1 Spalte */
+  .responsive-grid-4,
+  .responsive-grid-3,
+  .responsive-grid-2 { grid-template-columns: 1fr !important; }
+
+  /* Sidebar Layouts → stapeln */
+  .responsive-sidebar { flex-direction: column !important; }
+  .responsive-sidebar > * { width: 100% !important; }
+
+  /* Padding stark reduzieren */
+  .responsive-section { padding-left: 16px !important; padding-right: 16px !important; }
+  section { padding-left: 16px !important; padding-right: 16px !important; }
+
+  /* Große Überschriften kleiner */
+  h1 { font-size: clamp(24px, 7vw, 36px) !important; }
+
+  /* Flex-Container die nebeneinander sind → umbrechen */
+  .responsive-flex { flex-wrap: wrap !important; }
+
+  /* Tabellen scrollbar machen */
+  .responsive-table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+  table { min-width: 600px; }
+}
+
+/* Sehr kleine Geräte (≤ 400px) */
+@media (max-width: 400px) {
+  .responsive-section, section { padding-left: 12px !important; padding-right: 12px !important; }
+}
+
+/* Globale Mobile-Verbesserungen für alle Grids automatisch */
+@media (max-width: 768px) {
+  /* Auto-fill Grids mit großen min-width → kleiner */
+  [style*="gridTemplateColumns"][style*="repeat(auto"] {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+  }
+}
+
+/* ── Navbar Mobile ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Center Nav verstecken, Hamburger zeigen */
+  .navbar-center { display: none !important; }
+  .navbar-hamburger { display: block !important; }
+  .navbar-search { display: none !important; }
+  .navbar-mobile-menu { display: flex !important; }
+
+  /* Navbar Padding reduzieren */
+  nav > div { padding-left: 16px !important; padding-right: 16px !important; }
+}
+
+/* Admin/Support/Merchant Sidebars auf Mobile */
+@media (max-width: 768px) {
+  .admin-sidebar, .support-sidebar, .merchant-sidebar {
+    width: 100% !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+  }
+}
+
+/* ── Tabellen auf Mobile scrollbar ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Alle Tabellen-Container scrollbar */
+  div:has(> table) {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  table { min-width: 560px; }
+
+  /* Modals auf Mobile full-width */
+  [style*="position:fixed"][style*="maxWidth"] {
+    max-width: 92vw !important;
+    margin: 0 4vw !important;
+  }
+}
+
+/* ── Touch-Targets vergrößern ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  button, a[role="button"], input[type="submit"] {
+    min-height: 40px;
+  }
+}
+
+/* ── Hero-Höhe auf Mobile anpassen ─────────────────────────────────────────── */
+@media (max-width: 640px) {
+  section[style*="92vh"], section[style*="height:92vh"] {
+    height: 70vh !important;
+    min-height: 480px !important;
+  }
+}

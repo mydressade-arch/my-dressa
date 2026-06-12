@@ -1,0 +1,17 @@
+{
+  "name": "my-dressa",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:api":   "cd apps/api && npm run dev",
+    "dev:web":   "cd apps/web && npm run dev",
+    "build:api": "cd apps/api && npm run build",
+    "build:web": "cd apps/web && npm run build",
+    "migrate":   "cd apps/api && npm run migration:run",
+    "seed":      "cd apps/api && npm run db:seed"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}
