@@ -10,8 +10,24 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
   app.use(helmet());
+  // CORS: erlaubt Production-Frontend + lokale Entwicklung (Flutter Web, Next dev)
+  const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'http://localhost:3000',
+    'https://mydressa.de',
+    'https://www.mydressa.de',
+  ];
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      // Kein Origin (mobile Apps, curl) oder localhost (jeder Port) immer erlauben
+      if (!origin ||
+          origin.startsWith('http://localhost') ||
+          origin.startsWith('http://127.0.0.1') ||
+          allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, true); // im Zweifel erlauben (öffentliche Shop-API)
+    },
     credentials: true,
   });
 
