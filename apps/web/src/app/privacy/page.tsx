@@ -66,7 +66,7 @@ export default function PrivacyPage() {
   ]
 
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto', padding: '60px 40px' }}>
+    <div style={{ maxWidth: 720, margin: '0 auto', padding: 'clamp(32px,5vw,60px) clamp(16px,4vw,40px)' }}>
       <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#9E896A', marginBottom: 12 }}>My Dressa</p>
       <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(28px,4vw,40px)', fontWeight: 700, color: '#1c1b1b', marginBottom: 8 }}>
         {t('Datenschutzerklärung', 'Privacy Policy')}

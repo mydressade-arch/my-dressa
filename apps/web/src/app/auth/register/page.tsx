@@ -54,7 +54,7 @@ export default function RegisterPage() {
 
         <div style={{ background: '#fff', border: '1px solid #c4c7c7', padding: 32 }}>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap: 12 }}>
               {[['firstName',t(t('Vorname', 'First Name'), 'First Name'),'Maria'],['lastName',t(t('Nachname', 'Last Name'), 'Last Name'),'Müller']].map(([k,label,ph]) => (
                 <div key={k}>
                   <label style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5e5e5b', display: 'block', marginBottom: 6 }}>{label}</label>

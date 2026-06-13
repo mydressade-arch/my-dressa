@@ -81,7 +81,7 @@ export default function MerchantEarningsPage() {
       )}
 
       {/* Stats */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16, marginBottom:32 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:16, marginBottom:32 }}>
         {[
           { label:'Total Earned',   value:`€${Number(stats?.totalEarned||0).toFixed(2)}`,   icon:'payments',      color:'#064E3B' },
           { label:'Pending Payout', value:`€${pendingAmount.toFixed(2)}`,                    icon:'hourglass_empty', color:'#9E896A' },

@@ -66,7 +66,7 @@ export default function MerchantProductsPage() {
         </div>
       ) : products.length === 0 ? (
         <div style={{ textAlign:'center',padding:'80px 0',border:'1px solid #c4c7c7' }}>
-          <span className="material-symbols-outlined" style={{ fontSize:48,color:'#c4c7c7',display:'block',marginBottom:16 }}>checkroom</span>
+          <span className="material-symbols-outlined" style={{ fontSize:'clamp(28px,4vw,48px)',color:'#c4c7c7',display:'block',marginBottom:16 }}>checkroom</span>
           <p style={{ color:'#5e5e5b',marginBottom:24 }}>No products yet</p>
           <Link href="/merchant/products/new" style={{ background:'#1c1b1b',color:'#fff',padding:'12px 24px',fontSize:12,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em',textDecoration:'none' }}>
             Add First Product

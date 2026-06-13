@@ -1,6 +1,6 @@
 'use client'
 import { useLangStore } from '@/store/lang.store'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { productsApi, api } from '@/lib/api'
 import { useUI } from '@/components/ui/UIProvider'
@@ -16,6 +16,14 @@ export default function NewProductPage() {
   const [images, setImages]     = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [variants, setVariants] = useState([{ size: '', color: '', stockQuantity: 1 }])
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES)
+
+  useEffect(() => {
+    api.get('/categories').then(({ data }: any) => {
+      const names = Array.isArray(data) ? data.map((c: any) => typeof c === 'string' ? c : c.name).filter(Boolean) : []
+      if (names.length) setCategories(names)
+    }).catch(() => {})
+  }, [])
   const [form, setForm] = useState({
     title: '', description: '', category: '',
     salePrice: '', rentalPrice: '', shippingCost: '4.99', depositAmount: '',
@@ -113,7 +121,7 @@ export default function NewProductPage() {
               <select value={form.category} onChange={up('category')}
                 style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }}>
                 <option value="">Kategorie wählen</option>
-                {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
           </div>
@@ -134,7 +142,7 @@ export default function NewProductPage() {
               </label>
             ))}
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:12 }}>
             {form.isForSale && (
               <div>
                 <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Verkaufspreis (€) *</label>

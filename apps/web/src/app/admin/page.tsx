@@ -40,7 +40,7 @@ export default function AdminDashboardPage() {
       <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:28 }}>Übersicht der Plattform</p>
 
       {/* Stat Cards */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:16, marginBottom:32 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:16, marginBottom:32 }}>
         {loading ? Array(5).fill(0).map((_,i) => (
           <div key={i} style={{ height:90, background:'#f1edec', borderRadius:6 }} />
         )) : STAT_CARDS.map(card => (
@@ -85,7 +85,7 @@ export default function AdminDashboardPage() {
           <div style={{ height:280, background:'#fdf8f8', display:'flex', alignItems:'center', justifyContent:'center', color:'#9e9e9b' }}>Laden...</div>
         ) : !chart.some(d => d.purchases > 0 || d.rentals > 0) ? (
           <div style={{ height:280, background:'#fdf8f8', display:'flex', alignItems:'center', justifyContent:'center', color:'#9e9e9b', flexDirection:'column', gap:8 }}>
-            <span className="material-symbols-outlined" style={{ fontSize:40, color:'#c4c7c7' }}>bar_chart</span>
+            <span className="material-symbols-outlined" style={{ fontSize:'clamp(24px,3vw,40px)', color:'#c4c7c7' }}>bar_chart</span>
             Noch keine Daten
           </div>
         ) : (
@@ -94,7 +94,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Quick Links */}
-      <div className="responsive-grid-4" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginTop:24 }}>
+      <div className="responsive-grid-4" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:12, marginTop:24 }}>
         {[
           { label:t('Händler genehmigen', 'Approve Merchants'), href:'/admin/merchant-requests', icon:'storefront', color:'#633806', bg:'#FAEEDA' },
           { label:t('Auszahlungen prüfen', 'Review Payouts'), href:'/admin/payouts', icon:'payments', color:'#0C447C', bg:'#E6F1FB' },

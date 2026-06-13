@@ -78,8 +78,8 @@ export default function HomePage() {
       </section>
 
       {/* ── USP Bar ────────────────────────────────────────────────────────── */}
-      <section style={{ background:'#1c1b1b', padding:'20px 40px' }}>
-        <div className="responsive-grid-3" style={{ maxWidth:1000, margin:'0 auto', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:24 }}>
+      <section style={{ background:'#1c1b1b', padding:'clamp(16px,1vw,20px) clamp(16px,4vw,40px)' }}>
+        <div className="responsive-grid-3" style={{ maxWidth:1000, margin:'0 auto', width:'100%', display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:24 }}>
           {[
             { icon:'verified', text: mounted ? t('Verifizierte Händler', 'Verified Sellers') : 'Verifizierte Händler' },
             { icon:'local_shipping', text: mounted ? t('Kostenloser Versand ab €100', 'Free shipping over €100') : 'Kostenloser Versand ab €100' },
@@ -94,7 +94,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Featured Products ──────────────────────────────────────────────── */}
-      <section style={{ padding:'80px 40px', maxWidth:1200, margin:'0 auto' }}>
+      <section style={{ padding:'clamp(40px,6vw,80px) clamp(16px,4vw,40px)', maxWidth:1200, margin:'0 auto', width:'100%' }}>
         <div style={{ textAlign:'center', marginBottom:48 }}>
           <p style={{ fontSize:11, fontWeight:600, letterSpacing:'0.15em', textTransform:'uppercase', color:'#9E896A', marginBottom:12 }}>
             {mounted ? t('Ausgewählte Stücke', 'Featured Pieces') : 'Ausgewählte Stücke'}
@@ -107,15 +107,15 @@ export default function HomePage() {
           {featuredProducts.map(p => <ProductCard key={p.id} {...p} />)}
         </div>
         <div style={{ textAlign:'center', marginTop:48 }}>
-          <Link href="/products" style={{ padding:'14px 40px', background:'#1c1b1b', color:'#fdf8f8', textDecoration:'none', fontSize:12, fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase' }}>
+          <Link href="/products" style={{ padding:'clamp(14px,2vw,16px) clamp(16px,4vw,40px)', background:'#1c1b1b', color:'#fdf8f8', textDecoration:'none', fontSize:12, fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase' }}>
             {mounted ? t('Alle Produkte', 'View All') : 'Alle Produkte'}
           </Link>
         </div>
       </section>
 
       {/* ── Collections ───────────────────────────────────────────────────── */}
-      <section style={{ padding:'0 40px 80px', maxWidth:1200, margin:'0 auto' }}>
-        <div className="responsive-grid-2" style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:16, marginBottom:16 }}>
+      <section style={{ padding:'0 clamp(16px,4vw,40px) clamp(40px,6vw,80px)', maxWidth:1200, margin:'0 auto', width:'100%' }}>
+        <div className="responsive-grid-2" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:16, marginBottom:16 }}>
           <div style={{ position:'relative', overflow:'hidden', height:480 }}>
             <img src={DRESS_IMG} alt="Abendmode" className="collection-img" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
             <div style={{ position:'absolute', bottom:0, left:0, right:0, padding:28, background:'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }}>
@@ -150,15 +150,15 @@ export default function HomePage() {
       </section>
 
       {/* ── How it works ──────────────────────────────────────────────────── */}
-      <section style={{ padding:'80px 40px', background:'#fdf8f8' }}>
-        <div style={{ maxWidth:900, margin:'0 auto', textAlign:'center' }}>
+      <section style={{ padding:'clamp(40px,5vw,80px) clamp(16px,4vw,40px)', background:'#fdf8f8' }}>
+        <div style={{ maxWidth:900, margin:'0 auto', width:'100%', textAlign:'center' }}>
           <p style={{ fontSize:11, fontWeight:600, letterSpacing:'0.15em', textTransform:'uppercase', color:'#9E896A', marginBottom:12 }}>
             {mounted ? t('So funktioniert es', 'How it works') : 'So funktioniert es'}
           </p>
           <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:'clamp(24px,3vw,36px)', fontWeight:700, color:'#1c1b1b', marginBottom:48 }}>
             {mounted ? t('Mode mieten in 3 Schritten', 'Rent fashion in 3 steps') : 'Mode mieten in 3 Schritten'}
           </h2>
-          <div className="responsive-grid-3" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:40 }}>
+          <div className="responsive-grid-3" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:40 }}>
             {[
               { icon:'search', num:'01', title: mounted ? t('Entdecken', 'Discover') : 'Entdecken', desc: mounted ? t('Durchstöbere hunderte kuratierter Designer-Stücke', 'Browse hundreds of curated designer pieces') : 'Durchstöbere hunderte kuratierter Designer-Stücke' },
               { icon:'calendar_month', num:'02', title: mounted ? t('Buchen', 'Book') : 'Buchen', desc: mounted ? t('Wähle deine Mietdauer und sichere dir das Kleid', 'Choose your rental period and secure the dress') : 'Wähle deine Mietdauer und sichere dir das Kleid' },
@@ -196,8 +196,8 @@ export default function HomePage() {
       </section>
 
       {/* ── Newsletter ─────────────────────────────────────────────────────── */}
-      <section style={{ padding:'80px 64px', background:'#1c1b1b', textAlign:'center' }}>
-        <div style={{ maxWidth:480, margin:'0 auto' }}>
+      <section style={{ padding:'clamp(40px,6vw,80px) clamp(16px,5vw,64px)', background:'#1c1b1b', textAlign:'center' }}>
+        <div style={{ maxWidth:480, margin:'0 auto', width:'100%' }}>
           <p style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.12em', color:'#9E896A', marginBottom:12 }}>
             {mounted ? t('Exklusiver Zugang', 'Exclusive Access') : 'Exklusiver Zugang'}
           </p>

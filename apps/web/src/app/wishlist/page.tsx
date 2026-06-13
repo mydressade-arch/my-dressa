@@ -30,7 +30,7 @@ export default function WishlistPage() {
   }
 
   return (
-    <div style={{ maxWidth:1440, margin:'0 auto', padding:'40px 48px' }}>
+    <div style={{ maxWidth:1440, margin:'0 auto', width:'100%', padding:'clamp(20px,2vw,40px) clamp(16px,4vw,48px)' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:32 }}>
         <div>
           <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:32, fontWeight:700, marginBottom:4 }}>
@@ -49,7 +49,7 @@ export default function WishlistPage() {
       </div>
 
       {loading ? (
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:24 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:24 }}>
           {[1,2,3,4].map(i => (
             <div key={i}>
               <div style={{ paddingBottom:'133%', background:'#f1edec', marginBottom:16, animation:'pulse 1.5s infinite' }} />
@@ -60,7 +60,7 @@ export default function WishlistPage() {
         </div>
       ) : items.length === 0 ? (
         <div style={{ textAlign:'center', padding:'80px 0', border:'1px solid #c4c7c7' }}>
-          <span className="material-symbols-outlined" style={{ fontSize:48, color:'#c4c7c7', display:'block', marginBottom:16 }}>favorite</span>
+          <span className="material-symbols-outlined" style={{ fontSize:'clamp(28px,4vw,48px)', color:'#c4c7c7', display:'block', marginBottom:16 }}>favorite</span>
           <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:20, marginBottom:8 }}>Your wishlist is empty</h3>
           <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:24, lineHeight:1.6 }}>
             Save pieces you love by clicking the ♡ heart icon on any product.
@@ -70,7 +70,7 @@ export default function WishlistPage() {
           </Link>
         </div>
       ) : (
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:24 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:24 }}>
           {items.map((item: any) => (
             <div key={item.id} style={{ position:'relative' }}>
               {/* Remove button */}

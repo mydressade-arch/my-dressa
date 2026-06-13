@@ -36,8 +36,8 @@ export default function ContactPage() {
   ]
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 40px' }}>
-      <div style={{ maxWidth: 840, margin: '0 auto' }}>
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(32px,5vw,64px) clamp(16px,4vw,40px)' }}>
+      <div style={{ maxWidth: 840, margin: '0 auto', width: '100%' }}>
         <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#9E896A', marginBottom: 12 }}>
           My Dressa
         </p>
@@ -51,7 +51,7 @@ export default function ContactPage() {
           )}
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 48 }}>
+        <div style={{ display: 'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap: 48 }}>
           {/* Form */}
           {sent ? (
             <div style={{ textAlign: 'center', padding: '64px 0' }}>
@@ -76,7 +76,7 @@ export default function ContactPage() {
           ) : (
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               {/* Name + Email */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap: 16 }}>
                 <div>
                   <label style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#5e5e5b', display: 'block', marginBottom: 8 }}>
                     {t('Name', 'Name')} *

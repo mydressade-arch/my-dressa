@@ -102,7 +102,7 @@ export default function AdminMerchantDetailPage() {
                     <img src={img} alt={p.title} style={{ width:'100%', height:180, objectFit:'cover', display:'block' }} />
                   ) : (
                     <div style={{ width:'100%', height:180, background:'#f1edec', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize:40, color:'#c4c7c7' }}>checkroom</span>
+                      <span className="material-symbols-outlined" style={{ fontSize:'clamp(24px,3vw,40px)', color:'#c4c7c7' }}>checkroom</span>
                     </div>
                   )}
                   <div style={{ padding:16 }}>

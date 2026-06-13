@@ -34,8 +34,9 @@ export function ProductCard({
   const imgSrc = imageUrl || PLACEHOLDER
 
   useEffect(() => {
-    // Keine Wishlist-Abfrage für Demo-IDs
+    // Keine Wishlist-Abfrage für Demo-IDs oder ohne gültigen Token
     if (!user || !id || id.startsWith('demo-')) return
+    if (typeof window !== 'undefined' && !localStorage.getItem('accessToken')) return
     wishlistApi.isSaved(id)
       .then(({ data }: any) => setSaved(data.saved))
       .catch(() => {})
@@ -107,12 +108,12 @@ export function ProductCard({
       {/* CTAs */}
       <div style={{ display:'flex', gap:6 }}>
         {isForRent && rentalPrice && (
-          <Link href={`/products/${id}`} style={{ flex:1, fontSize:11, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.05em', padding:'9px 0', textAlign:'center' as const, background:'#9E896A', color:'#fff', textDecoration:'none', display:'block' }}>
+          <Link href={`/products/${id}`} style={{ flex:1, fontSize:11, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.05em', padding:'9px 4px', textAlign:'center' as const, background:'#9E896A', color:'#fff', textDecoration:'none', display:'flex', alignItems:'center', justifyContent:'center', minHeight:38, whiteSpace:'nowrap' as const }}>
             {mounted ? t('Jetzt Mieten', 'Rent Now') : 'Jetzt Mieten'} €{rentalPrice}
           </Link>
         )}
         {isForSale && salePrice && (
-          <Link href={`/products/${id}`} style={{ flex:1, fontSize:11, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.05em', padding:'9px 0', textAlign:'center' as const, border:'1px solid #1A1A1A', color:'#1A1A1A', background:'transparent', textDecoration:'none', display:'block' }}>
+          <Link href={`/products/${id}`} style={{ flex:1, fontSize:11, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.05em', padding:'9px 4px', textAlign:'center' as const, border:'1px solid #1A1A1A', color:'#1A1A1A', background:'transparent', textDecoration:'none', display:'flex', alignItems:'center', justifyContent:'center', minHeight:38, whiteSpace:'nowrap' as const }}>
             {mounted ? t('Jetzt Kaufen', 'Buy Now') : 'Jetzt Kaufen'} €{salePrice}
           </Link>
         )}

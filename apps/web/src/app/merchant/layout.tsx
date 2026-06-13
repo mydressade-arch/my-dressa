@@ -37,16 +37,16 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
   if (!user) return null
 
   return (
-    <div className="flex min-h-screen" style={{ background: '#fdf8f8' }}>
-      <aside className="w-64 flex-shrink-0 border-r border-outline-variant flex flex-col bg-white">
-        <div className="px-6 py-6 border-b border-outline-variant">
+    <div className="flex flex-col md:flex-row min-h-screen" style={{ background: '#fdf8f8' }}>
+      <aside className="w-full md:w-64 flex-shrink-0 border-b md:border-b-0 md:border-r border-outline-variant flex flex-col bg-white">
+        <div className="px-6 py-4 md:py-6 border-b border-outline-variant">
           <Link href="/" className="font-serif text-xl font-bold tracking-tighter text-primary block mb-1">My Dressa</Link>
           <p className="text-xs text-secondary uppercase tracking-widest">Merchant Portal</p>
         </div>
-        <nav className="flex-1 px-3 py-6 space-y-1">
+        <nav className="flex-1 px-3 py-3 md:py-6 flex flex-row md:flex-col gap-1 overflow-x-auto">
           {NAV.map(item => (
             <Link key={item.href} href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all ${
+              className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all whitespace-nowrap ${
                 pathname === item.href
                   ? 'bg-surface-container text-primary font-semibold'
                   : 'text-secondary hover:text-primary hover:bg-surface-container-low'
@@ -56,13 +56,13 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
             </Link>
           ))}
         </nav>
-        <div className="px-6 py-5 border-t border-outline-variant">
+        <div className="hidden md:block px-6 py-5 border-t border-outline-variant">
           <p className="text-xs font-semibold mb-0.5">{user.firstName} {user.lastName}</p>
           <p className="text-xs text-secondary">{user.email}</p>
         </div>
       </aside>
       <main className="flex-1 overflow-auto">
-        <div className="max-w-6xl mx-auto px-8 py-10">{children}</div>
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-6 md:py-10">{children}</div>
       </main>
     </div>
   )

@@ -119,7 +119,7 @@ export default function AdminPayoutsPage() {
         </div>
       ) : payouts.length === 0 ? (
         <div style={{ textAlign:'center', padding:'64px 0', border:'1px solid #c4c7c7', color:'#5e5e5b' }}>
-          <span className="material-symbols-outlined" style={{ fontSize:40, display:'block', marginBottom:12, color:'#c4c7c7' }}>payments</span>
+          <span className="material-symbols-outlined" style={{ fontSize:'clamp(24px,3vw,40px)', display:'block', marginBottom:12, color:'#c4c7c7' }}>payments</span>
           {tab === 'pending' ? 'Keine offenen Auszahlungsanfragen' : 'Keine Auszahlungen vorhanden'}
         </div>
       ) : (

@@ -124,7 +124,7 @@ export default function AdminCategoriesPage() {
             {editId ? 'Kategorie bearbeiten' : t('Neue Kategorie', 'New Category')}
           </h2>
           <form onSubmit={handleSubmit}>
-            <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:16, marginBottom:16 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:16, marginBottom:16 }}>
               <div>
                 <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Name *</label>
                 <input

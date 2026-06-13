@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { TwoFaService } from './two-fa.service';
 import { randomBytes } from 'crypto';
 
 import { User, UserRole } from '../users/user.entity';
@@ -27,6 +28,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly notifications: NotificationsService,
+    private readonly twoFaService: TwoFaService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -164,6 +166,31 @@ export class AuthService {
 
     const hashed = await bcrypt.hash(newPassword, 10);
     await this.userRepo.query(`UPDATE users SET password_hash = $1, reset_password_token = NULL, reset_password_expires = NULL WHERE id = $2`, [hashed, user.id]);
+
+    return { message: 'Passwort erfolgreich geändert' };
+  }
+
+  async changePassword(userId: string, oldPassword: string, newPassword: string, twoFaCode?: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User nicht gefunden');
+
+    // 1. Altes Passwort prüfen
+    const valid = await bcrypt.compare(oldPassword, user.passwordHash);
+    if (!valid) throw new BadRequestException('Aktuelles Passwort ist falsch');
+
+    // 2. Falls 2FA aktiv → Code prüfen
+    if (user.twoFaEnabled) {
+      if (!twoFaCode) throw new BadRequestException('2FA-Code erforderlich');
+      const codeValid = this.twoFaService.validateCode(user.twoFaSecret || '', twoFaCode);
+      if (!codeValid) throw new UnauthorizedException('Ungültiger 2FA-Code');
+    }
+
+    // 3. Neues Passwort setzen
+    if (!newPassword || newPassword.length < 8) {
+      throw new BadRequestException('Neues Passwort muss mindestens 8 Zeichen haben');
+    }
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await this.userRepo.update(userId, { passwordHash: hashed });
 
     return { message: 'Passwort erfolgreich geändert' };
   }

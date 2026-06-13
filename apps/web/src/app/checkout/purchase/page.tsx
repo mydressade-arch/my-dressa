@@ -112,7 +112,7 @@ function PurchaseInner() {
   )
 
   return (
-    <div style={{ maxWidth:1100, margin:'0 auto', padding:'40px 24px' }}>
+    <div style={{ maxWidth:1100, margin:'0 auto', width:'100%', padding:'clamp(20px,4vw,40px) clamp(12px,3vw,24px)' }}>
       <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:32, fontWeight:700, marginBottom:8 }}>
         {step === 'details' ? t('Kauf abschließen', 'Complete Purchase') : t('Zahlung', 'Payment')}
       </h1>
@@ -141,14 +141,14 @@ function PurchaseInner() {
         ))}
       </div>
 
-      <div className="responsive-grid-2" style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:40 }}>
+      <div className="responsive-grid-2" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:40 }}>
         {step === 'details' ? (
           <form onSubmit={handleConfirm} style={{ display:'flex', flexDirection:'column', gap:20 }}>
             <div style={{ background:'#fff', border:'1px solid #c4c7c7', padding:24 }}>
               <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600, marginBottom:20, paddingBottom:14, borderBottom:'1px solid #f1edec' }}>Delivery Address</h2>
               <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
                 {inp(t('Straße & Hausnummer', 'Street & Number'), 'street', 'Musterstraße 1')}
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:12 }}>
                   {inp(t('Stadt', 'City'), 'city', 'Berlin')}
                   {inp('ZIP', 'zip', '10115')}
                 </div>

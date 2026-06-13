@@ -35,7 +35,7 @@ export function CookieBanner() {
       zIndex: 9999,
       background: '#1c1b1b',
       borderTop: '1px solid rgba(255,255,255,0.1)',
-      padding: '20px 40px',
+      padding:'clamp(16px,1vw,20px) clamp(16px,4vw,40px)',
     }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
         {/* Icon */}

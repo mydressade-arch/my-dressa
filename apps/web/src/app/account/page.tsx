@@ -48,6 +48,8 @@ function AccountPageInner() {
   const [otp2FA, setOtp2FA]             = useState('')
   const [twoFaEnabled, setTwoFaEnabled] = useState<boolean>((user as any)?.twoFaEnabled || false)
   const [twoFaStep, setTwoFaStep]       = useState<'idle'|'scan'|'verify'>('idle')
+  const [pwForm, setPwForm]             = useState({ oldPassword:'', newPassword:'', confirm:'', twoFaCode:'' })
+  const [pwSaving, setPwSaving]         = useState(false)
   useEffect(() => { setTwoFaEnabled((user as any)?.twoFaEnabled || false) }, [user])
 
   const submitReturnTracking = async (rentalId: string, orderId: string) => {
@@ -129,7 +131,7 @@ function AccountPageInner() {
   }
 
   return (
-    <div style={{ maxWidth:1440, margin:'0 auto', padding:'40px 64px' }}>
+    <div style={{ maxWidth:1440, margin:'0 auto', width:'100%', padding:'clamp(20px,2vw,40px) clamp(16px,4vw,64px)' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:32 }}>
         <div>
           <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:32, fontWeight:700, marginBottom:4 }}>{t("Mein Konto", "My Account")}</h1>
@@ -162,7 +164,7 @@ function AccountPageInner() {
             <div>
               {orders.length === 0 ? (
                 <div style={{ textAlign:'center', padding:'64px 0', border:'1px solid #c4c7c7' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize:40, color:'#c4c7c7', display:'block', marginBottom:12 }}>shopping_bag</span>
+                  <span className="material-symbols-outlined" style={{ fontSize:'clamp(24px,3vw,40px)', color:'#c4c7c7', display:'block', marginBottom:12 }}>shopping_bag</span>
                   <p style={{ color:'#5e5e5b', marginBottom:20 }}>No orders yet</p>
                   <Link href="/products" style={{ background:'#1c1b1b', color:'#fff', padding:'12px 24px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textDecoration:'none' }}>
                     Start Shopping
@@ -268,7 +270,7 @@ function AccountPageInner() {
             <div>
               {rentals.length === 0 ? (
                 <div style={{ textAlign:'center', padding:'64px 0', border:'1px solid #c4c7c7' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize:40, color:'#c4c7c7', display:'block', marginBottom:12 }}>calendar_month</span>
+                  <span className="material-symbols-outlined" style={{ fontSize:'clamp(24px,3vw,40px)', color:'#c4c7c7', display:'block', marginBottom:12 }}>calendar_month</span>
                   <p style={{ color:'#5e5e5b', marginBottom:20 }}>No active rentals</p>
                   <Link href="/products?forRent=true" style={{ background:'#9E896A', color:'#fff', padding:'12px 24px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textDecoration:'none' }}>
                     Browse Rentals
@@ -388,9 +390,54 @@ function AccountPageInner() {
                   </div>
                 )}
               </div>
+
+              {/* Passwort ändern */}
+              <div style={{ background:'#fff', border:'1px solid #c4c7c7', padding:24, marginBottom:20 }}>
+                <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:16, fontWeight:600, marginBottom:4 }}>Passwort ändern</h3>
+                <p style={{ fontSize:12, color:'#5e5e5b', marginBottom:16 }}>
+                  {twoFaEnabled ? 'Mit aktivem 2FA: aktuelles Passwort + Authenticator-Code erforderlich' : 'Aktuelles Passwort eingeben, dann neues setzen'}
+                </p>
+                <div style={{ display:'flex', flexDirection:'column', gap:12, maxWidth:360 }}>
+                  <input type="password" value={pwForm.oldPassword} onChange={e=>setPwForm(f=>({...f, oldPassword:e.target.value}))}
+                    placeholder="Aktuelles Passwort"
+                    style={{ padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none' }} />
+                  <input type="password" value={pwForm.newPassword} onChange={e=>setPwForm(f=>({...f, newPassword:e.target.value}))}
+                    placeholder="Neues Passwort (min. 8 Zeichen)"
+                    style={{ padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none' }} />
+                  <input type="password" value={pwForm.confirm} onChange={e=>setPwForm(f=>({...f, confirm:e.target.value}))}
+                    placeholder="Neues Passwort bestätigen"
+                    style={{ padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none' }} />
+                  {twoFaEnabled && (
+                    <input value={pwForm.twoFaCode} onChange={e=>setPwForm(f=>({...f, twoFaCode:e.target.value.replace(/[^0-9]/g,'').slice(0,6)}))}
+                      placeholder="2FA-Code (6-stellig)" maxLength={6}
+                      style={{ padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', fontFamily:'monospace', letterSpacing:'0.2em' }} />
+                  )}
+                  <button disabled={pwSaving} onClick={async () => {
+                    if (!pwForm.oldPassword || !pwForm.newPassword) { toast('Bitte alle Felder ausfüllen', 'error'); return }
+                    if (pwForm.newPassword.length < 8) { toast('Neues Passwort min. 8 Zeichen', 'error'); return }
+                    if (pwForm.newPassword !== pwForm.confirm) { toast('Passwörter stimmen nicht überein', 'error'); return }
+                    if (twoFaEnabled && pwForm.twoFaCode.length !== 6) { toast('2FA-Code erforderlich', 'error'); return }
+                    setPwSaving(true)
+                    try {
+                      await api.post('/auth/change-password', {
+                        oldPassword: pwForm.oldPassword,
+                        newPassword: pwForm.newPassword,
+                        twoFaCode: twoFaEnabled ? pwForm.twoFaCode : undefined,
+                      })
+                      toast('Passwort erfolgreich geändert ✓', 'success')
+                      setPwForm({ oldPassword:'', newPassword:'', confirm:'', twoFaCode:'' })
+                    } catch(e:any) {
+                      toast(e.response?.data?.message || 'Fehler beim Ändern', 'error')
+                    } finally { setPwSaving(false) }
+                  }} style={{ padding:'11px 24px', background:'#1c1b1b', color:'#fff', border:'none', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', cursor:pwSaving?'not-allowed':'pointer', opacity:pwSaving?0.6:1, alignSelf:'flex-start' }}>
+                    {pwSaving ? 'Speichern...' : 'Passwort ändern'}
+                  </button>
+                </div>
+              </div>
+
               <div style={{ background:'#fff', border:'1px solid #c4c7c7', padding:28, marginBottom:20 }}>
                 <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:20, fontWeight:600, marginBottom:20, paddingBottom:14, borderBottom:'1px solid #f1edec' }}>Personal Details</h2>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:16, marginBottom:16 }}>
                   {[['First Name',user.firstName],['Last Name',user.lastName]].map(([l,v])=>(
                     <div key={l}>
                       <p style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', marginBottom:4 }}>{l}</p>

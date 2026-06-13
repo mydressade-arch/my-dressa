@@ -6,7 +6,7 @@ export default function TermsPage() {
   const { t } = useLangStore()
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: '60px 40px' }}>
+    <div style={{ maxWidth: 800, margin: '0 auto', padding: 'clamp(32px,5vw,60px) clamp(16px,4vw,40px)' }}>
       <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#9E896A', marginBottom: 12 }}>
         My Dressa
       </p>

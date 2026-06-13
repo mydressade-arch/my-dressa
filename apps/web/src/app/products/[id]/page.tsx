@@ -43,8 +43,8 @@ function ProductDetail() {
     product.merchantId === merchantProfile.id
 
   if (loading) return (
-    <div style={{ maxWidth: 1440, margin: '0 auto', padding: '48px 64px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64 }}>
+    <div style={{ maxWidth: 1440, margin: '0 auto', padding:'clamp(24px,3vw,48px) clamp(16px,4vw,64px)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap: 64 }}>
         <div style={{ background: '#f1edec', aspectRatio: '3/4', animation: 'pulse 1.5s infinite' }} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {[40, 60, 100, 60].map((h, i) => <div key={i} style={{ height: h, background: '#f1edec', borderRadius: 4 }} />)}
@@ -59,7 +59,7 @@ function ProductDetail() {
   const colors = [...new Set((product.variants || []).map((v: any) => v.color))]
 
   return (
-    <div style={{ maxWidth: 1440, margin: '0 auto', padding: '48px 64px' }}>
+    <div style={{ maxWidth: 1440, margin: '0 auto', padding:'clamp(24px,3vw,48px) clamp(16px,4vw,64px)' }}>
       {/* Breadcrumb */}
       <nav style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5e5e5b', marginBottom: 40, display: 'flex', gap: 8 }}>
         <a href="/" style={{ color: '#5e5e5b', textDecoration: 'none' }}>Home</a>
@@ -69,7 +69,7 @@ function ProductDetail() {
         <span style={{ color: '#1c1b1b' }}>{product.title}</span>
       </nav>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64 }}>
+      <div style={{ display: 'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap: 64 }}>
         {/* Left: Images */}
         <div>
           <div style={{ position: 'relative', paddingBottom: '125%', overflow: 'hidden', background: '#f1edec', marginBottom: 12 }}>

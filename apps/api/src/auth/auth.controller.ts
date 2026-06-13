@@ -77,6 +77,18 @@ export class AuthController {
     return this.authService.resetPassword(body.token, body.password);
   }
 
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Passwort ändern (eingeloggt, mit optionalem 2FA)' })
+  async changePassword(
+    @CurrentUser() user: User,
+    @Body() body: { oldPassword: string; newPassword: string; twoFaCode?: string },
+  ) {
+    return this.authService.changePassword(user.id, body.oldPassword, body.newPassword, body.twoFaCode);
+  }
+
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)

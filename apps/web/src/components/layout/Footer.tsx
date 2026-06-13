@@ -32,10 +32,10 @@ export function Footer() {
 
   return (
     <footer style={{ background:'#1c1b1b', color:'#f4f0ef', marginTop:'auto' }}>
-      <div style={{ maxWidth:1440, margin:'0 auto', padding:'64px 64px' }}>
-        <div style={{ display:'grid', gridTemplateColumns:'1.5fr 1fr 1fr 1fr', gap:48, marginBottom:48 }}>
+      <div style={{ maxWidth:1440, margin:'0 auto', width:'100%', padding:'clamp(32px,4vw,64px) clamp(16px,4vw,64px)' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))', gap:'clamp(24px,4vw,48px)', marginBottom:48 }}>
           <div>
-            <Link href="/" style={{ fontFamily:"'Playfair Display', serif", fontSize:22, fontWeight:700, color:'#f4f0ef', textDecoration:'none', display:'block', marginBottom:12 }}>
+            <Link href="/" style={{ fontFamily:"'Playfair Display', serif", fontSize:'clamp(18px,2.2vw,22px)', fontWeight:700, color:'#f4f0ef', textDecoration:'none', display:'block', marginBottom:12 }}>
               My Dressa
             </Link>
             <p style={{ fontSize:13, color:'#9c9a92', lineHeight:1.7, maxWidth:240, marginBottom:20 }}>
@@ -57,7 +57,7 @@ export function Footer() {
             </div>
           ))}
         </div>
-        <div style={{ borderTop:'1px solid #313030', paddingTop:24, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <div style={{ borderTop:'1px solid #313030', paddingTop:24, display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12 }}>
           <p style={{ fontSize:12, color:'rgba(244,240,239,0.35)' }}>
             © 2025 My Dressa. {t(t('Alle Rechte vorbehalten', 'All rights reserved'), 'All rights reserved')}. Made in Germany 🇩🇪
           </p>

@@ -14,10 +14,10 @@ const DESIGNERS = [
 
 export default function DesignersPage() {
   return (
-    <div style={{ maxWidth:1440, margin:'0 auto', padding:'48px 64px' }}>
+    <div style={{ maxWidth:1440, margin:'0 auto', width:'100%', padding:'clamp(24px,3vw,48px) clamp(16px,4vw,64px)' }}>
       <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:36, fontWeight:700, marginBottom:6 }}>Designers</h1>
       <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:40 }}>Discover pieces from the world's most coveted fashion houses.</p>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:20, marginBottom:48 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:20, marginBottom:48 }}>
         {DESIGNERS.map(d=>(
           <Link key={d.name} href={`/products?search=${encodeURIComponent(d.name)}`}
             style={{ border:'1px solid #c4c7c7', padding:24, textDecoration:'none', background:'#fff', display:'block' }}>

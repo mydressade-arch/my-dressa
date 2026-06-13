@@ -25,7 +25,7 @@ api.interceptors.response.use(
       const isLogin    = path.startsWith('/auth/login')
       const isAdmin    = path.startsWith('/admin')
       const isMerchant = path.startsWith('/merchant')
-      const is2FA      = url.includes('/auth/2fa') || url.includes('/auth/login')
+      const is2FA      = url.includes('/auth/2fa') || url.includes('/auth/login') || url.includes('/auth/change-password')
 
       // Nicht ausloggen bei: 2FA, Login, Checkout, Admin, Merchant
       if (!isCheckout && !isLogin && !is2FA && !isAdmin && !isMerchant) {

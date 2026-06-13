@@ -103,7 +103,18 @@ export class ProductsService {
       // Beide aktiv → Produkte die entweder rent ODER sale haben
       qb.andWhere('(p.isForRent = true OR p.isForSale = true)');
     }
-    if (query.size)     qb.andWhere('v.size = :size', { size: query.size });
+    if (query.size) {
+      // EXISTS statt Join-Filter — sonst werden Multi-Size-Produkte auf 1 Variante reduziert
+      qb.andWhere(qb2 => {
+        const sub = qb2.subQuery()
+          .select('1')
+          .from('product_variants', 'pv_size')
+          .where('pv_size.product_id = p.id')
+          .andWhere('pv_size.size = :size', { size: query.size })
+          .getQuery();
+        return 'EXISTS ' + sub;
+      });
+    }
     if (query.minPrice !== undefined)
       qb.andWhere('(p.salePrice >= :min OR p.rentalPrice >= :min)', { min: query.minPrice });
     if (query.maxPrice !== undefined)

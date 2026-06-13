@@ -40,7 +40,7 @@ export default function SupportDashboard() {
       </p>
 
       {/* Stats */}
-      <div className="responsive-grid-4" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:32 }}>
+      <div className="responsive-grid-4" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:16, marginBottom:32 }}>
         {STAT_CARDS.map(c => (
           <div key={c.label} style={{ background:'#fff', border:'1px solid #c4c7c7', padding:'16px 20px' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
@@ -57,7 +57,7 @@ export default function SupportDashboard() {
       </div>
 
       {/* Quick Links */}
-      <div className="responsive-grid-3" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:32 }}>
+      <div className="responsive-grid-3" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:12, marginBottom:32 }}>
         {[
           { label: t('Bestellung suchen', 'Search Order'), href: '/support/orders', icon: 'search', color: '#0C447C', bg: '#E6F1FB' },
           { label: t('Kunden suchen', 'Search Customer'), href: '/support/customers', icon: 'person_search', color: '#27500A', bg: '#EAF3DE' },

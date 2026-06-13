@@ -54,7 +54,7 @@ export default function MerchantBankPage() {
             </div>
             <button onClick={() => setShowForm(true)} style={{ fontSize:12, fontWeight:600, textTransform:'uppercase', padding:'8px 16px', background:'none', border:'1px solid #c4c7c7', cursor:'pointer' }}>Ändern</button>
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:12 }}>
             <div style={{ background:'#fdf8f8', padding:'12px 16px' }}>
               <p style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', color:'#9e9e9b', marginBottom:4 }}>IBAN</p>
               <p style={{ fontSize:14, fontFamily:'monospace' }}>{bankData.ibanMasked}</p>

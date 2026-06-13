@@ -14,6 +14,7 @@ function ProductsInner() {
 
   const { t } = useLangStore()
   const [products, setProducts] = useState<any[]>([])
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
 
@@ -108,11 +109,11 @@ function ProductsInner() {
   const pageTitle = forRent ? 'For Rent' : forSale ? 'For Sale' : category !== 'All' ? category : 'Collection'
 
   return (
-    <div style={{ maxWidth:1440, margin:'0 auto', padding:'32px 48px' }}>
+    <div style={{ maxWidth:1440, margin:'0 auto', width:'100%', padding:'clamp(16px,2vw,32px) clamp(16px,4vw,48px)' }}>
 
       {/* Page Header */}
       <div style={{ marginBottom:28 }}>
-        <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', gap:16 }}>
+        <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', gap:16, flexWrap:'wrap' }}>
           <div>
             <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:36, fontWeight:700, letterSpacing:'-0.02em', color:'#1c1b1b', marginBottom:4 }}>
               {pageTitle}
@@ -162,10 +163,18 @@ function ProductsInner() {
         )}
       </div>
 
-      <div style={{ display:'flex', gap:40 }}>
+      {/* Filter-Button nur auf Mobile */}
+      <button onClick={() => setFiltersOpen(o => !o)} className="filter-toggle-btn"
+        style={{ display:'none', alignItems:'center', gap:8, width:'100%', padding:'12px 16px', marginBottom:16, background:'#fff', border:'1px solid #c4c7c7', cursor:'pointer', fontSize:13, fontWeight:600, color:'#1c1b1b' }}>
+        <span className="material-symbols-outlined" style={{ fontSize:18 }}>tune</span>
+        {filtersOpen ? (mounted ? t('Filter ausblenden', 'Hide Filters') : 'Filter') : (mounted ? t('Filter anzeigen', 'Show Filters') : 'Filter')}
+        {hasFilters && <span style={{ marginLeft:'auto', background:'#9E896A', color:'#fff', fontSize:11, fontWeight:700, padding:'1px 8px', borderRadius:10 }}>!</span>}
+      </button>
+
+      <div className="products-layout" style={{ display:'flex', gap:40 }}>
 
         {/* Sidebar */}
-        <aside style={{ width:190, flexShrink:0 }}>
+        <aside className={`products-sidebar ${filtersOpen ? 'filters-open' : ''}`} style={{ width:190, flexShrink:0 }}>
           <div style={{ position:'sticky', top:88 }}>
 
             {/* Type filter */}
@@ -236,7 +245,7 @@ function ProductsInner() {
         {/* Product Grid */}
         <div style={{ flex:1, minWidth:0 }}>
           {loading ? (
-            <div className="responsive-grid-3" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:20 }}>
+            <div className="responsive-grid-3" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:20 }}>
               {Array.from({ length:9 }).map((_, i) => (
                 <div key={i}>
                   <div style={{ paddingBottom:'130%', background:'#f1edec', animation:'pulse 1.5s infinite' }} />
@@ -247,7 +256,7 @@ function ProductsInner() {
             </div>
           ) : products.length === 0 ? (
             <div style={{ textAlign:'center', padding:'80px 0', borderTop:'1px solid #e8e3e1' }}>
-              <span className="material-symbols-outlined" style={{ fontSize:48, color:'#d4cfcd', display:'block', marginBottom:16 }}>search_off</span>
+              <span className="material-symbols-outlined" style={{ fontSize:'clamp(28px,4vw,48px)', color:'#d4cfcd', display:'block', marginBottom:16 }}>search_off</span>
               <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:22, fontWeight:700, marginBottom:8, color:'#1c1b1b' }}>
                 No pieces found
               </h3>
@@ -262,7 +271,7 @@ function ProductsInner() {
               )}
             </div>
           ) : (
-            <div className="responsive-grid-3" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:20 }}>
+            <div className="product-grid" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:20 }}>
               {products.map((p: any) => (
                 <ProductCard
                   key={p.id} id={p.id} title={p.title}

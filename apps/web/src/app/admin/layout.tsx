@@ -53,9 +53,9 @@ export default function AdminLayout({children}:{children:React.ReactNode}) {
   if (!user) return null
 
   return (
-    <div className="flex min-h-screen" style={{background:'#fdf8f8'}}>
-      <aside className="w-64 flex-shrink-0 border-r flex flex-col" style={{background:'#1c1b1b'}}>
-        <div className="px-6 py-6 border-b" style={{borderColor:'#313030'}}>
+    <div className="flex flex-col md:flex-row min-h-screen" style={{background:'#fdf8f8'}}>
+      <aside className="w-full md:w-64 flex-shrink-0 border-b md:border-b-0 md:border-r flex flex-col" style={{background:'#1c1b1b'}}>
+        <div className="px-6 py-4 md:py-6 border-b" style={{borderColor:'#313030'}}>
           <Link href="/" className="font-serif text-xl font-bold tracking-tighter block mb-1" style={{color:'#f4f0ef'}}>My Dressa</Link>
           <p className="text-xs uppercase tracking-widest" style={{color:'#9c9a92'}}>
           Admin Panel
@@ -66,10 +66,10 @@ export default function AdminLayout({children}:{children:React.ReactNode}) {
           )}
         </p>
         </div>
-        <nav className="flex-1 px-3 py-6 space-y-1">
+        <nav className="flex-1 px-3 py-3 md:py-6 flex flex-row md:flex-col gap-1 overflow-x-auto">
           {NAV.map(item => (
             <Link key={item.href} href={item.href}
-              className={clsx('flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all',
+              className={clsx('flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all whitespace-nowrap',
                 pathname === item.href ? 'text-white' : 'hover:text-white'
               )}
               style={pathname===item.href ? {background:'rgba(255,255,255,0.1)',color:'#f4f0ef'} : {color:'#9c9a92'}}>
@@ -83,13 +83,13 @@ export default function AdminLayout({children}:{children:React.ReactNode}) {
             </Link>
           ))}
         </nav>
-        <div className="px-6 py-5 border-t" style={{borderColor:'#313030'}}>
+        <div className="hidden md:block px-6 py-5 border-t" style={{borderColor:'#313030'}}>
           <p className="text-xs font-semibold mb-0.5" style={{color:'#f4f0ef'}}>{user.firstName} {user.lastName}</p>
           <p className="text-xs" style={{color:'#9c9a92'}}>{user.email}</p>
         </div>
       </aside>
       <main className="flex-1 overflow-auto">
-        <div className="max-w-6xl mx-auto px-8 py-10">{children}</div>
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-6 md:py-10">{children}</div>
       </main>
     </div>
   )

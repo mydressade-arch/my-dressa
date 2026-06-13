@@ -53,7 +53,7 @@ export default function SupportCustomerDetailPage() {
           </span>
         </div>
 
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginTop:20 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:12, marginTop:20 }}>
           <div style={{ background:'#fdf8f8', padding:'12px 16px' }}>
             <p style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', color:'#9e9e9b', marginBottom:4 }}>{t('Bestellungen', 'Orders')}</p>
             <p style={{ fontSize:22, fontWeight:700 }}>{orderCount}</p>

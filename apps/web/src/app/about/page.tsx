@@ -4,19 +4,19 @@ export default function AboutPage() {
   return (
     <div>
       {/* Hero */}
-      <div style={{ background:'#1c1b1b', padding:'96px 64px', textAlign:'center' }}>
+      <div style={{ background:'#1c1b1b', padding:'clamp(48px,6vw,96px) clamp(16px,4vw,64px)', textAlign:'center' }}>
         <p style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.15em', color:'#9E896A', marginBottom:16 }}>Our Story</p>
-        <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:52, fontWeight:700, color:'#f4f0ef', lineHeight:1.1, maxWidth:700, margin:'0 auto 20px' }}>
+        <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:'clamp(31px,4vw,52px)', fontWeight:700, color:'#f4f0ef', lineHeight:1.1, maxWidth:700, margin:'0 auto 20px' }}>
           Redefining Fashion Ownership
         </h1>
-        <p style={{ fontSize:16, color:'#9c9a92', lineHeight:1.7, maxWidth:560, margin:'0 auto' }}>
+        <p style={{ fontSize:16, color:'#9c9a92', lineHeight:1.7, maxWidth:560, margin:'0 auto', width:'100%' }}>
           My Dressa is Germany's premier luxury fashion rental and resale marketplace, connecting discerning customers with exceptional merchants.
         </p>
       </div>
 
       {/* Mission */}
-      <div style={{ maxWidth:1440, margin:'0 auto', padding:'80px 64px' }}>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:64, alignItems:'center' }}>
+      <div style={{ maxWidth:1440, margin:'0 auto', width:'100%', padding:'clamp(40px,5vw,80px) clamp(16px,4vw,64px)' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:64, alignItems:'center' }}>
           <div>
             <p style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#9E896A', marginBottom:16 }}>Our Mission</p>
             <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:36, fontWeight:700, marginBottom:20, lineHeight:1.2 }}>Fashion for Every Moment</h2>
@@ -28,7 +28,7 @@ export default function AboutPage() {
             </p>
           </div>
           <div style={{ background:'#f1edec', padding:48, textAlign:'center' }}>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:24 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:24 }}>
               {[['500+','Designer pieces'],['50+','Partner merchants'],['DSGVO','Compliant'],['100%','Authenticated']].map(([num,label])=>(
                 <div key={label} style={{ padding:20, background:'#fff' }}>
                   <p style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, color:'#1c1b1b', marginBottom:4 }}>{num}</p>
@@ -41,10 +41,10 @@ export default function AboutPage() {
       </div>
 
       {/* Values */}
-      <div style={{ background:'#f7f3f2', padding:'64px 64px' }}>
-        <div style={{ maxWidth:1440, margin:'0 auto' }}>
+      <div style={{ background:'#f7f3f2', padding:'clamp(32px,4vw,64px) clamp(16px,4vw,64px)' }}>
+        <div style={{ maxWidth:1440, margin:'0 auto', width:'100%' }}>
           <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:32, fontWeight:700, textAlign:'center', marginBottom:48 }}>Our Values</h2>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:32 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:32 }}>
             {[
               { icon:'eco', title:'Sustainability', desc:'Every rental extends a garment\'s life and reduces fashion waste. We\'re committed to a circular fashion economy.' },
               { icon:'verified', title:'Authenticity', desc:'Every item is verified by our expert team. We guarantee the authenticity of all designer pieces on our platform.' },
@@ -61,7 +61,7 @@ export default function AboutPage() {
       </div>
 
       {/* CTA */}
-      <div style={{ padding:'64px 64px', textAlign:'center', maxWidth:1440, margin:'0 auto' }}>
+      <div style={{ padding:'clamp(32px,4vw,64px) clamp(16px,4vw,64px)', textAlign:'center', maxWidth:1440, margin:'0 auto', width:'100%' }}>
         <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:32, fontWeight:700, marginBottom:12 }}>Join My Dressa</h2>
         <p style={{ color:'#5e5e5b', fontSize:15, marginBottom:32 }}>Discover luxury fashion or become a merchant partner.</p>
         <div style={{ display:'flex', gap:16, justifyContent:'center' }}>

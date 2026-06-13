@@ -11,7 +11,8 @@ export default function SupportDamagePage() {
 
   const load = (st = filter) => {
     setLoading(true)
-    api.get(`/support/damage-reports${st ? `?status=${st}` : ''}`)
+    const q = (st && st !== 'all') ? `?status=${st}` : ''
+    api.get(`/support/damage-reports${q}`)
       .then(({ data }: any) => setReports(Array.isArray(data) ? data : []))
       .catch(() => {})
       .finally(() => setLoading(false))

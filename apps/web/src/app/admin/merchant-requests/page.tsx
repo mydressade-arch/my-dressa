@@ -60,7 +60,7 @@ export default function AdminMerchantRequestsPage() {
   }
 
   return (
-    <div style={{ padding: '40px 48px', maxWidth: 960, margin: '0 auto' }}>
+    <div style={{ padding:'clamp(20px,2vw,40px) clamp(16px,4vw,48px)', maxWidth: 960, margin: '0 auto' }}>
       <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, marginBottom: 8 }}>
         Merchant Applications
       </h1>
@@ -76,7 +76,7 @@ export default function AdminMerchantRequestsPage() {
         </div>
       ) : requests.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 0', border: '1px solid #c4c7c7', color: '#5e5e5b' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: 40, display: 'block', marginBottom: 12 }}>check_circle</span>
+          <span className="material-symbols-outlined" style={{ fontSize:'clamp(24px,3vw,40px)', display: 'block', marginBottom: 12 }}>check_circle</span>
           No pending merchant applications
         </div>
       ) : (

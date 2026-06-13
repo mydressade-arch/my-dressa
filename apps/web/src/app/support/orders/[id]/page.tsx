@@ -76,7 +76,7 @@ export default function SupportOrderDetailPage() {
   const s = STATUS_STYLE[order.status] || { bg:'#f1edec', color:'#5e5e5b' }
 
   return (
-    <div style={{ maxWidth: 800 }}>
+    <div style={{ maxWidth: '800px' }}>
       <button onClick={() => router.push('/support/orders')}
         style={{ background:'none', border:'none', cursor:'pointer', fontSize:13, color:'#5e5e5b', marginBottom:20, display:'flex', alignItems:'center', gap:4 }}>
         <span className="material-symbols-outlined" style={{ fontSize:16 }}>arrow_back</span>

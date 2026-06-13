@@ -1,8 +1,8 @@
 export default function RentalPolicyPage() {
   return (
-    <div style={{ maxWidth:860, margin:'0 auto', padding:'64px 40px' }}>
+    <div style={{ maxWidth:860, margin:'0 auto', width:'100%', padding:'clamp(32px,4vw,64px) clamp(16px,4vw,40px)' }}>
       <p style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#9E896A', marginBottom:12 }}>Information</p>
-      <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:40, fontWeight:700, marginBottom:8 }}>Rental Policy</h1>
+      <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:'clamp(24px,3vw,40px)', fontWeight:700, marginBottom:8 }}>Rental Policy</h1>
       <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:48 }}>Everything you need to know about renting on My Dressa.</p>
 
       {[

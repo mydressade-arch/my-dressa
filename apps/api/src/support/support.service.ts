@@ -173,7 +173,7 @@ export class SupportService {
   }
 
   async getDamageReports(status?: string) {
-    const query: any = status ? { status } : {};
+    const query: any = (status && status !== 'all') ? { status } : {};
     return this.damageRepo.find({
       where: query,
       order: { createdAt: 'DESC' },

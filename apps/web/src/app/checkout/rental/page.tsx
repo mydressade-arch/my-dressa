@@ -136,7 +136,7 @@ function RentalCheckoutInner() {
   )
 
   return (
-    <div style={{ maxWidth:1100, margin:'0 auto', padding:'40px 24px' }}>
+    <div style={{ maxWidth:1100, margin:'0 auto', width:'100%', padding:'clamp(20px,4vw,40px) clamp(12px,3vw,24px)' }}>
       <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:32, fontWeight:700, marginBottom:8 }}>
         {step === 'details' ? 'Complete Your Rental' : 'Payment'}
       </h1>
@@ -165,14 +165,14 @@ function RentalCheckoutInner() {
         ))}
       </div>
 
-      <div className="responsive-grid-2" style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:40 }}>
+      <div className="responsive-grid-2" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:40 }}>
         {step === 'details' ? (
           <form onSubmit={handleConfirm} style={{ display:'flex', flexDirection:'column', gap:20 }}>
             <div style={{ background:'#fff', border:'1px solid #c4c7c7', padding:24 }}>
               <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600, marginBottom:20, paddingBottom:14, borderBottom:'1px solid #f1edec' }}>Delivery Address</h2>
               <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
                 {inp(t('Straße & Hausnummer', 'Street & Number'), 'street', 'Musterstraße 1')}
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:12 }}>
                   {inp(t('Stadt', 'City'), 'city', 'Berlin')}
                   {inp(t('Postleitzahl', 'Postal Code'), 'zip', '10115')}
                 </div>
@@ -259,32 +259,67 @@ function RentalCheckoutInner() {
         )}
 
         {/* Order Summary */}
-        <div style={{ background:'#fdf8f8', border:'1px solid #e8e3e1', padding:20 }}>
-          <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:16, fontWeight:600, marginBottom:16 }}>
+        <div style={{ background:'#fff', border:'1px solid #e8e3e1', padding:24, position:'sticky', top:88, alignSelf:'start' }}>
+          <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600, marginBottom:18, paddingBottom:14, borderBottom:'1px solid #f1edec' }}>
             {t('Bestellübersicht', 'Order Summary')}
           </h3>
-          {product && (
-            <div>
-              <p style={{ fontSize:14, fontWeight:600, marginBottom:4 }}>{product.title}</p>
-              <p style={{ fontSize:12, color:'#5e5e5b', marginBottom:12 }}>{product.merchant?.shopName || ''}</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:6, fontSize:13, color:'#5e5e5b', borderTop:'1px solid #f1edec', paddingTop:12 }}>
-                <div style={{ display:'flex', justifyContent:'space-between' }}>
-                  <span>{t('Mietgebühr', 'Rental fee')}</span>
-                  <span>€{Number(product.rentalPrice||0).toFixed(2)}/Tag</span>
-                </div>
-                <div style={{ display:'flex', justifyContent:'space-between' }}>
-                  <span>{t('Versand', 'Shipping')}</span>
-                  <span>€{Number(product.shippingCost||0).toFixed(2)}</span>
-                </div>
-                {product.depositAmount && (
-                  <div style={{ display:'flex', justifyContent:'space-between', color:'#633806' }}>
-                    <span>{t('Kaution (Hold)', 'Deposit (Hold)')}</span>
-                    <span>€{Number(product.depositAmount).toFixed(2)}</span>
+          {product && (() => {
+            const rate    = Number(product.rentalPrice || 0)
+            const ship    = Number(product.shippingCost || 0)
+            const deposit = Number(product.depositAmount || 0)
+            const rentalTotal = rate * days
+            const payNow  = rentalTotal + ship
+            return (
+              <div>
+                {/* Produktzeile mit Bild */}
+                <div style={{ display:'flex', gap:12, marginBottom:18 }}>
+                  {product.images?.[0]?.url && (
+                    <img src={product.images[0].url} alt={product.title}
+                      style={{ width:64, height:80, objectFit:'cover', flexShrink:0, borderRadius:2 }} />
+                  )}
+                  <div style={{ minWidth:0 }}>
+                    <p style={{ fontSize:14, fontWeight:600, marginBottom:2, lineHeight:1.3 }}>{product.title}</p>
+                    <p style={{ fontSize:12, color:'#9e9e9b', marginBottom:4 }}>{product.merchant?.shopName || ''}</p>
+                    <p style={{ fontSize:11, color:'#9E896A', fontWeight:600 }}>{startDate} → {endDate}</p>
                   </div>
-                )}
+                </div>
+
+                {/* Kostenaufstellung */}
+                <div style={{ display:'flex', flexDirection:'column', gap:10, fontSize:13, color:'#5e5e5b' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between' }}>
+                    <span>€{rate.toFixed(2)} × {days} {days === 1 ? t('Tag','day') : t('Tage','days')}</span>
+                    <span style={{ color:'#1c1b1b' }}>€{rentalTotal.toFixed(2)}</span>
+                  </div>
+                  <div style={{ display:'flex', justifyContent:'space-between' }}>
+                    <span>{t('Versand', 'Shipping')}</span>
+                    <span style={{ color:'#1c1b1b' }}>€{ship.toFixed(2)}</span>
+                  </div>
+
+                  {/* Jetzt zahlbar */}
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderTop:'1px solid #f1edec', paddingTop:12, marginTop:2 }}>
+                    <span style={{ fontSize:15, fontWeight:700, color:'#1c1b1b' }}>{t('Jetzt zahlbar', 'Pay now')}</span>
+                    <span style={{ fontSize:18, fontWeight:700, color:'#1c1b1b' }}>€{payNow.toFixed(2)}</span>
+                  </div>
+
+                  {/* Kaution separat */}
+                  {deposit > 0 && (
+                    <div style={{ background:'#FAEEDA', padding:'12px 14px', marginTop:8, borderRadius:2 }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+                        <span style={{ fontSize:13, fontWeight:600, color:'#633806' }}>{t('Kaution', 'Deposit')}</span>
+                        <span style={{ fontSize:14, fontWeight:700, color:'#633806' }}>€{deposit.toFixed(2)}</span>
+                      </div>
+                      <p style={{ fontSize:11, color:'#8a6d3b', lineHeight:1.5, margin:0 }}>
+                        {t(
+                          'Wird nur auf deiner Karte reserviert (nicht abgebucht) und nach Rückgabe freigegeben.',
+                          'Only held on your card (not charged) and released after return.'
+                        )}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
         </div>
       </div>
     </div>

@@ -24,108 +24,174 @@
   to { transform: rotate(360deg); }
 }
 
-/* ════════════════════════════════════════════════════════════════════════════
-   MOBILE RESPONSIVE — greift auf Inline-Style Patterns via Klassen
-   ════════════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE FOUNDATION — My Dressa
+   Strategie: Inline-Styles können keine Media Queries. Diese Schicht greift
+   gezielt auf die im Code verwendeten Inline-Patterns zu und überschreibt sie
+   nur dort wo nötig. Breakpoints folgen Tailwind-Standard.
+     sm 640  ·  md 768  ·  lg 1024  ·  xl 1280
+═══════════════════════════════════════════════════════════════════════════ */
 
-/* Tablet & Mobile (≤ 900px) */
-@media (max-width: 900px) {
-  /* Grids die 2-4 Spalten haben → 2 oder 1 Spalte */
-  .responsive-grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
-  .responsive-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
-  .responsive-grid-2 { grid-template-columns: 1fr !important; }
+/* ── 0. Globale Overflow-Prävention ───────────────────────────────────────── */
+* { box-sizing: border-box; }
+html { max-width: 100%; overflow-x: hidden; }
+body { max-width: 100%; overflow-x: hidden; position: relative; }
+#__next, main { max-width: 100%; overflow-x: clip; }
+img, video, svg, canvas { max-width: 100%; height: auto; }
+/* Lange Wörter umbrechen NUR wenn nötig — niemals Buchstabe-für-Buchstabe */
+p, h1, h2, h3, h4, h5, span, a, li, label { overflow-wrap: break-word; }
+a, button { -webkit-tap-highlight-color: transparent; }
 
-  /* Padding reduzieren */
-  .responsive-section { padding-left: 20px !important; padding-right: 20px !important; }
-}
-
-/* Mobile (≤ 640px) */
-@media (max-width: 640px) {
-  /* Alle Multi-Spalten Grids → 1 Spalte */
-  .responsive-grid-4,
-  .responsive-grid-3,
-  .responsive-grid-2 { grid-template-columns: 1fr !important; }
-
-  /* Sidebar Layouts → stapeln */
-  .responsive-sidebar { flex-direction: column !important; }
-  .responsive-sidebar > * { width: 100% !important; }
-
-  /* Padding stark reduzieren */
-  .responsive-section { padding-left: 16px !important; padding-right: 16px !important; }
-  section { padding-left: 16px !important; padding-right: 16px !important; }
-
-  /* Große Überschriften kleiner */
-  h1 { font-size: clamp(24px, 7vw, 36px) !important; }
-
-  /* Flex-Container die nebeneinander sind → umbrechen */
-  .responsive-flex { flex-wrap: wrap !important; }
-
-  /* Tabellen scrollbar machen */
-  .responsive-table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
-  table { min-width: 600px; }
-}
-
-/* Sehr kleine Geräte (≤ 400px) */
-@media (max-width: 400px) {
-  .responsive-section, section { padding-left: 12px !important; padding-right: 12px !important; }
-}
-
-/* Globale Mobile-Verbesserungen für alle Grids automatisch */
+/* ── 1. Fließende Typografie (greift global, skaliert mit Viewport) ───────── */
+/* Überschreibt feste fontSize Inline-Styles ab den jeweiligen Größen */
 @media (max-width: 768px) {
-  /* Auto-fill Grids mit großen min-width → kleiner */
-  [style*="gridTemplateColumns"][style*="repeat(auto"] {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+  [style*="fontSize:44"], [style*="fontSize: 44"],
+  [style*="fontSize:48"], [style*="fontSize: 48"],
+  [style*="fontSize:42"], [style*="fontSize: 42"],
+  [style*="fontSize:40"], [style*="fontSize: 40"] { font-size: 30px !important; }
+  [style*="fontSize:36"], [style*="fontSize: 36"],
+  [style*="fontSize:34"], [style*="fontSize: 34"],
+  [style*="fontSize:32"], [style*="fontSize: 32"] { font-size: 26px !important; }
+  [style*="fontSize:28"], [style*="fontSize: 28"] { font-size: 23px !important; }
+}
+@media (max-width: 480px) {
+  [style*="fontSize:44"], [style*="fontSize: 44"],
+  [style*="fontSize:48"], [style*="fontSize: 48"],
+  [style*="fontSize:42"], [style*="fontSize: 42"],
+  [style*="fontSize:40"], [style*="fontSize: 40"] { font-size: 26px !important; }
+  [style*="fontSize:36"], [style*="fontSize: 36"],
+  [style*="fontSize:34"], [style*="fontSize: 34"],
+  [style*="fontSize:32"], [style*="fontSize: 32"] { font-size: 23px !important; }
+}
+
+/* ── 2. Container-Padding skalieren ───────────────────────────────────────── */
+/* Große horizontale Paddings auf Mobile reduzieren */
+@media (max-width: 768px) {
+  [style*="padding:'80px 40px'"], [style*="padding: '80px 40px'"],
+  [style*="padding:'64px 40px'"], [style*="padding: '64px 40px'"],
+  [style*="padding:'64px 48px'"], [style*="padding: '64px 48px'"],
+  [style*="padding:'48px 40px'"], [style*="padding: '48px 40px'"] {
+    padding-left: 20px !important; padding-right: 20px !important;
+  }
+}
+@media (max-width: 480px) {
+  [style*="padding:'80px 40px'"], [style*="padding: '80px 40px'"],
+  [style*="padding:'64px 40px'"], [style*="padding: '64px 40px'"],
+  [style*="padding:'64px 48px'"], [style*="padding: '64px 48px'"] {
+    padding-top: 40px !important; padding-bottom: 40px !important;
+    padding-left: 16px !important; padding-right: 16px !important;
   }
 }
 
-/* ── Navbar Mobile ─────────────────────────────────────────────────────────── */
+/* ── 3. NAVBAR ─────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  /* Center Nav verstecken, Hamburger zeigen */
-  .navbar-center { display: none !important; }
-  .navbar-hamburger { display: block !important; }
-  .navbar-search { display: none !important; }
-  .navbar-mobile-menu { display: flex !important; }
-
-  /* Navbar Padding reduzieren */
+  .navbar-center  { display: none !important; }
+  .navbar-search  { display: none !important; }
+  .navbar-icon-group { display: none !important; }
+  .navbar-hamburger    { display: flex !important; }
+  .navbar-mobile-menu  { display: flex !important; }
   nav > div { padding-left: 16px !important; padding-right: 16px !important; }
 }
-
-/* Admin/Support/Merchant Sidebars auf Mobile */
-@media (max-width: 768px) {
-  .admin-sidebar, .support-sidebar, .merchant-sidebar {
-    width: 100% !important;
-    flex-direction: row !important;
-    overflow-x: auto !important;
-  }
+@media (min-width: 769px) {
+  .navbar-hamburger   { display: none !important; }
+  .navbar-mobile-menu { display: none !important; }
 }
 
-/* ── Tabellen auf Mobile scrollbar ─────────────────────────────────────────── */
+/* ── 4. PORTAL-LAYOUTS (Admin / Support / Merchant) ───────────────────────── */
+/* Sidebar wird auf Mobile zur horizontalen Scroll-Leiste oben.
+   Greift sowohl auf Tailwind- als auch CSS-Klassen-Layouts. */
+@media (min-width: 769px) {
+  /* Desktop: Support-Sidebar fest 220px, vertikal */
+  .support-sidebar { width: 220px !important; }
+  .support-nav { flex-direction: column !important; padding: 16px 0 !important; }
+}
 @media (max-width: 768px) {
-  /* Alle Tabellen-Container scrollbar */
-  div:has(> table) {
+  /* Mobile: volle Breite, Nav horizontal scrollbar */
+  .support-sidebar { width: 100% !important; }
+  .support-nav {
+    flex-direction: row !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
   }
-  table { min-width: 560px; }
+  .support-nav a { white-space: nowrap !important; }
+}
 
-  /* Modals auf Mobile full-width */
-  [style*="position:fixed"][style*="maxWidth"] {
-    max-width: 92vw !important;
-    margin: 0 4vw !important;
+/* ── 5. TABELLEN — horizontal scrollbar statt gequetscht ──────────────────── */
+@media (max-width: 1024px) {
+  .table-scroll,
+  div:has(> table) {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
   }
 }
 
-/* ── Touch-Targets vergrößern ──────────────────────────────────────────────── */
+/* ── 6. FORMULARE & INPUTS ────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  button, a[role="button"], input[type="submit"] {
-    min-height: 40px;
+  /* iOS-Zoom verhindern: Inputs min. 16px */
+  input, select, textarea { font-size: 16px !important; }
+  /* Touch-Targets */
+  button, a[role="button"], input[type="submit"], select { min-height: 42px; }
+}
+
+/* ── 7. MODALS / OVERLAYS ─────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  [style*="position:fixed"] [style*="maxWidth"],
+  [class*="modal-content"] {
+    max-width: 92vw !important;
+    width: 92vw !important;
+    max-height: 88vh !important;
+    overflow-y: auto !important;
   }
 }
 
-/* ── Hero-Höhe auf Mobile anpassen ─────────────────────────────────────────── */
+/* ── 8. RESPONSIVE UTILITY-KLASSEN (für gezielten Einsatz im JSX) ─────────── */
+/* Container der maxWidth hat aber auf Mobile volle Breite braucht */
+.rsp-container { width: 100%; }
+
+/* Flex-Reihe die auf Mobile umbricht */
+@media (max-width: 768px) {
+  .rsp-stack { flex-direction: column !important; }
+  .rsp-stack > * { width: 100% !important; }
+  .rsp-wrap { flex-wrap: wrap !important; }
+}
+
+/* Grid das auf Mobile zu 1 Spalte wird */
 @media (max-width: 640px) {
-  section[style*="92vh"], section[style*="height:92vh"] {
-    height: 70vh !important;
-    min-height: 480px !important;
-  }
+  .rsp-grid-1 { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 900px) {
+  .rsp-grid-2 { grid-template-columns: repeat(2,1fr) !important; }
+}
+
+/* Auf Mobile verstecken / nur auf Mobile zeigen */
+@media (max-width: 768px) { .rsp-hide-mobile { display: none !important; } }
+@media (min-width: 769px) { .rsp-only-mobile { display: none !important; } }
+
+/* ── 9. HERO ──────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hero-section { height: auto !important; min-height: 70vh !important; }
+}
+
+/* ── 10. PRODUKT-GRID (auto-fill hält Karten konsistent) ──────────────────── */
+@media (max-width: 640px) {
+  .product-grid { grid-template-columns: repeat(2,1fr) !important; gap: 12px !important; }
+}
+@media (max-width: 400px) {
+  .product-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── 11. PRODUCTS PAGE — Filter-Sidebar ───────────────────────────────────── */
+@media (min-width: 901px) {
+  /* Desktop: Filter-Button verstecken, Sidebar immer sichtbar */
+  .filter-toggle-btn { display: none !important; }
+}
+@media (max-width: 900px) {
+  /* Tablet/Mobile: Layout stapelt, Sidebar standardmäßig versteckt */
+  .products-layout { flex-direction: column !important; gap: 0 !important; }
+  .filter-toggle-btn { display: flex !important; }
+  .products-sidebar { display: none; width: 100% !important; }
+  .products-sidebar.filters-open { display: block; margin-bottom: 24px; }
+  /* Sticky aus wenn gestapelt */
+  .products-sidebar > div { position: static !important; top: auto !important; }
 }

@@ -61,16 +61,17 @@ export function Navbar() {
     <>
       {/* Top announcement bar — only after hydration */}
       {mounted && (
-        <div style={{ background:'#1c1b1b', color:'#f4f0ef', textAlign:'center', padding:'8px 0', fontSize:11, fontWeight:500, letterSpacing:'0.12em', textTransform:'uppercase' }}>
-          Free shipping on orders over €80 · Secure rentals with €50 deposit
+        <div className="announcement-bar" style={{ background:'#1c1b1b', color:'#f4f0ef', textAlign:'center', padding:'7px 12px', fontSize:11, fontWeight:500, letterSpacing:'0.1em', textTransform:'uppercase' }}>
+          <span className="rsp-hide-mobile">Free shipping on orders over €80 · Secure rentals with €50 deposit</span>
+          <span className="rsp-only-mobile">Free shipping over €80</span>
         </div>
       )}
 
       <nav style={{ background:'#fdf8f8', borderBottom:'1px solid #e8e3e1', position:'sticky', top:0, zIndex:100 }}>
-        <div style={{ maxWidth:1440, margin:'0 auto', padding:'0 48px' }}>
+        <div style={{ maxWidth:1440, margin:'0 auto', width:'100%', padding:'0 clamp(16px,4vw,48px)' }}>
 
           {/* Main bar */}
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', height:64 }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', height:'clamp(52px,7vw,64px)' }}>
 
             {/* Hamburger (nur Mobile) */}
             <button className="navbar-hamburger" onClick={() => setMobileMenuOpen(o => !o)}
@@ -81,7 +82,7 @@ export function Navbar() {
             </button>
 
             {/* Logo */}
-            <Link href="/" style={{ fontFamily:"'Playfair Display', serif", fontSize:24, fontWeight:700, letterSpacing:'-0.03em', color:'#1c1b1b', textDecoration:'none', flexShrink:0 }}>
+            <Link href="/" style={{ fontFamily:"'Playfair Display', serif", fontSize:'clamp(18px,2.2vw,22px)', fontWeight:700, letterSpacing:'-0.03em', color:'#1c1b1b', textDecoration:'none', flexShrink:0 }}>
               My Dressa
             </Link>
 
@@ -133,10 +134,10 @@ export function Navbar() {
                   </button>
                 </form>
               ) : (
-                <IconBtn onClick={() => setSearchOpen(true)} icon="search" />
+                <span className="navbar-icon-group"><IconBtn onClick={() => setSearchOpen(true)} icon="search" /></span>
               )}
 
-              <div style={{ position:'relative' }}>
+              <div className="navbar-icon-group" style={{ position:'relative' }}>
                 <IconBtn href="/wishlist" icon="favorite_border" />
                 {wishlistCount > 0 && (
                   <div style={{ position:'absolute', top:4, right:4, width:14, height:14, borderRadius:'50%', background:'#9E896A', display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none' }}>
@@ -145,7 +146,7 @@ export function Navbar() {
                 )}
               </div>
 
-              <IconBtn href={user ? '/account' : '/auth/login'} icon="shopping_bag" />
+              <span className="navbar-icon-group"><IconBtn href={user ? '/account' : '/auth/login'} icon="shopping_bag" /></span>
               <LangSwitcher />
 
               {/* Profile dropdown */}
@@ -230,7 +231,7 @@ export function Navbar() {
         </div>
         {/* Mobile Menu Dropdown */}
         {mobileMenuOpen && (
-          <div className="navbar-mobile-menu" style={{ display:'none', flexDirection:'column', borderTop:'1px solid #e8e3e1', background:'#fdf8f8', padding:'8px 0' }}>
+          <div className="navbar-mobile-menu" style={{ flexDirection:'column', borderTop:'1px solid #e8e3e1', background:'#fdf8f8', padding:'8px 0' }}>
             {[
               { label: mounted ? t('Neu', 'New In') : 'New In', href:'/products' },
               { label: mounted ? t('Mieten', 'Rent') : 'Rent', href:'/products?forRent=true' },
@@ -250,6 +251,21 @@ export function Navbar() {
                 <span className="material-symbols-outlined" style={{ fontSize:18 }}>search</span>
               </button>
             </form>
+
+            {/* Mobile Quick-Actions: Wishlist + Bag/Account */}
+            <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)}
+              style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 24px', fontSize:15, fontWeight:500, color:'#1c1b1b', textDecoration:'none', borderTop:'1px solid #f1edec' }}>
+              <span className="material-symbols-outlined" style={{ fontSize:20 }}>favorite_border</span>
+              {mounted ? t('Merkliste', 'Wishlist') : 'Merkliste'}
+              {wishlistCount > 0 && (
+                <span style={{ marginLeft:'auto', background:'#9E896A', color:'#fff', fontSize:11, fontWeight:700, padding:'1px 8px', borderRadius:10 }}>{wishlistCount}</span>
+              )}
+            </Link>
+            <Link href={user ? '/account' : '/auth/login'} onClick={() => setMobileMenuOpen(false)}
+              style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 24px', fontSize:15, fontWeight:500, color:'#1c1b1b', textDecoration:'none', borderTop:'1px solid #f1edec' }}>
+              <span className="material-symbols-outlined" style={{ fontSize:20 }}>shopping_bag</span>
+              {mounted ? (user ? t('Mein Konto', 'My Account') : t('Anmelden', 'Sign In')) : 'Konto'}
+            </Link>
           </div>
         )}
       </nav>
