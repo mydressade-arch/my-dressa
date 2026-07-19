@@ -5,7 +5,6 @@ import { useAuthStore } from '@/store/auth.store'
 import { rentalsApi, api } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
 import { getStripe, isTestMode } from '@/lib/stripe'
-import { differenceInDays, parseISO } from 'date-fns'
 import {
   Elements,
   PaymentElement,
@@ -44,7 +43,7 @@ function RentalCheckoutInner() {
       errors.zip = 'PLZ muss 5 Ziffern haben (z.B. 10115)'
     return errors
   }
-  const [consent, setConsent]     = useState({ agb:false, rental:false, liability:false })
+  const [consent, setConsent]     = useState({ agb:false, rental:false, liability:false, deposit:false })
 
   // Stripe payment step
   const { t } = useLangStore()
@@ -71,9 +70,9 @@ function RentalCheckoutInner() {
     getStripe().then(s => { setStripeInstance(s); setStripeReady(true) })
   }, [])
 
-  const days       = startDate && endDate ? Math.max(1, differenceInDays(parseISO(endDate), parseISO(startDate))) : 0
+  const days       = 10 // feste Mietdauer
   const pricePerDay  = Number(product?.rentalPrice || 0)
-  const rentalFee    = days * pricePerDay
+  const rentalFee    = pricePerDay // fester Mietpreis (NICHT × Tage)
   const shippingCost = Number(product?.shippingCost || 0)
   const deposit      = product?.depositAmount != null ? Number(product.depositAmount) : 50
   const total        = rentalFee + shippingCost
@@ -81,7 +80,7 @@ function RentalCheckoutInner() {
   // Step 1: Rental anlegen + Payment Intent holen
   const handleConfirm = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!consent.agb || !consent.rental || !consent.liability) {
+    if (!consent.agb || !consent.rental || !consent.liability || !consent.deposit) {
       setError(t('Bitte alle Bedingungen akzeptieren', 'Please accept all terms')); return
     }
     const addrErrs = validateAddress(addr)
@@ -98,7 +97,7 @@ function RentalCheckoutInner() {
         productVariantId: variantId,
         startDate, endDate,
         shippingAddress: addr,
-        consent: { agbVersion:'1.0', rentalTermsVersion:'1.0', liabilityAccepted:true },
+        consent: { agbVersion:'1.0', rentalTermsVersion:'1.0', liabilityAccepted:true, depositAccepted:true, depositTermsVersion:'1.0' },
       })
 
       // 2. Payment Intent für diese Order erstellen
@@ -141,7 +140,7 @@ function RentalCheckoutInner() {
         {step === 'details' ? 'Complete Your Rental' : 'Payment'}
       </h1>
       <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:32 }}>
-        {startDate} → {endDate} · {days} days
+        {startDate} → {endDate} · 10 {t('Tage Mietdauer','day rental')}
       </p>
 
       {/* Step indicator */}
@@ -183,7 +182,7 @@ function RentalCheckoutInner() {
               <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600, marginBottom:20, paddingBottom:14, borderBottom:'1px solid #f1edec' }}>Terms & Conditions</h2>
               {([
                 ['agb', t('Ich akzeptiere die Allgemeinen Geschäftsbedingungen (AGB)', 'I accept the General Terms and Conditions')],
-                ['rental', t(`Ich akzeptiere die Mietbedingungen — max. 7 Tage, €${deposit} Kaution`, `I accept the Rental Terms — max 7 days, €${deposit} deposit required`)],
+                ['rental', t('Ich akzeptiere die Mietbedingungen. Bei verspäteter Rückgabe kann die Kaution einbehalten und eine Strafgebühr erhoben werden.', 'I accept the Rental Terms. Late returns may forfeit the deposit and incur a penalty fee.')],
                 ['liability', 'I accept liability for damage or loss of the item'],
               ] as const).map(([k, label]) => (
                 <label key={k} style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14, cursor:'pointer' }}>
@@ -194,6 +193,27 @@ function RentalCheckoutInner() {
                   <span style={{ fontSize:13, color:'#5e5e5b', lineHeight:1.5 }}>{label}</span>
                 </label>
               ))}
+            </div>
+
+            {/* Feature 3: separate Zustimmung zur Kaution */}
+            <div style={{ background:'#fff', border:'2px solid #0C447C', padding:24 }}>
+              <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600, marginBottom:8 }}>
+                {t('Kaution', 'Deposit')}
+              </h2>
+              <p style={{ fontSize:13, color:'#5e5e5b', lineHeight:1.6, marginBottom:16 }}>
+                {t(`Für diese Miete wird eine Kaution von €${deposit} erhoben. Sie wird bei der Buchung abgebucht und nach ordnungsgemäßer Rückgabe automatisch zurückerstattet. Bei Beschädigung, Verlust oder verspäteter Rückgabe kann die Kaution ganz oder teilweise einbehalten werden.`,
+                    `A deposit of €${deposit} applies to this rental. It is charged at booking and automatically refunded after a proper return. In case of damage, loss or late return, the deposit may be retained in full or in part.`)}
+              </p>
+              <label style={{ display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer' }}>
+                <div onClick={() => setConsent(c => ({...c, deposit: !c.deposit}))}
+                  style={{ width:18, height:18, border:`2px solid ${consent.deposit ? '#0C447C' : '#c4c7c7'}`, background:consent.deposit ? '#0C447C' : 'transparent', flexShrink:0, marginTop:1, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+                  {consent.deposit && <span className="material-symbols-outlined" style={{ fontSize:13, color:'#fff' }}>check</span>}
+                </div>
+                <span style={{ fontSize:13, color:'#1c1b1b', lineHeight:1.5, fontWeight:600 }}>
+                  {t(`Ich stimme der Kaution von €${deposit} und den Kautionsbedingungen zu`,
+                      `I agree to the €${deposit} deposit and the deposit terms`)}
+                </span>
+              </label>
             </div>
 
             {error && <div style={{ padding:'12px 14px', background:'#ffdad6', color:'#ba1a1a', fontSize:13 }}>{error}</div>}
@@ -267,8 +287,8 @@ function RentalCheckoutInner() {
             const rate    = Number(product.rentalPrice || 0)
             const ship    = Number(product.shippingCost || 0)
             const deposit = Number(product.depositAmount || 0)
-            const rentalTotal = rate * days
-            const payNow  = rentalTotal + ship
+            const rentalTotal = rate // fester Mietpreis (NICHT × Tage)
+            const payNow  = rentalTotal + ship + deposit  // Kaution wird mit abgebucht
             return (
               <div>
                 {/* Produktzeile mit Bild */}
@@ -287,7 +307,7 @@ function RentalCheckoutInner() {
                 {/* Kostenaufstellung */}
                 <div style={{ display:'flex', flexDirection:'column', gap:10, fontSize:13, color:'#5e5e5b' }}>
                   <div style={{ display:'flex', justifyContent:'space-between' }}>
-                    <span>€{rate.toFixed(2)} × {days} {days === 1 ? t('Tag','day') : t('Tage','days')}</span>
+                    <span>{t(`Mietpreis (${Number(product.rentalDurationDays || 10)} Tage)`, `Rental price (${Number(product.rentalDurationDays || 10)} days)`)}</span>
                     <span style={{ color:'#1c1b1b' }}>€{rentalTotal.toFixed(2)}</span>
                   </div>
                   <div style={{ display:'flex', justifyContent:'space-between' }}>
@@ -295,23 +315,26 @@ function RentalCheckoutInner() {
                     <span style={{ color:'#1c1b1b' }}>€{ship.toFixed(2)}</span>
                   </div>
 
-                  {/* Jetzt zahlbar */}
+                  {/* Kaution — wird mit abgebucht */}
+                  {deposit > 0 && (
+                    <div style={{ display:'flex', justifyContent:'space-between' }}>
+                      <span>{t('Kaution (rückerstattbar)', 'Deposit (refundable)')}</span>
+                      <span style={{ color:'#1c1b1b' }}>€{deposit.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  {/* Gesamtbetrag der Abbuchung */}
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderTop:'1px solid #f1edec', paddingTop:12, marginTop:2 }}>
-                    <span style={{ fontSize:15, fontWeight:700, color:'#1c1b1b' }}>{t('Jetzt zahlbar', 'Pay now')}</span>
+                    <span style={{ fontSize:15, fontWeight:700, color:'#1c1b1b' }}>{t('Gesamt jetzt abgebucht', 'Total charged now')}</span>
                     <span style={{ fontSize:18, fontWeight:700, color:'#1c1b1b' }}>€{payNow.toFixed(2)}</span>
                   </div>
 
-                  {/* Kaution separat */}
                   {deposit > 0 && (
-                    <div style={{ background:'#FAEEDA', padding:'12px 14px', marginTop:8, borderRadius:2 }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
-                        <span style={{ fontSize:13, fontWeight:600, color:'#633806' }}>{t('Kaution', 'Deposit')}</span>
-                        <span style={{ fontSize:14, fontWeight:700, color:'#633806' }}>€{deposit.toFixed(2)}</span>
-                      </div>
+                    <div style={{ background:'#FAEEDA', padding:'12px 14px', marginTop:4, borderRadius:2 }}>
                       <p style={{ fontSize:11, color:'#8a6d3b', lineHeight:1.5, margin:0 }}>
                         {t(
-                          'Wird nur auf deiner Karte reserviert (nicht abgebucht) und nach Rückgabe freigegeben.',
-                          'Only held on your card (not charged) and released after return.'
+                          `Davon sind €${deposit.toFixed(2)} Kaution. Sie wird nach ordnungsgemäßer Rückgabe automatisch zurückerstattet.`,
+                          `Of this, €${deposit.toFixed(2)} is a deposit. It is refunded automatically after a proper return.`
                         )}
                       </p>
                     </div>
@@ -366,16 +389,9 @@ function StripePaymentForm({ orderId, amount, depositClientSecret, onBack }: {
       return
     }
 
-    // 2. Kaution mit gleicher PaymentMethod (setup_future_usage erlaubt Wiederverwendung)
-    if (depositClientSecret && paymentIntent?.payment_method) {
-      const { error: depositError } = await stripe.confirmCardPayment(
-        depositClientSecret,
-        { payment_method: paymentIntent.payment_method as string }
-      )
-      if (depositError) {
-        console.warn('Kaution Fehler:', depositError.message)
-      }
-    }
+    // Kaution ist in dieser EINEN Zahlung bereits enthalten.
+    // (Früher gab es einen zweiten PaymentIntent — der konnte technisch
+    //  nie bestätigt werden und blieb dauerhaft "unvollständig".)
 
     // Weiterleitung zur Success-Seite
     window.location.href = `${window.location.origin}/checkout/success?orderId=${orderId}`

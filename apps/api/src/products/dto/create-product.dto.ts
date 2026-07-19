@@ -72,6 +72,18 @@ export class CreateProductDto {
   @Min(0)
   depositAmount?: number;
 
+  @ApiProperty({ example: 80, description: 'Strafbetrag bei Nichtrückgabe in €', required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  penaltyAmount?: number;
+
+  @ApiProperty({ example: 10, description: 'Mietdauer in Tagen (z.B. 7 oder 10)', required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  rentalDurationDays?: number;
+
   @ApiProperty({ type: [ProductVariantDto], required: false })
   @IsOptional()
   @IsArray()

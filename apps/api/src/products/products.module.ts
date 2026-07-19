@@ -19,6 +19,6 @@ import { StorageService } from './storage.service';
   ],
   controllers: [ProductsController, CategoriesController],
   providers: [ProductsService, CategoriesService, StorageService],
-  exports: [ProductsService, CategoriesService],
+  exports: [ProductsService, CategoriesService, StorageService],
 })
 export class ProductsModule {}

@@ -51,6 +51,13 @@ export class Product {
   @Column({ name: 'deposit_amount', type: 'decimal', precision: 10, scale: 2, nullable: true, default: null })
   depositAmount: number | null;
 
+  @Column({ name: 'penalty_amount', type: 'decimal', precision: 10, scale: 2, nullable: true, default: null })
+  penaltyAmount: number | null;
+
+  // Feature 1: Mietdauer in Tagen (Händler wählt aus den vom Admin erlaubten Werten)
+  @Column({ name: 'rental_duration_days', type: 'int', default: 10 })
+  rentalDurationDays: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

@@ -26,11 +26,23 @@ export class AllExceptionsFilter implements ExceptionFilter {
       } else if (err.code === '23505') {
         status  = HttpStatus.CONFLICT;
         message = 'Dieser Eintrag existiert bereits';
+      } else if (err.code === '23514') {
+        // Check-Constraint verletzt
+        status  = HttpStatus.BAD_REQUEST;
+        message = 'Eingabe nicht zulässig';
       } else {
-        message = err.detail || err.message || message;
+        // SICHERHEIT: interne DB-Details (err.detail enthält Tabellen-/
+        // Spaltenwerte) NICHT an den Client leaken. Nur generische Meldung.
+        status  = HttpStatus.BAD_REQUEST;
+        message = 'Anfrage konnte nicht verarbeitet werden';
       }
+      // Volle DB-Fehlerdetails nur ins Server-Log (nicht an den Client)
+      this.logger.error(`DB-Fehler ${err.code}: ${err.detail || err.message}`);
     } else if (exception instanceof Error) {
-      message = exception.message;
+      // SICHERHEIT: bei unerwarteten Fehlern keine internen Details/Stacktraces
+      // an den Client. Details nur ins Log.
+      this.logger.error(`Unhandled: ${exception.message}`, exception.stack);
+      message = 'Interner Serverfehler';
     }
 
     this.logger.error(`${req.method} ${req.url} → ${status}: ${message}`);

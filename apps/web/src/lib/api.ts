@@ -65,6 +65,12 @@ export const rentalsApi = {
   myRentals:  ()                 => api.get('/rentals/my-rentals'),
   detail:     (id: string)       => api.get(`/rentals/${id}`),
   processReturn: (id: string, data: any) => api.patch(`/rentals/${id}/return`, data),
+  confirmReturnCustomer: (id: string) => api.post(`/rentals/${id}/confirm-return-customer`),
+  confirmReturnMerchant: (id: string, condition: string, notes?: string) =>
+    api.post(`/rentals/${id}/confirm-return-merchant`, { condition, notes }),
+  extensionOptions: (id: string) => api.get(`/rentals/${id}/extension-options`),
+  requestExtension: (id: string, extraDays: number) =>
+    api.post(`/rentals/${id}/extend`, { extraDays }),
 }
 
 export const ordersApi = {
@@ -97,4 +103,28 @@ export const wishlistApi = {
   isSaved:       (productId: string) => api.get(`/wishlist/${productId}/status`),
   batchStatus:   (productIds: string[]) => api.post('/wishlist/batch-status', { productIds }),
   remove:        (productId: string) => api.delete(`/wishlist/${productId}`),
+}
+
+// Feature 1: Einstellungen (Mietdauern)
+export const settingsApi = {
+  rentalDurations: () => api.get('/settings/rental-durations'),
+  productColors: () => api.get('/settings/product-colors'),
+  productSizes: () => api.get('/settings/product-sizes'),
+  homeImages: () => api.get('/settings/home-images'),
+  adminSetHomeImage: (name: string, url: string) =>
+    api.put(`/settings/admin/home-images/${name}`, { url }),
+  adminUploadHomeImage: (name: string, file: File) => {
+    const fd = new FormData()
+    fd.append('image', file)
+    return api.post(`/settings/admin/home-images/${name}/upload`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+  adminGetAll: () => api.get('/settings/admin/all'),
+  adminSetRentalDurations: (durations: number[]) =>
+    api.put('/settings/admin/rental-durations', { durations }),
+  adminSetProductColors: (colors: string[]) =>
+    api.put('/settings/admin/product-colors', { colors }),
+  adminSetProductSizes: (sizes: string[]) =>
+    api.put('/settings/admin/product-sizes', { sizes }),
 }

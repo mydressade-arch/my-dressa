@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { ordersApi, api } from '@/lib/api'
+import { ordersApi, api, rentalsApi } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
 import { useUI } from '@/components/ui/UIProvider'
 
@@ -16,7 +16,7 @@ const STATUS_STYLE: Record<string, {bg:string,color:string}> = {
   overdue:        { bg:'#FCEBEB', color:'#791F1F' },
 }
 
-type ReturnCondition = 'good' | 'damaged' | 'lost'
+type ReturnCondition = 'good' | 'damaged' | 'lost' | 'late'
 
 export default function MerchantOrdersPage() {
   const { toast, confirm } = useUI()
@@ -71,23 +71,34 @@ export default function MerchantOrdersPage() {
     if (!returnModal) return
     setUpdating(returnModal.rentalId)
     try {
-      await api.patch(`/rentals/${returnModal.rentalId}/return`, {
-        condition: returnCondition,
-        damageNotes: damageNotes || undefined,
-      })
+      // Feature 6: neuer beidseitiger Bestätigungs-Endpoint.
+      // Bei "good" wird die Kaution nur zurückgezahlt, wenn auch der
+      // Kunde bestätigt hat. Bei damaged/lost geht es an den Admin.
+      const res = await rentalsApi.confirmReturnMerchant(
+        returnModal.rentalId,
+        returnCondition,
+        damageNotes || undefined,
+      )
 
       if (returnCondition !== 'good' && (damageNotes || damagePhotos.length > 0)) {
         try {
           const fd = new FormData()
           fd.append('rentalId', returnModal.rentalId)
           fd.append('description', damageNotes || `Zustand: ${returnCondition}`)
-          fd.append('severity', returnCondition === 'lost' ? 'lost' : 'moderate')
+          fd.append('severity', returnCondition === 'lost' ? 'lost' : returnCondition === 'late' ? 'late' : 'moderate')
           damagePhotos.forEach(f => fd.append('photos', f))
           await api.post('/damage-reports', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
         } catch {}
       }
 
-      notify(`Rückgabe bestätigt — ${returnCondition === 'good' ? 'Kaution wird freigegeben ✓' : 'Schadensmeldung eingereicht'}`)
+      const needsReview = (res as any)?.data?.requiresAdminReview
+      notify(
+        returnCondition === 'good'
+          ? 'Erhalt bestätigt — Kaution wird zurückgezahlt, sobald auch der Kunde bestätigt hat ✓'
+          : needsReview
+            ? 'Problem gemeldet — der Admin prüft die Kaution'
+            : 'Schadensmeldung eingereicht',
+      )
       setReturnModal(null); setReturnCondition('good'); setDamageNotes(''); setDamagePhotos([])
       load()
     } catch (e: any) { notify(e.response?.data?.message || 'Fehler bei Rückgabe') }
@@ -158,10 +169,20 @@ export default function MerchantOrdersPage() {
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           {displayed.map((order: any) => {
             const rental = order.rentals?.[0] || order.rental
-            const canShip = (order.status === 'paid' || order.status === 'pending') && !order.trackingNumber
+            // Verlängerungen brauchen KEINEN Versand — das Kleid ist beim Kunden
+            const isExtension = order.isExtension === true
+            const canShip = !isExtension
+              && (order.status === 'paid' || order.status === 'pending')
+              && !order.trackingNumber
 
             return (
               <div key={order.id} style={{ background:'#fff', border:'1px solid #c4c7c7' }}>
+                {isExtension && (
+                  <div style={{ padding:'8px 20px', background:'#FAEEDA', color:'#8a5a00', fontSize:12, fontWeight:600, display:'flex', alignItems:'center', gap:6 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize:16 }}>more_time</span>
+                    Mietverlängerung — kein Versand nötig, der Artikel ist bereits beim Kunden
+                  </div>
+                )}
 
                 {/* Product Info */}
                 <div style={{ padding:'16px 20px', display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid #f1edec' }}>
@@ -185,9 +206,50 @@ export default function MerchantOrdersPage() {
                       )}
                     </div>
                   </div>
-                  <p style={{ fontWeight:700, fontSize:20, color:'#064E3B' }}>
-                    €{Number(order.merchantAmount || order.totalPrice).toFixed(2)}
-                  </p>
+                  <div style={{ minWidth: 150, textAlign: 'right' }}>
+                    {(() => {
+                      // Aufschlüsselung. Primär die echten Backend-Werte nutzen;
+                      // nur wenn merchantAmount fehlt, selbst nachrechnen.
+                      const total = Number(order.totalPrice || 0)
+                      const isRentalOrder = order.type === 'rental'
+                      const rate = isRentalOrder ? 0.10 : 0.15
+                      // Versand: bei Kauf am Order gespeichert, sonst vom Produkt
+                      const ship = Number(
+                        order.shippingCost ?? order.productVariant?.product?.shippingCost ?? 0
+                      )
+                      // Provision NIE auf Versand — gilt für Miete UND Kauf
+                      const base = Math.max(0, total - ship)
+                      const commission = Number(order.commissionAmount) > 0
+                        ? Number(order.commissionAmount)
+                        : Math.round(base * rate * 100) / 100
+                      const merchant = Number(order.merchantAmount) > 0
+                        ? Number(order.merchantAmount)
+                        : Math.round((total - commission) * 100) / 100
+
+                      return (
+                        <>
+                          <p style={{ fontSize: 11, color: '#9e9e9b', display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                            <span>Kunde zahlte</span>
+                            <span style={{ color: '#5e5e5b' }}>€{total.toFixed(2)}</span>
+                          </p>
+                          {ship > 0 && (
+                            <p style={{ fontSize: 11, color: '#9e9e9b', display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                              <span>davon Versand</span>
+                              <span style={{ color: '#5e5e5b' }}>€{ship.toFixed(2)}</span>
+                            </p>
+                          )}
+                          <p style={{ fontSize: 11, color: '#9e9e9b', display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                            <span>Provision ({Math.round(rate * 100)}%)</span>
+                            <span style={{ color: '#b23b3b' }}>−€{commission.toFixed(2)}</span>
+                          </p>
+                          <div style={{ borderTop: '1px solid #ece7e5', marginTop: 4, paddingTop: 4, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline' }}>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: '#1c1b1b' }}>Dein Anteil</span>
+                            <span style={{ fontWeight: 700, fontSize: 19, color: '#064E3B' }}>€{merchant.toFixed(2)}</span>
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
                 </div>
 
                 {/* Status + Actions */}
@@ -337,9 +399,11 @@ export default function MerchantOrdersPage() {
             <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Schwere</label>
             <select value={damageSev} onChange={e => setDamageSev(e.target.value)}
               style={{ width:'100%', padding:'10px 14px', fontSize:13, border:'1px solid #c4c7c7', outline:'none', marginBottom:14, boxSizing:'border-box' as const }}>
-              <option value="minor">Leicht</option>
-              <option value="moderate">Mittel</option>
-              <option value="severe">Schwer</option>
+              <option value="minor">Leichter Schaden</option>
+              <option value="moderate">Mittlerer Schaden</option>
+              <option value="severe">Schwerer Schaden</option>
+              <option value="late">Verspätete Rückgabe</option>
+              <option value="lost">Nicht zurückgegeben</option>
               <option value="lost">Verloren</option>
             </select>
             <textarea value={damageDesc} onChange={e => setDamageDesc(e.target.value)}
@@ -372,9 +436,10 @@ export default function MerchantOrdersPage() {
             </p>
             <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:20 }}>
               {([
-                ['good',    '✓ Guter Zustand — Kaution wird freigegeben',   '#EAF3DE', '#27500A'],
-                ['damaged', '⚠ Beschädigt — Kaution wird einbehalten',      '#FAEEDA', '#633806'],
-                ['lost',    '✗ Nicht zurückgekommen — Kaution einbehalten', '#FCEBEB', '#791F1F'],
+                ['good',    '✓ Guter Zustand — Kaution wird zurückgezahlt', '#EAF3DE', '#27500A'],
+                ['damaged', '⚠ Beschädigt — Admin prüft die Kaution',       '#FAEEDA', '#633806'],
+                ['late',    '⏱ Verspätet zurück — Admin prüft die Kaution', '#FAEEDA', '#8a5a00'],
+                ['lost',    '✗ Nicht zurückgekommen — Admin prüft',         '#FCEBEB', '#791F1F'],
               ] as const).map(([val, label, bg, color]) => (
                 <label key={val} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', background:returnCondition===val?bg:'#fdf8f8', border:`1.5px solid ${returnCondition===val?color:'#c4c7c7'}`, cursor:'pointer' }}>
                   <input type="radio" name="condition" value={val} checked={returnCondition===val} onChange={() => setReturnCondition(val)} style={{ accentColor: color }} />

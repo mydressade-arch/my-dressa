@@ -159,7 +159,7 @@ function PurchaseInner() {
 
             <button type="submit" disabled={submitting}
               style={{ background:'#1c1b1b', color:'#fff', border:'none', padding:16, fontSize:13, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.05em', cursor:submitting ? 'not-allowed' : 'pointer', opacity:submitting ? 0.7 : 1 }}>
-              {submitting ? 'Processing...' : `Continue to Payment — €${Number(product.salePrice).toFixed(2)}`}
+              {submitting ? 'Processing...' : `Continue to Payment — €${(Number(product.salePrice||0) + Number(product.shippingCost||0)).toFixed(2)}`}
             </button>
           </form>
         ) : (
@@ -180,7 +180,7 @@ function PurchaseInner() {
             }}>
               <StripePaymentForm
                 orderId={orderId}
-                amount={Number(product.salePrice)}
+                amount={Number(product.salePrice||0) + Number(product.shippingCost||0)}
                 onBack={() => setStep('details')}
               />
             </Elements>

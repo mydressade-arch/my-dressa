@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { format, addDays, differenceInDays, isBefore, isAfter, startOfDay, parseISO, eachDayOfInterval } from 'date-fns'
+import { format, addDays, isBefore, isAfter, startOfDay, parseISO, eachDayOfInterval } from 'date-fns'
 import { useLangStore } from '@/store/lang.store'
 import { rentalsApi } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
@@ -8,13 +8,14 @@ import { Button } from '@/components/ui/Button'
 interface Props {
   productVariantId: string
   rentalPricePerDay: number
+  rentalDurationDays?: number
   shippingCost?: number
   depositAmount?: number
   stockQuantity?: number
   onConfirm: (startDate: string, endDate: string) => void
 }
 
-export function RentalCalendar({ productVariantId, rentalPricePerDay, shippingCost = 0, depositAmount, stockQuantity, onConfirm }: Props) {
+export function RentalCalendar({ productVariantId, rentalPricePerDay, rentalDurationDays = 10, shippingCost = 0, depositAmount, stockQuantity, onConfirm }: Props) {
   const depositValue = depositAmount ? Number(depositAmount) : 0;
   const { t } = useLangStore()
   const today = startOfDay(new Date())
@@ -47,20 +48,21 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, shippingCo
   const isBlocked = (date: Date) => blockedSet.has(format(date, 'yyyy-MM-dd'))
   const isPast    = (date: Date) => isBefore(date, today)
 
+  const RENTAL_DAYS = rentalDurationDays // Mietdauer laut Produkt
+
   const handleDayClick = (date: Date) => {
     if (isPast(date) || isBlocked(date)) return
-    if (!startDate || (startDate && endDate)) {
-      setStartDate(date); setEndDate(null)
-    } else {
-      if (isBefore(date, startDate)) { setStartDate(date); return }
-      const days = differenceInDays(date, startDate)
-      if (days > 7) { setEndDate(addDays(startDate, 7)); return }
-      // Prüfen ob zwischen start und end ein blockierter Tag liegt
-      const range = eachDayOfInterval({ start: startDate, end: date })
-      const hasBlocked = range.some(d => isBlocked(d))
-      if (hasBlocked) { setStartDate(date); setEndDate(null); return }
-      setEndDate(date)
+    // Einzelnes Startdatum wählen — Enddatum automatisch +10 Tage
+    const autoEnd = addDays(date, RENTAL_DAYS)
+    // Prüfen ob im 10-Tage-Fenster ein blockierter Tag liegt
+    const range = eachDayOfInterval({ start: date, end: autoEnd })
+    const hasBlocked = range.some(d => isBlocked(d))
+    if (hasBlocked) {
+      // Zeitraum nicht verfügbar — trotzdem Start setzen, Nutzer sieht Sperre
+      setStartDate(date); setEndDate(null); return
     }
+    setStartDate(date)
+    setEndDate(autoEnd)
   }
 
   const isInRange = (date: Date) => {
@@ -80,9 +82,10 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, shippingCo
     return days
   }
 
-  const duration    = startDate && endDate ? Math.max(1, differenceInDays(endDate, startDate)) : 0
-  const rentalTotal = duration * rentalPricePerDay
-  const total       = rentalTotal + shippingCost
+  const duration    = RENTAL_DAYS // feste Mietdauer
+  const rentalTotal = Number(rentalPricePerDay) || 0 // fester Mietpreis (NICHT × Tage)
+  const shipNum     = Number(shippingCost) || 0
+  const total       = rentalTotal + shipNum
 
   const prevMonth = () => setCurrentMonth(d => new Date(d.getFullYear(), d.getMonth()-1, 1))
   const nextMonth = () => setCurrentMonth(d => new Date(d.getFullYear(), d.getMonth()+1, 1))
@@ -188,7 +191,7 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, shippingCo
       {/* Info */}
       <div style={{ marginTop:12, padding:'10px 14px', background:'#f7f3f2', border:'1px solid #e8e3e1', fontSize:12, color:'#5e5e5b', display:'flex', gap:8, alignItems:'flex-start' }}>
         <span className="material-symbols-outlined" style={{ fontSize:15, color:'#9E896A', flexShrink:0, marginTop:1 }}>info</span>
-        <span>Rote Tage sind bereits vergeben. Max. 7 Tage Mietdauer. Kaution €{depositValue} wird beim Buchen reserviert.</span>
+        <span>Rote Tage sind bereits vergeben. Mietdauer: {RENTAL_DAYS} Tage. Kaution €{depositValue} wird beim Buchen abgebucht und bei pünktlicher Rückgabe erstattet.</span>
       </div>
       <div style={{ marginTop:8, padding:'10px 14px', background:'#E6F1FB', border:'1px solid #cce0ff', fontSize:12, color:'#0C447C', display:'flex', gap:8, alignItems:'flex-start' }}>
         <span className="material-symbols-outlined" style={{ fontSize:15, color:'#0C447C', flexShrink:0, marginTop:1 }}>local_shipping</span>
@@ -201,16 +204,16 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, shippingCo
           <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
             <div style={{ display:'flex', justifyContent:'space-between', fontSize:13 }}>
               <span style={{ color:'#5e5e5b' }}>{format(startDate,'dd.MM.')} → {format(endDate,'dd.MM.yyyy')}</span>
-              <span style={{ fontWeight:600, color:'#9E896A' }}>{duration} Tag{duration > 1 ? 'e' : ''}</span>
+              <span style={{ fontWeight:600, color:'#9E896A' }}>{duration} Tage</span>
             </div>
             <div style={{ display:'flex', justifyContent:'space-between', fontSize:13 }}>
-              <span style={{ color:'#5e5e5b' }}>Mietgebühr (€{rentalPricePerDay}/Tag × {duration})</span>
+              <span style={{ color:'#5e5e5b' }}>Mietpreis ({RENTAL_DAYS} Tage)</span>
               <span style={{ fontWeight:600 }}>€{rentalTotal.toFixed(2)}</span>
             </div>
-            {shippingCost > 0 && (
+            {shipNum > 0 && (
               <div style={{ display:'flex', justifyContent:'space-between', fontSize:13 }}>
                 <span style={{ color:'#5e5e5b' }}>Versand (DHL)</span>
-                <span style={{ fontWeight:600 }}>€{shippingCost.toFixed(2)}</span>
+                <span style={{ fontWeight:600 }}>€{shipNum.toFixed(2)}</span>
               </div>
             )}
             <div style={{ display:'flex', justifyContent:'space-between', fontSize:15, fontWeight:700, paddingTop:10, borderTop:'1px solid #e8e3e1' }}>
@@ -237,8 +240,8 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, shippingCo
       )}
 
       {startDate && !endDate && (
-        <p style={{ marginTop:12, fontSize:12, color:'#9E896A', textAlign:'center', fontWeight:500 }}>
-          Enddatum auswählen (max. 7 Tage ab {format(startDate,'dd.MM.')})
+        <p style={{ marginTop:12, fontSize:12, color:'#ba1a1a', textAlign:'center', fontWeight:500 }}>
+          Dieser Zeitraum ({RENTAL_DAYS} Tage ab {format(startDate,'dd.MM.')}) ist nicht komplett verfügbar. Bitte anderes Startdatum wählen.
         </p>
       )}
     </div>

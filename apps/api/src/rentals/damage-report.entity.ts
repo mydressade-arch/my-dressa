@@ -8,6 +8,7 @@ export enum DamageSeverity {
   MODERATE = 'moderate',  // sichtbare Schäden, reparierbar
   SEVERE   = 'severe',    // starke Beschädigung, unbrauchbar
   LOST     = 'lost',      // Kleid nicht zurückgekommen
+  LATE     = 'late',      // verspätete Rückgabe (Feature 4)
 }
 
 export enum DamageReportStatus {
@@ -37,16 +38,18 @@ export class DamageReport {
   @Column({ name: 'photo_urls', type: 'jsonb', default: [] })
   photoUrls: string[];
 
+  // DB-Spalte ist VARCHAR(20) — kein Postgres-Enum. TypeScript-Enum
+  // dient nur der Typsicherheit im Code.
   @Column({
-    type: 'enum',
-    enum: DamageSeverity,
+    type: 'varchar',
+    length: 20,
     default: DamageSeverity.MINOR,
   })
   severity: DamageSeverity;
 
   @Column({
-    type: 'enum',
-    enum: DamageReportStatus,
+    type: 'varchar',
+    length: 20,
     default: DamageReportStatus.OPEN,
   })
   status: DamageReportStatus;

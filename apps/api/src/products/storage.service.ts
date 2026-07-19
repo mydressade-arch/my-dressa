@@ -91,6 +91,21 @@ export class StorageService {
     }
   }
 
+  /** Allgemeiner Upload für Seiten-Bilder (Startseite etc.), nicht produktgebunden. */
+  async uploadSiteImage(file: Express.Multer.File, folder = 'site'): Promise<string> {
+    const ext      = (file.originalname.split('.').pop() || 'jpg').toLowerCase();
+    const filename = `${folder}/${uuidv4()}.${ext}`;
+
+    if (this.provider === 'r2') {
+      return this.uploadToR2(file, filename);
+    } else if (this.provider === 'firebase') {
+      return this.uploadToFirebase(file, filename);
+    } else {
+      this.logger.warn('Upload übersprungen: kein Storage konfiguriert');
+      throw new Error('Kein Speicher konfiguriert — bitte URL eintragen statt hochladen');
+    }
+  }
+
   // ── Cloudflare R2 ──────────────────────────────────────────────────────────
   private async uploadToR2(file: Express.Multer.File, filename: string): Promise<string> {
     await this.s3.upload({

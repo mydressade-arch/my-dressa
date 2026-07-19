@@ -123,7 +123,70 @@ export class ProductsService {
     qb.orderBy('p.createdAt', 'DESC').skip((page - 1) * limit).take(limit);
 
     const [items, total] = await qb.getManyAndCount();
-    return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+
+    // Verfügbarkeit anreichern (EINE zusätzliche Abfrage für die ganze Seite).
+    // Die Produktkarte zeigt damit "Sofort verfügbar" oder "Frei ab <Datum>".
+    const enriched = await this.attachAvailability(items);
+
+    return { items: enriched, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  /**
+   * Ermittelt pro Produkt, ob aktuell mindestens ein Exemplar frei ist.
+   * Falls nicht: wann das nächste zurückkommt.
+   * Bewusst EINE Query für alle Produkte der Seite (kein N+1).
+   */
+  private async attachAvailability(items: Product[]): Promise<any[]> {
+    const variantIds = items.flatMap((p) => (p.variants ?? []).map((v) => v.id));
+    if (variantIds.length === 0) return items;
+
+    // Laufende Mieten je Variante (belegt = active/overdue, und alles was
+    // bezahlt ist aber noch nicht zurück).
+    const rows = await this.productRepo.manager.query(
+      `SELECT o.product_variant_id AS variant_id,
+              COUNT(*)             AS busy,
+              MIN(r.end_date)      AS next_free
+         FROM rentals r
+         JOIN orders o ON o.id = r.order_id
+        WHERE o.product_variant_id = ANY($1)
+          AND r.status IN ('active','overdue','pending')
+        GROUP BY o.product_variant_id`,
+      [variantIds],
+    );
+
+    const busyMap = new Map<string, { busy: number; nextFree: Date | null }>();
+    for (const r of rows) {
+      busyMap.set(String(r.variant_id), {
+        busy: Number(r.busy) || 0,
+        nextFree: r.next_free ? new Date(r.next_free) : null,
+      });
+    }
+
+    return items.map((p) => {
+      let freeNow = false;
+      let soonest: Date | null = null;
+
+      for (const v of p.variants ?? []) {
+        const stock = Number(v.stockQuantity) || 0;
+        const info = busyMap.get(String(v.id));
+        const busy = info?.busy ?? 0;
+
+        if (stock > busy) { freeNow = true; break; }
+        if (info?.nextFree && (!soonest || info.nextFree < soonest)) {
+          soonest = info.nextFree;
+        }
+      }
+
+      // Rückgabetag + 1 = erster wieder buchbarer Tag
+      let nextAvailableDate: string | null = null;
+      if (!freeNow && soonest) {
+        const d = new Date(soonest);
+        d.setDate(d.getDate() + 1);
+        nextAvailableDate = d.toISOString().split('T')[0];
+      }
+
+      return { ...p, availableNow: freeNow, nextAvailableDate };
+    });
   }
 
   async findOne(id: string): Promise<Product> {
@@ -169,17 +232,61 @@ export class ProductsService {
     // Nur skalare Felder updaten
     await this.productRepo.update(id, productData);
 
-    // Variants updaten falls mitgeschickt
+    // Variants intelligent zusammenführen (NICHT einfach alle löschen!).
+    // Grund: Sobald eine Variante in einer Bestellung referenziert ist,
+    // verbietet die DB das Löschen (Fremdschlüssel). Früher knallte hier
+    // "Kann nicht gelöscht werden — verknüpfte Bestellungen".
     if (variants?.length) {
-      // Alte Variants löschen und neue erstellen
-      await this.variantRepo.delete({ productId: id });
+      const existing = await this.variantRepo.find({ where: { productId: id } });
+
+      // Schlüssel: Größe|Farbe (case-insensitiv, getrimmt)
+      const keyOf = (v: any) =>
+        `${(v.size ?? '').trim().toLowerCase()}|${(v.color ?? '').trim().toLowerCase()}`;
+      const existingByKey = new Map(existing.map((v) => [keyOf(v), v]));
+      const incomingKeys = new Set(variants.map(keyOf));
+
+      // 1. Vorhandene aktualisieren oder neue anlegen
       for (const v of variants) {
-        const variant = this.variantRepo.create({ ...v, productId: id });
-        await this.variantRepo.save(variant);
+        const match = existingByKey.get(keyOf(v));
+        if (match) {
+          await this.variantRepo.update(match.id, {
+            size: v.size,
+            color: v.color,
+            stockQuantity: v.stockQuantity ?? match.stockQuantity,
+          });
+        } else {
+          await this.variantRepo.save(
+            this.variantRepo.create({ ...v, productId: id }),
+          );
+        }
+      }
+
+      // 2. Entfernte Varianten behandeln
+      for (const old of existing) {
+        if (incomingKeys.has(keyOf(old))) continue; // bleibt erhalten
+
+        const used = await this.variantHasOrders(old.id);
+        if (used) {
+          // In Bestellungen referenziert → NICHT löschen, nur aus dem
+          // Verkauf nehmen (Bestand 0). Historie bleibt intakt.
+          await this.variantRepo.update(old.id, { stockQuantity: 0 });
+        } else {
+          // Frei → darf gelöscht werden
+          await this.variantRepo.delete(old.id);
+        }
       }
     }
 
     return this.findOne(id);
+  }
+
+  /** Prüft, ob eine Variante in irgendeiner Bestellung referenziert ist. */
+  private async variantHasOrders(variantId: string): Promise<boolean> {
+    const rows = await this.productRepo.query(
+      `SELECT COUNT(*) as count FROM orders WHERE product_variant_id = $1`,
+      [variantId],
+    );
+    return Number(rows[0]?.count) > 0;
   }
 
   async publish(id: string, userId: string): Promise<Product> {

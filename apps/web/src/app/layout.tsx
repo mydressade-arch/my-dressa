@@ -10,6 +10,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  themeColor: '#1A1A1A',
 }
 
 export const metadata: Metadata = {
@@ -25,7 +26,17 @@ export const metadata: Metadata = {
     siteName: 'My Dressa',
     locale: 'de_DE',
     type: 'website',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'My Dressa' }],
   },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '48x48' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
+  },
+  manifest: '/manifest.json',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

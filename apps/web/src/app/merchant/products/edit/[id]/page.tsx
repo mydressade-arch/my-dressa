@@ -2,7 +2,7 @@
 import { useLangStore } from '@/store/lang.store'
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { productsApi, api } from '@/lib/api'
+import { productsApi, api , settingsApi } from '@/lib/api'
 import { useUI } from '@/components/ui/UIProvider'
 
 export default function EditProductPage() {
@@ -13,6 +13,9 @@ export default function EditProductPage() {
   const [product, setProduct] = useState<any>(null)
   const [loading, setLoading]   = useState(true)
   const [saving, setSaving]     = useState(false)
+  const [durations, setDurations] = useState<number[]>([7,10])
+  const [sizeOptions, setSizeOptions] = useState<string[]>([])
+  const [colorOptions, setColorOptions] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const [categories, setCategories] = useState<string[]>([])
@@ -20,9 +23,21 @@ export default function EditProductPage() {
 
   const [form, setForm] = useState({
     title: '', description: '', category: '',
-    salePrice: '', rentalPrice: '', shippingCost: '', depositAmount: '',
+    salePrice: '', rentalPrice: '', shippingCost: '', depositAmount: '', penaltyAmount: '', rentalDurationDays: 10,
     isForSale: false, isForRent: false,
   })
+
+  useEffect(() => {
+    settingsApi.rentalDurations()
+      .then(r => { const d = (r as any).data?.durations; if (Array.isArray(d) && d.length) setDurations(d) })
+      .catch(() => {})
+    settingsApi.productSizes()
+      .then(r => { const s2 = (r as any).data?.sizes; if (Array.isArray(s2) && s2.length) setSizeOptions(s2) })
+      .catch(() => {})
+    settingsApi.productColors()
+      .then(r => { const c2 = (r as any).data?.colors; if (Array.isArray(c2) && c2.length) setColorOptions(c2) })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     Promise.all([
@@ -43,6 +58,8 @@ export default function EditProductPage() {
         rentalPrice:   prod.rentalPrice ? String(prod.rentalPrice) : '',
         shippingCost:  prod.shippingCost ? String(prod.shippingCost) : '',
         depositAmount: prod.depositAmount ? String(prod.depositAmount) : '',
+        penaltyAmount: prod.penaltyAmount ? String(prod.penaltyAmount) : '',
+        rentalDurationDays: prod.rentalDurationDays ?? 10,
         isForSale:     prod.isForSale || false,
         isForRent:     prod.isForRent || false,
       })
@@ -60,6 +77,7 @@ export default function EditProductPage() {
     if (!form.isForSale && !form.isForRent) {
       toast('Bitte wähle Verkauf oder Miete', 'error'); return
     }
+    if (!variants.some(v => v.size && v.color)) { toast('Mindestens eine Variante mit Größe UND Farbe erforderlich', 'error'); return }
     setSaving(true)
     try {
       await productsApi.update(id, {
@@ -70,9 +88,11 @@ export default function EditProductPage() {
         rentalPrice:   form.isForRent && form.rentalPrice ? parseFloat(form.rentalPrice) : undefined,
         shippingCost:  form.shippingCost ? parseFloat(form.shippingCost) : 0,
         depositAmount: form.isForRent && form.depositAmount ? parseFloat(form.depositAmount) : undefined,
+        penaltyAmount: form.isForRent && form.penaltyAmount ? parseFloat(form.penaltyAmount) : undefined,
+        rentalDurationDays: form.isForRent ? Number(form.rentalDurationDays) : undefined,
         isForSale:     form.isForSale,
         isForRent:     form.isForRent,
-        variants:      variants.filter(v => v.size || v.color),
+        variants:      variants.filter(v => v.size && v.color),
       })
       toast('Produkt aktualisiert ✓', 'success')
       router.push('/merchant/products')
@@ -190,6 +210,23 @@ export default function EditProductPage() {
                   style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'2px solid #0C447C', outline:'none', boxSizing:'border-box' as const }} />
               </div>
             )}
+            {form.isForRent && (
+              <div>
+                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#0C447C', display:'block', marginBottom:6 }}>Strafgebühr bei Nichtrückgabe (€)</label>
+                <input type="number" step="0.01" min="0" value={form.penaltyAmount} onChange={up('penaltyAmount')} placeholder="z.B. 80.00"
+                  style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }} />
+              </div>
+            )}
+            {form.isForRent && (
+              <div>
+                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#0C447C', display:'block', marginBottom:6 }}>Mietdauer</label>
+                <select value={form.rentalDurationDays} onChange={e => setForm(f => ({...f, rentalDurationDays: Number(e.target.value)}))}
+                  style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const, background:'#fff' }}>
+                  {durations.map(d => <option key={d} value={d}>{d} Tage</option>)}
+                </select>
+              </div>
+            )}
+
           </div>
         </div>
 
@@ -201,12 +238,16 @@ export default function EditProductPage() {
           <div style={{ display:'flex', flexDirection:'column', gap:10, marginTop:14 }}>
             {variants.map((v, i) => (
               <div key={i} style={{ display:'grid', gridTemplateColumns:'1fr 1fr 80px 32px', gap:8, alignItems:'center' }}>
-                <input value={v.size||''} onChange={e => setVariants(vs => vs.map((x,j) => j===i ? {...x, size:e.target.value} : x))}
-                  placeholder="Größe (z.B. S, M, L, XL)"
-                  style={{ padding:'8px 12px', fontSize:13, border:'1px solid #c4c7c7', outline:'none' }} />
-                <input value={v.color||''} onChange={e => setVariants(vs => vs.map((x,j) => j===i ? {...x, color:e.target.value} : x))}
-                  placeholder="Farbe (optional)"
-                  style={{ padding:'8px 12px', fontSize:13, border:'1px solid #c4c7c7', outline:'none' }} />
+                <select value={v.size||''} onChange={e => setVariants(vs => vs.map((x,j) => j===i ? {...x, size:e.target.value} : x))}
+                  style={{ padding:'8px 12px', fontSize:13, border:'1px solid #c4c7c7', outline:'none', background:'#fff' }}>
+                  <option value="">Größe wählen *</option>
+                  {sizeOptions.map(s2 => <option key={s2} value={s2}>{s2}</option>)}
+                </select>
+                <select value={v.color||''} onChange={e => setVariants(vs => vs.map((x,j) => j===i ? {...x, color:e.target.value} : x))}
+                  style={{ padding:'8px 12px', fontSize:13, border:'1px solid #c4c7c7', outline:'none', background:'#fff' }}>
+                  <option value="">Farbe wählen *</option>
+                  {colorOptions.map(c2 => <option key={c2} value={c2}>{c2}</option>)}
+                </select>
                 <input type="number" min="0" value={v.stockQuantity||1} onChange={e => setVariants(vs => vs.map((x,j) => j===i ? {...x, stockQuantity:parseInt(e.target.value)||0} : x))}
                   placeholder="Stk"
                   style={{ padding:'8px 12px', fontSize:13, border:'1px solid #c4c7c7', outline:'none', textAlign:'center' as const }} />

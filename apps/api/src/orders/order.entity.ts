@@ -44,6 +44,10 @@ export class Order {
   @Column({ name: 'commission_amount', type: 'decimal', precision: 10, scale: 2, default: 0 })
   commissionAmount: number;
 
+  // Versandkosten dieser Bestellung (bei Kauf; Miete führt sie am Rental).
+  @Column({ name: 'shipping_cost', type: 'decimal', precision: 10, scale: 2, default: 0 })
+  shippingCost: number;
+
   @Column({ name: 'merchant_amount', type: 'decimal', precision: 10, scale: 2, default: 0 })
   merchantAmount: number;
 
@@ -58,6 +62,11 @@ export class Order {
 
   @Column({ name: 'tracking_url', type: 'varchar', nullable: true })
   trackingUrl: string | null;
+
+  // Feature 5: Verlängerungs-Order — es gibt NICHTS zu versenden,
+  // das Kleid ist bereits beim Kunden.
+  @Column({ name: 'is_extension', type: 'boolean', default: false })
+  isExtension: boolean;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

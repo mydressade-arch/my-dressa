@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { differenceInDays, parseISO, isAfter, isBefore, addDays } from 'date-fns';
+import { parseISO, isAfter, isBefore, addDays } from 'date-fns';
 
 import { Rental, RentalStatus } from './rental.entity';
 import { Deposit, DepositStatus } from './deposit.entity';
@@ -16,12 +16,16 @@ import { ReturnRentalDto, ReturnCondition } from './dto/return-rental.dto';
 import { User } from '../users/user.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MerchantProfile } from '../users/merchant-profile.entity';
+import { PaymentsService } from '../payments/payments.service';
+import { SettingsService } from '../settings/settings.service';
+import { RentalExtension, ExtensionStatus } from './rental-extension.entity';
 
 // Geschäftsregeln — zentral definiert
 const RULES = {
-  MAX_RENTAL_DAYS: 7,
+  // Fallback-Mietdauer, falls kein Produkt-Wert und kein Admin-Setting greift.
+  RENTAL_DAYS: 10,
   MAX_ACTIVE_RENTALS_PER_USER: 3,
-  // DEPOSIT_AMOUNT entfernt — wird aus product.depositAmount gelesen
+  // Kaution + Strafbetrag werden pro Produkt aus der DB gelesen.
 };
 
 @Injectable()
@@ -47,6 +51,10 @@ export class RentalsService {
     private readonly notifications: NotificationsService,
     @InjectRepository(MerchantProfile)
     private readonly merchantProfileRepo: Repository<MerchantProfile>,
+    private readonly paymentsService: PaymentsService,
+    private readonly settingsService: SettingsService,
+    @InjectRepository(RentalExtension)
+    private readonly extensionRepo: Repository<RentalExtension>,
   ) {}
 
   // ─── AVAILABILITY CHECK (öffentlich) ────────────────────────
@@ -87,28 +95,29 @@ export class RentalsService {
 
   // ─── CREATE RENTAL (atomare Transaktion) ─────────────────────
   async create(userId: string, dto: CreateRentalDto, ipAddress: string) {
+    // DSGVO-Einwilligung ist Pflicht (verhindert auch 500-Crash).
+    if (!dto.consent || dto.consent.liabilityAccepted !== true) {
+      throw new BadRequestException(
+        'Zustimmung zu AGB, Mietbedingungen und Haftung ist erforderlich',
+      );
+    }
+    // Feature 3: separate Zustimmung zur Kaution
+    if (dto.consent.depositAccepted !== true) {
+      throw new BadRequestException(
+        'Zustimmung zur Kaution ist erforderlich',
+      );
+    }
+
     const startDate = parseISO(dto.startDate);
-    const endDate = parseISO(dto.endDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // ── Validierungen ──────────────────────────────────────────
+    // ── Validierung Startdatum ─────────────────────────────────
     if (isBefore(startDate, today)) {
       throw new BadRequestException('Startdatum muss in der Zukunft liegen');
     }
-    if (!isAfter(endDate, startDate)) {
-      throw new BadRequestException('Enddatum muss nach dem Startdatum liegen');
-    }
 
-    const durationDays = differenceInDays(endDate, startDate);
-    if (durationDays > RULES.MAX_RENTAL_DAYS) {
-      throw new BadRequestException(
-        `Maximale Mietdauer: ${RULES.MAX_RENTAL_DAYS} Tage`,
-      );
-    }
-    if (durationDays < 1) {
-      throw new BadRequestException('Mindestmietdauer: 1 Tag');
-    }
+    // Mietdauer wird aus dem Produkt gelesen (nach dem Laden der Variante)
 
     // ── Nutzer-Limit prüfen ────────────────────────────────────
     const activeCount = await this.rentalRepo
@@ -116,13 +125,11 @@ export class RentalsService {
       .innerJoin('r.order', 'o')
       .where('o.user_id = :userId', { userId })
       .andWhere('r.status IN (:...active)', {
-        active: [RentalStatus.PENDING, RentalStatus.ACTIVE],  // PENDING_RETURN & RETURNED nicht mitzählen
+        active: [RentalStatus.PENDING, RentalStatus.ACTIVE],
       })
-      // Stornierte Orders nicht mitzählen
       .andWhere('o.status != :cancelled', { cancelled: 'cancelled' })
       .getCount();
 
-    // Nur in Production limitieren
     if (process.env.NODE_ENV === 'production' && activeCount >= RULES.MAX_ACTIVE_RENTALS_PER_USER) {
       throw new BadRequestException(
         `Maximal ${RULES.MAX_ACTIVE_RENTALS_PER_USER} aktive Mieten gleichzeitig erlaubt`,
@@ -139,7 +146,26 @@ export class RentalsService {
       throw new BadRequestException('Dieses Produkt ist nicht zur Miete verfügbar');
     }
 
-    const rentalPrice  = Number(variant.product.rentalPrice) * durationDays;
+    // Feature 1: Mietdauer aus dem Produkt (Händler hat sie gewählt).
+    // Fallback auf den ersten vom Admin erlaubten Wert.
+    const allowedDurations = await this.settingsService.getRentalDurations();
+    let durationDays = Number(variant.product.rentalDurationDays);
+    if (!Number.isFinite(durationDays) || durationDays <= 0) {
+      durationDays = allowedDurations[0] ?? 10;
+    }
+    // Sicherheit: nur erlaubte Dauern zulassen
+    if (!allowedDurations.includes(durationDays)) {
+      this.logger.warn(
+        `Produkt ${variant.product.id} hat unerlaubte Mietdauer ${durationDays} — nutze ${allowedDurations[0]}`,
+      );
+      durationDays = allowedDurations[0] ?? 10;
+    }
+    const endDate = addDays(startDate, durationDays);
+    const endDateStr = endDate.toISOString().split('T')[0];
+    const startDateStr = startDate.toISOString().split('T')[0];
+
+    // Fester Mietpreis (NICHT mehr × Tage) — vom Händler festgelegt
+    const rentalPrice  = Number(variant.product.rentalPrice);
     const shippingCost  = Number(variant.product.shippingCost ?? 0);
     const totalPrice    = rentalPrice + shippingCost;
     // Kaution vom Produkt lesen — NUR aus DB, kein hardcoded Fallback
@@ -147,6 +173,7 @@ export class RentalsService {
       throw new BadRequestException('Kaution nicht konfiguriert — bitte Produkt bearbeiten und Kaution setzen');
     }
     const depositAmount = Number(variant.product.depositAmount);
+
 
     // ── ATOMARE TRANSAKTION ────────────────────────────────────
     // Availability Check + Order + Rental + Deposit + Consent
@@ -164,8 +191,8 @@ export class RentalsService {
         .andWhere('r.status NOT IN (:...excluded)', {
           excluded: [RentalStatus.CANCELLED, RentalStatus.RETURNED],
         })
-        .andWhere('r.start_date < :endDate', { endDate: dto.endDate })
-        .andWhere('r.end_date > :startDate', { startDate: dto.startDate })
+        .andWhere('r.start_date < :endDate', { endDate: endDateStr })
+        .andWhere('r.end_date > :startDate', { startDate: startDateStr })
         .setLock('pessimistic_write') // FOR UPDATE — sperrt die Zeilen
         .getMany();
 
@@ -182,6 +209,7 @@ export class RentalsService {
         type: OrderType.RENTAL,
         status: OrderStatus.PENDING,
         totalPrice: totalPrice,
+        shippingCost,           // Versand am Order (für die Händler-Aufschlüsselung)
         shippingAddress: dto.shippingAddress,
       });
       await manager.getRepository(Order).save(order);
@@ -190,8 +218,8 @@ export class RentalsService {
       const rental = manager.getRepository(Rental).create({
         orderId: order.id,
         productVariantId: dto.productVariantId,
-        startDate: dto.startDate,
-        endDate: dto.endDate,
+        startDate: startDateStr,
+        endDate: endDateStr,
         durationDays,
         status: RentalStatus.PENDING,
       });
@@ -212,6 +240,8 @@ export class RentalsService {
         agbVersion: dto.consent.agbVersion,
         rentalTermsVersion: dto.consent.rentalTermsVersion,
         liabilityAccepted: dto.consent.liabilityAccepted,
+        depositAccepted: dto.consent.depositAccepted,
+        depositTermsVersion: dto.consent.depositTermsVersion ?? '1.0',
         ipAddress,
       });
       await manager.getRepository(LegalConsent).save(consent);
@@ -228,8 +258,8 @@ export class RentalsService {
         shippingCost,
         totalPrice,
         depositAmount,
-        startDate: dto.startDate,
-        endDate: dto.endDate,
+        startDate: startDateStr,
+        endDate: endDateStr,
         durationDays,
         message: 'Mietanfrage erstellt. Bitte Zahlung abschließen.',
       };
@@ -286,12 +316,31 @@ export class RentalsService {
 
       // Deposit updaten
       if (deposit) {
+        // Schutz: Wenn die Kaution bereits als Strafe einbehalten wurde
+        // (Status RETAINED durch Overdue-Scheduler), NICHT zurückerstatten.
+        const alreadyResolved = deposit.status === DepositStatus.RETAINED ||
+            deposit.status === DepositStatus.RELEASED;
+
         await manager.getRepository(Deposit).update(deposit.id, {
           status: depositStatus,
           releasedAt: new Date(),
           releaseReason,
           retainedAmount: depositStatus === DepositStatus.RELEASED ? 0 : deposit.amount,
         });
+
+        // Option A: Bei einwandfreier Rückgabe die abgebuchte Kaution
+        // per Stripe zurückerstatten — aber NUR wenn nicht schon
+        // als Strafe einbehalten oder bereits erstattet.
+        if (depositStatus === DepositStatus.RELEASED &&
+            deposit.stripeHoldId &&
+            !alreadyResolved) {
+          try {
+            await this.paymentsService.refundDeposit(
+                deposit.stripeHoldId, Number(deposit.amount));
+          } catch (e) {
+            this.logger.error(`Kautions-Rückerstattung fehlgeschlagen: ${e}`);
+          }
+        }
       }
 
       // Rental + Order Status updaten
@@ -390,17 +439,364 @@ export class RentalsService {
     this.logger.log(`Rücksende-Tracking: ${trackingNumber} für Rental ${rentalId}`);
   }
 
+  // ─── Feature 6: Beidseitige Rückgabe-Bestätigung ────────────────────────────
+
+  /// Kunde bestätigt: "Ich habe das Kleid zurückgeschickt."
+  async customerConfirmReturn(rentalId: string, userId: string) {
+    const rental = await this.rentalRepo.findOne({
+      where: { id: rentalId },
+      relations: ['order'],
+    });
+    if (!rental) throw new NotFoundException('Miete nicht gefunden');
+    if (rental.order.userId !== userId) {
+      throw new ForbiddenException('Keine Berechtigung');
+    }
+    if (![RentalStatus.ACTIVE, RentalStatus.PENDING_RETURN, RentalStatus.OVERDUE]
+        .includes(rental.status)) {
+      throw new BadRequestException('Bestätigung nur bei laufender Miete möglich');
+    }
+
+    await this.rentalRepo.update(rentalId, {
+      customerConfirmedReturn: true,
+      customerConfirmedAt: new Date(),
+      status: RentalStatus.PENDING_RETURN,
+    });
+
+    // Prüfen, ob jetzt beide bestätigt haben
+    await this.tryFinalizeReturn(rentalId);
+    return { message: 'Rückgabe vom Kunden bestätigt' };
+  }
+
+  /// Händler bestätigt: "Kleid erhalten." condition = good | damaged | lost
+  async merchantConfirmReturn(
+    rentalId: string,
+    merchantUserId: string,
+    condition: 'good' | 'damaged' | 'lost' | 'late',
+    notes?: string,
+  ) {
+    const rental = await this.rentalRepo.findOne({
+      where: { id: rentalId },
+      relations: ['order', 'order.productVariant', 'order.productVariant.product'],
+    });
+    if (!rental) throw new NotFoundException('Miete nicht gefunden');
+
+    // Berechtigung: Händler des Produkts
+    const product = rental.order.productVariant.product;
+    const merchantProfile = await this.merchantProfileRepo?.findOne({
+      where: { userId: merchantUserId },
+    });
+    const resolvedMerchantId = merchantProfile?.id ?? merchantUserId;
+    if (product.merchantId !== resolvedMerchantId && product.merchantId !== merchantUserId) {
+      throw new ForbiddenException('Keine Berechtigung');
+    }
+
+    // Bei Problem (Schaden/verloren): NICHT automatisch abschließen,
+    // sondern Schadensmeldung erzeugen → Admin entscheidet (Feature 4)
+    if (condition === 'damaged' || condition === 'lost' || condition === 'late') {
+      await this.rentalRepo.update(rentalId, {
+        merchantConfirmedReturn: true,
+        merchantConfirmedAt: new Date(),
+        returnCondition: condition,
+      });
+      // Schadensmeldung anlegen (falls Service verfügbar)
+      this.logger.log(
+        `Händler meldet Problem (${condition}) für Rental ${rentalId} → Admin-Review`,
+      );
+      return {
+        message: 'Problem gemeldet — Kaution wird vom Admin geprüft',
+        requiresAdminReview: true,
+      };
+    }
+
+    // Zustand gut → Händler-Bestätigung setzen
+    await this.rentalRepo.update(rentalId, {
+      merchantConfirmedReturn: true,
+      merchantConfirmedAt: new Date(),
+      returnCondition: 'good',
+    });
+
+    await this.tryFinalizeReturn(rentalId);
+    return { message: 'Rückgabe vom Händler bestätigt' };
+  }
+
+  /// Prüft, ob BEIDE bestätigt haben. Wenn ja UND Zustand gut →
+  /// Kaution automatisch zurückerstatten + Miete abschließen.
+  private async tryFinalizeReturn(rentalId: string) {
+    const rental = await this.rentalRepo.findOne({
+      where: { id: rentalId },
+    });
+    if (!rental) return;
+
+    // Beide müssen bestätigt haben
+    if (!rental.customerConfirmedReturn || !rental.merchantConfirmedReturn) {
+      return; // noch nicht beide → warten
+    }
+
+    // Zustand muss gut sein (bei Schaden/verloren läuft es über Admin)
+    if (rental.returnCondition && rental.returnCondition !== 'good') {
+      return;
+    }
+
+    // Kaution zurückerstatten
+    const deposit = await this.depositRepo.findOne({ where: { rentalId } });
+    if (deposit && deposit.status === DepositStatus.HELD && deposit.stripeHoldId) {
+      try {
+        await this.paymentsService.refundDeposit(
+            deposit.stripeHoldId, Number(deposit.amount));
+        await this.depositRepo.update(deposit.id, {
+          status: DepositStatus.RELEASED,
+          releasedAt: new Date(),
+          releaseReason: 'Beide Seiten haben die Rückgabe bestätigt',
+          retainedAmount: 0,
+        });
+      } catch (e) {
+        this.logger.error(`Auto-Kautions-Rückgabe fehlgeschlagen: ${e}`);
+      }
+    }
+
+    // Miete + Order abschließen
+    await this.rentalRepo.update(rentalId, {
+      status: RentalStatus.RETURNED,
+      returnedAt: new Date(),
+      returnConfirmedAt: new Date(),
+    });
+    const full = await this.rentalRepo.findOne({
+      where: { id: rentalId },
+      relations: ['order'],
+    });
+    if (full?.order) {
+      await this.orderRepo.update(full.order.id, { status: OrderStatus.RETURNED });
+    }
+    this.logger.log(`Miete ${rentalId} beidseitig bestätigt → abgeschlossen, Kaution zurück`);
+  }
+
+  // ─── Feature 5: Mietverlängerung ────────────────────────────────────────────
+
+  /// Zeigt dem Kunden, ob und wie er verlängern kann.
+  async getExtensionOptions(rentalId: string, userId: string) {
+    const rental = await this.rentalRepo.findOne({
+      where: { id: rentalId },
+      relations: ['order', 'order.productVariant', 'order.productVariant.product'],
+    });
+    if (!rental) throw new NotFoundException('Miete nicht gefunden');
+    if (rental.order.userId !== userId) {
+      throw new ForbiddenException('Keine Berechtigung');
+    }
+
+    // Nur solange das Kleid beim Kunden ist
+    const extendable = [RentalStatus.ACTIVE, RentalStatus.OVERDUE].includes(rental.status);
+    if (!extendable) {
+      return { canExtend: false, reason: 'Verlängerung nur bei laufender Miete möglich' };
+    }
+    if (rental.customerConfirmedReturn) {
+      return { canExtend: false, reason: 'Rücksendung wurde bereits bestätigt' };
+    }
+
+    // Limit prüfen
+    const maxExtensions = parseInt(
+      await this.settingsService.get('max_extensions_per_rental', '2'), 10) || 2;
+    const used = await this.extensionRepo.count({
+      where: { rentalId, status: ExtensionStatus.PAID },
+    });
+    if (used >= maxExtensions) {
+      return {
+        canExtend: false,
+        reason: `Maximal ${maxExtensions} Verlängerungen erlaubt`,
+      };
+    }
+
+    const product = rental.order.productVariant.product;
+    const durations = await this.settingsService.getRentalDurations();
+
+    // Gebühr pro Option: anteilig zum Mietpreis, OHNE Versandkosten
+    const basePrice = Number(product.rentalPrice);
+    const baseDays = Number(product.rentalDurationDays) || durations[0] || 10;
+    const options = durations.map((days) => ({
+      extraDays: days,
+      // Tagespreis × zusätzliche Tage (kaufmännisch gerundet, kein Versand!)
+      fee: Math.round((basePrice / baseDays) * days * 100) / 100,
+    }));
+
+    return {
+      canExtend: true,
+      currentEndDate: rental.endDate,
+      extensionsUsed: used,
+      maxExtensions,
+      options,
+      note: 'Die Verlängerungsgebühr enthält keine Versandkosten.',
+    };
+  }
+
+  /// Legt eine Verlängerung an (unbezahlt). Der Client bezahlt danach über
+  /// den normalen Payment-Flow (create-intent mit der zurückgegebenen orderId).
+  async requestExtension(rentalId: string, userId: string, extraDays: number) {
+    const opts = await this.getExtensionOptions(rentalId, userId);
+    if (!opts.canExtend) {
+      throw new BadRequestException(opts.reason ?? 'Verlängerung nicht möglich');
+    }
+
+    const chosen = opts.options?.find((o) => o.extraDays === extraDays);
+    if (!chosen) {
+      throw new BadRequestException('Ungültige Verlängerungsdauer');
+    }
+
+    const rental = await this.rentalRepo.findOne({
+      where: { id: rentalId },
+      relations: ['order'],
+    });
+    if (!rental) throw new NotFoundException('Miete nicht gefunden');
+
+    const prevEnd = new Date(rental.endDate);
+    const newEnd = addDays(prevEnd, extraDays);
+    const newEndStr = newEnd.toISOString().split('T')[0];
+
+    return this.dataSource.transaction(async (manager) => {
+      // Order für die Verlängerungsgebühr (KEINE Versandkosten!)
+      const order = manager.getRepository(Order).create({
+        userId,
+        productVariantId: rental.productVariantId,
+        type: OrderType.RENTAL,
+        status: OrderStatus.PENDING,
+        totalPrice: chosen.fee,
+        shippingAddress: rental.order.shippingAddress,
+        // Verlängerung: KEIN Versand nötig, Kleid ist beim Kunden
+        isExtension: true,
+      });
+      await manager.getRepository(Order).save(order);
+
+      const ext = manager.getRepository(RentalExtension).create({
+        rentalId,
+        orderId: order.id,
+        extraDays,
+        fee: chosen.fee,
+        previousEndDate: String(rental.endDate),
+        newEndDate: newEndStr,
+        status: ExtensionStatus.PENDING,
+      });
+      await manager.getRepository(RentalExtension).save(ext);
+
+      this.logger.log(
+        `Verlängerung angefragt: Rental ${rentalId}, +${extraDays} Tage, ${chosen.fee}€`,
+      );
+
+      return {
+        extensionId: ext.id,
+        orderId: order.id,       // damit der Client bezahlen kann
+        extraDays,
+        fee: chosen.fee,
+        newEndDate: newEndStr,
+      };
+    });
+  }
+
+  /// Wird nach erfolgreicher Zahlung aufgerufen (vom Webhook).
+  /// Verlängert das Enddatum der Miete.
+  async confirmExtensionPaid(orderId: string) {
+    const ext = await this.extensionRepo.findOne({ where: { orderId } });
+    if (!ext || ext.status === ExtensionStatus.PAID) return;
+
+    await this.extensionRepo.update(ext.id, {
+      status: ExtensionStatus.PAID,
+      paidAt: new Date(),
+    });
+
+    // Enddatum der Miete aktualisieren + ggf. Status zurück auf ACTIVE
+    const rental = await this.rentalRepo.findOne({ where: { id: ext.rentalId } });
+    if (rental) {
+      await this.rentalRepo.update(rental.id, {
+        endDate: ext.newEndDate,
+        durationDays: Number(rental.durationDays) + Number(ext.extraDays),
+        // War die Miete überfällig, ist sie durch die Verlängerung wieder aktiv
+        status: rental.status === RentalStatus.OVERDUE
+          ? RentalStatus.ACTIVE
+          : rental.status,
+      });
+    }
+
+    this.logger.log(
+      `Verlängerung bezahlt: Rental ${ext.rentalId} läuft jetzt bis ${ext.newEndDate}`,
+    );
+  }
+
   async markOverdueRentals() {
     const today = new Date().toISOString().split('T')[0];
-    const result = await this.rentalRepo
-      .createQueryBuilder()
-      .update(Rental)
-      .set({ status: RentalStatus.OVERDUE })
-      .where('end_date < :today', { today })
-      .andWhere('status = :status', { status: RentalStatus.ACTIVE })
-      .execute();
 
-    this.logger.log(`${result.affected} Mieten als überfällig markiert`);
-    return result.affected;
+    // 1. Überfällige Mieten finden (Enddatum < heute, noch aktiv)
+    const overdueRentals = await this.rentalRepo
+      .createQueryBuilder('r')
+      .leftJoinAndSelect('r.order', 'o')
+      .leftJoinAndSelect('o.productVariant', 'pv')
+      .leftJoinAndSelect('pv.product', 'p')
+      .where('r.end_date < :today', { today })
+      .andWhere('r.status = :status', { status: RentalStatus.ACTIVE })
+      .getMany();
+
+    let penaltyCount = 0;
+    for (const rental of overdueRentals) {
+      // Status auf OVERDUE setzen
+      await this.rentalRepo.update(rental.id, { status: RentalStatus.OVERDUE });
+
+      // Strafe nur einmal auslösen
+      if (rental.penaltyAppliedAt) continue;
+
+      try {
+        await this.applyPenalty(rental);
+        penaltyCount++;
+      } catch (e) {
+        this.logger.error(`Strafe für Rental ${rental.id} fehlgeschlagen: ${e}`);
+      }
+    }
+
+    this.logger.log(
+      `${overdueRentals.length} überfällig, ${penaltyCount} Strafen ausgelöst`,
+    );
+    return overdueRentals.length;
+  }
+
+  /// Löst die Strafe für eine überfällige Miete aus:
+  /// 1. Kaution einbehalten (bereits abgebucht → bleibt einbehalten)
+  /// 2. Strafbetrag des Produkts erfassen
+  /// 3. Kunde per E-Mail informieren
+  async applyPenalty(rental: Rental) {
+    const product = rental.order?.productVariant?.product;
+    const penaltyAmount = product?.penaltyAmount != null
+      ? Number(product.penaltyAmount)
+      : 0;
+
+    // Kaution einbehalten (statt freigeben). Bei Option A ist sie schon
+    // abgebucht — resolveDeposit markiert sie als RETAINED.
+    await this.paymentsService.resolveDeposit(
+      rental.id,
+      true,
+      'Mietartikel nicht fristgerecht zurückgegeben',
+    );
+
+    // Strafe am Rental vermerken
+    await this.rentalRepo.update(rental.id, {
+      penaltyAppliedAt: new Date(),
+      penaltyAmount: penaltyAmount,
+    });
+
+    // Kunde benachrichtigen
+    try {
+      if (!rental.order?.id) return;
+      const fullOrder = await this.orderRepo.findOne({
+        where: { id: rental.order.id },
+        relations: ['user'],
+      });
+      if (fullOrder?.user) {
+        await this.notifications.sendOverduePenalty(fullOrder.user.email, {
+          firstName: fullOrder.user.firstName,
+          productTitle: product?.title || 'Mietartikel',
+          penaltyAmount,
+        });
+      }
+    } catch (e) {
+      this.logger.error(`Strafe-E-Mail fehlgeschlagen: ${e}`);
+    }
+
+    this.logger.log(
+      `Strafe ausgelöst für Rental ${rental.id}: Kaution einbehalten + ${penaltyAmount}€ Strafe`,
+    );
   }
 }

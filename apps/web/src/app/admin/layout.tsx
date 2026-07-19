@@ -35,6 +35,7 @@ export default function AdminLayout({children}:{children:React.ReactNode}) {
     { href:'/admin/revenue',           icon:'bar_chart',  label:t(t('Umsatz', 'Revenue'),             'Revenue'),        badge: 0 },
     { href:'/admin/payouts',           icon:'payments',   label:t(t('Auszahlungen', 'Payouts'),       'Payouts'),        badge: notifications.pendingPayouts },
     { href:'/admin/damage-reports',    icon:'report',     label:t(t('Schadensmeldungen', 'Damage Reports'),  'Damage Reports'), badge: notifications.openDamageReports },
+    { href:'/admin/settings',          icon:'settings',   label:t(t('Einstellungen', 'Settings'),      'Settings'),       badge: 0 },
   ]
 
   useEffect(() => { setHydrated(true) }, [])

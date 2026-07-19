@@ -51,11 +51,30 @@ export class Rental {
   @Column({ name: 'return_confirmed_by', type: 'uuid', nullable: true })
   returnConfirmedBy: string | null;
 
+  // Beidseitige Rückgabe-Bestätigung (Feature 6)
+  @Column({ name: 'customer_confirmed_return', type: 'boolean', default: false })
+  customerConfirmedReturn: boolean;
+
+  @Column({ name: 'customer_confirmed_at', type: 'timestamptz', nullable: true })
+  customerConfirmedAt: Date | null;
+
+  @Column({ name: 'merchant_confirmed_return', type: 'boolean', default: false })
+  merchantConfirmedReturn: boolean;
+
+  @Column({ name: 'merchant_confirmed_at', type: 'timestamptz', nullable: true })
+  merchantConfirmedAt: Date | null;
+
   @Column({ name: 'return_condition', type: 'varchar', nullable: true })
   returnCondition: string | null;   // 'good' | 'damaged' | 'lost'
 
   @Column({ name: 'damage_photo_urls', type: 'jsonb', default: [] })
   damagePhotoUrls: string[];
+
+  @Column({ name: 'penalty_applied_at', type: 'timestamptz', nullable: true })
+  penaltyAppliedAt: Date | null;
+
+  @Column({ name: 'penalty_amount', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  penaltyAmount: number | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

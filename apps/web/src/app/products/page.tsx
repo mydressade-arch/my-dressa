@@ -245,7 +245,7 @@ function ProductsInner() {
         {/* Product Grid */}
         <div style={{ flex:1, minWidth:0 }}>
           {loading ? (
-            <div className="responsive-grid-3" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:20 }}>
+            <div className="product-grid" style={{ display:'grid', gridTemplateColumns:'repeat(4, minmax(0, 1fr))', gap:20 }}>
               {Array.from({ length:9 }).map((_, i) => (
                 <div key={i}>
                   <div style={{ paddingBottom:'130%', background:'#f1edec', animation:'pulse 1.5s infinite' }} />
@@ -271,15 +271,18 @@ function ProductsInner() {
               )}
             </div>
           ) : (
-            <div className="product-grid" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:20 }}>
+            <div className="product-grid" style={{ display:'grid', gridTemplateColumns:'repeat(4, minmax(0, 1fr))', gap:20 }}>
               {products.map((p: any) => (
                 <ProductCard
                   key={p.id} id={p.id} title={p.title}
                   merchantName={p.merchant?.shopName || 'My Dressa'}
                   rentalPrice={p.rentalPrice} salePrice={p.salePrice}
                   imageUrl={p.images?.[0]?.url}
+                  images={p.images}
                   isForRent={p.isForRent} isForSale={p.isForSale}
                   isAvailable={true}
+                  availableNow={p.availableNow}
+                  nextAvailableDate={p.nextAvailableDate}
                 />
               ))}
             </div>

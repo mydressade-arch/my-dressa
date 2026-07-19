@@ -17,13 +17,18 @@ import { DamageReport } from './damage-report.entity';
 import { DamageReportsService } from './damage-reports.service';
 import { DamageReportsController } from './damage-reports.controller';
 import { ProductsModule } from '../products/products.module';
+import { PaymentsModule } from '../payments/payments.module';
+import { SettingsModule } from '../settings/settings.module';
+import { RentalExtension } from './rental-extension.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Rental, Deposit, LegalConsent, Order, ProductVariant, User, DamageReport, MerchantProfile]),
+    TypeOrmModule.forFeature([Rental, Deposit, LegalConsent, Order, ProductVariant, User, DamageReport, MerchantProfile, RentalExtension]),
     NotificationsModule,
     ProductsModule,
     ConfigModule,
+    PaymentsModule,
+    SettingsModule,
   ],
   controllers: [RentalsController, DamageReportsController],
   providers: [RentalsService, RentalScheduler, DamageReportsService, StorageService],

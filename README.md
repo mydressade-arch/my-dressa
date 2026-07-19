@@ -105,4 +105,3 @@ my-dressa/
 **Zahlungsfluss:** Escrow-Modell via Stripe Connect — Geld bleibt auf Platform bis Lieferung bestätigt, dann automatischer Transfer minus Provision.
 
 **DSGVO:** Jede Zustimmung wird in `legal_consents` mit Timestamp, IP und Dokumentversion gespeichert.
-# my-dressa

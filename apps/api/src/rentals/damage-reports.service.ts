@@ -91,13 +91,18 @@ export class DamageReportsService {
 
     const deposit = await this.depositRepo.findOne({ where: { rentalId: report.rentalId } });
 
-    // Stripe Hold freigeben
-    if (deposit?.stripeHoldId) {
+    // Option A: Die Kaution wurde bereits abgebucht → zurückERSTATTEN.
+    // (Früher war es ein Hold, der gecancelt wurde. Holds verfallen aber
+    //  nach 7 Tagen, deshalb wird jetzt sofort abgebucht.)
+    if (deposit?.stripeHoldId && deposit.status !== DepositStatus.RELEASED) {
       try {
-        await this.stripe.paymentIntents.cancel(deposit.stripeHoldId);
+        // NUR den Kautionsbetrag erstatten — die Zahlung enthält auch die Miete!
+        await this.stripe.refunds.create({
+          payment_intent: deposit.stripeHoldId,
+          amount: Math.round(Number(deposit.amount) * 100),
+        });
       } catch (e: any) {
-        // Bereits cancelled oder kein Hold — ignorieren
-        console.warn(`Stripe cancel skipped: ${e.message}`);
+        console.warn(`Stripe refund skipped: ${e.message}`);
       }
     }
 
@@ -139,18 +144,34 @@ export class DamageReportsService {
       where: { rentalId: report.rentalId },
     });
 
-    // 1. Stripe Capture — Kaution wird wirklich abgebucht
-    if (deposit?.stripeHoldId) {
+    // Option A: Die Kaution ist BEREITS abgebucht (kein Hold mehr).
+    // Einbehalten = Geld bleibt bei uns; ein Capture ist nicht nötig.
+    // Wenn der Admin nur einen TEIL einbehält, bekommt der Kunde den
+    // Rest per Teil-Refund zurück.
+    const depositTotal = deposit ? Number(deposit.amount) : 0;
+    const retainRaw = merchantAmount && merchantAmount > 0
+      ? Number(merchantAmount)
+      : depositTotal;
+    // Sicherheit: nie mehr einbehalten als die Kaution hergibt
+    const retained = Math.min(Math.max(retainRaw, 0), depositTotal);
+    const refundToCustomer = Math.round((depositTotal - retained) * 100) / 100;
+
+    // Teilbetrag an den Kunden zurückerstatten (falls nicht alles einbehalten wird)
+    if (deposit?.stripeHoldId && refundToCustomer > 0) {
       try {
-        await this.stripe.paymentIntents.capture(deposit.stripeHoldId);
+        await this.stripe.refunds.create({
+          payment_intent: deposit.stripeHoldId,
+          amount: Math.round(refundToCustomer * 100),
+        });
+        console.log(`Teil-Rückerstattung an Kunden: €${refundToCustomer}`);
       } catch (e: any) {
-        console.warn(`Stripe capture skipped: ${e.message}`);
+        console.warn(`Teil-Rückerstattung fehlgeschlagen: ${e.message}`);
       }
     }
 
     // 2. Transfer an Händler wenn merchantAmount > 0
     let transferId: string | undefined;
-    if (merchantAmount && merchantAmount > 0 && deposit) {
+    if (retained > 0 && deposit) {
       try {
         // Händler Connected Account laden
         const rental = await this.rentalRepo.findOne({
@@ -161,14 +182,14 @@ export class DamageReportsService {
 
         if (merchantStripeId) {
           const transfer = await this.stripe.transfers.create({
-            amount: Math.round(merchantAmount * 100),
+            amount: Math.round(retained * 100),
             currency: 'eur',
             destination: merchantStripeId,
             description: `Schadensentschädigung - ${reportId}`,
             metadata: { reportId, type: 'damage_compensation' },
           });
           transferId = transfer.id;
-          console.log(`Transfer an Händler: ${transfer.id} €${merchantAmount}`);
+          console.log(`Transfer an Händler: ${transfer.id} €${retained}`);
         }
       } catch (e: any) {
         console.warn(`Transfer an Händler fehlgeschlagen: ${e.message}`);
@@ -179,16 +200,18 @@ export class DamageReportsService {
     if (deposit) {
       await this.depositRepo.update(deposit.id, {
         status: DepositStatus.RETAINED,
-        retainedAmount: deposit.amount,
+        retainedAmount: retained,
         releasedAt: new Date(),
-        releaseReason: note || 'Kaution einbehalten wegen Schaden',
+        releaseReason: note || 'Kaution (teilweise) einbehalten',
       });
     }
 
     // 4. Report lösen
     const resolution = [
-      `✗ Kaution einbehalten`,
-      merchantAmount ? `€${merchantAmount} an Händler überwiesen` : null,
+      retained >= depositTotal
+        ? `✗ Kaution komplett einbehalten (€${retained})`
+        : `✗ €${retained} einbehalten, €${refundToCustomer} an Kunden zurück`,
+      retained > 0 ? `€${retained} an Händler überwiesen` : null,
       note || null,
     ].filter(Boolean).join(' — ');
 

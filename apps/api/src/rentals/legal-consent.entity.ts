@@ -20,6 +20,13 @@ export class LegalConsent {
   @Column({ name: 'liability_accepted' })
   liabilityAccepted: boolean;
 
+  // Feature 3: separate Zustimmung zur Kaution
+  @Column({ name: 'deposit_accepted', type: 'boolean', default: false })
+  depositAccepted: boolean;
+
+  @Column({ name: 'deposit_terms_version', type: 'varchar', length: 20, nullable: true })
+  depositTermsVersion: string | null;
+
   @Column({ name: 'ip_address', nullable: true })
   ipAddress: string;
 

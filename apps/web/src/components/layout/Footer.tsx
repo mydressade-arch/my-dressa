@@ -35,8 +35,11 @@ export function Footer() {
       <div style={{ maxWidth:1440, margin:'0 auto', width:'100%', padding:'clamp(32px,4vw,64px) clamp(16px,4vw,64px)' }}>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))', gap:'clamp(24px,4vw,48px)', marginBottom:48 }}>
           <div>
-            <Link href="/" style={{ fontFamily:"'Playfair Display', serif", fontSize:'clamp(18px,2.2vw,22px)', fontWeight:700, color:'#f4f0ef', textDecoration:'none', display:'block', marginBottom:12 }}>
-              My Dressa
+            <Link href="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none', marginBottom:12 }}>
+              <img src="/mark.svg" alt="" width={26} height={26} style={{ display:'block' }} />
+              <span style={{ fontFamily:"'Playfair Display', serif", fontSize:'clamp(18px,2.2vw,22px)', fontWeight:700, color:'#f4f0ef' }}>
+                My Dressa
+              </span>
             </Link>
             <p style={{ fontSize:13, color:'#9c9a92', lineHeight:1.7, maxWidth:240, marginBottom:20 }}>
               {t(t('Mode-Verleih Plattform für bewussten Luxus und nachhaltige Kleiderschränke.', 'Fashion rental platform for conscious luxury and sustainable wardrobes.'), t('Mode-Verleih Plattform für bewussten Luxus und nachhaltige Kleiderschränke.', 'Redefining fashion ownership through conscious luxury and shared wardrobes.'))}

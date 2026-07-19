@@ -10,6 +10,7 @@ import Stripe from 'stripe';
 
 import { Order, OrderStatus, OrderType } from '../orders/order.entity';
 import { Rental, RentalStatus } from '../rentals/rental.entity';
+import { RentalExtension, ExtensionStatus } from '../rentals/rental-extension.entity';
 import { Deposit, DepositStatus } from '../rentals/deposit.entity';
 import { Commission } from '../commissions/commission.entity';
 import { MerchantProfile } from '../users/merchant-profile.entity';
@@ -31,6 +32,8 @@ export class PaymentsService {
     private readonly orderRepo: Repository<Order>,
     @InjectRepository(Rental)
     private readonly rentalRepo: Repository<Rental>,
+    @InjectRepository(RentalExtension)
+    private readonly extensionRepo: Repository<RentalExtension>,
     @InjectRepository(Deposit)
     private readonly depositRepo: Repository<Deposit>,
     @InjectRepository(Commission)
@@ -65,7 +68,12 @@ export class PaymentsService {
 
     if (order.type === OrderType.PURCHASE) {
       const commissionRate = COMMISSION_RATES[OrderType.PURCHASE];
-      const commissionCents = Math.round(amountCents * commissionRate);
+      // Provision NIE auf Versandkosten (der Versand bleibt beim Händler).
+      const shipCents = Math.round(
+        Number((order as any).shippingCost ?? order.productVariant?.product?.shippingCost ?? 0) * 100,
+      );
+      const commissionBaseCents = Math.max(0, amountCents - shipCents);
+      const commissionCents = Math.round(commissionBaseCents * commissionRate);
 
       // Im Test-Modus: kein Stripe Connect nötig (direkter Charge an Plattform)
       // Im Live-Modus: Händler muss Stripe Connect haben
@@ -94,12 +102,30 @@ export class PaymentsService {
       };
 
     } else {
-      const rentalPaymentIntent = await this.stripe.paymentIntents.create({
-        amount: amountCents,
-        currency: 'eur',
-        payment_method_types: ['card'],
-        metadata: { orderId: order.id, orderType: OrderType.RENTAL, userId, type: 'rental_fee' },
-      });
+      // Feature 5: Ist das eine Verlängerungs-Order? Dann NUR die Gebühr
+      // berechnen — keine erneute Kaution und keine Versandkosten.
+      const extension = await this.extensionRepo.findOne({ where: { orderId: order.id } });
+      if (extension) {
+        const extIntent = await this.stripe.paymentIntents.create({
+          amount: amountCents,
+          currency: 'eur',
+          payment_method_types: ['card'],
+          metadata: {
+            orderId: order.id,
+            orderType: OrderType.RENTAL,
+            userId,
+            type: 'rental_extension',
+          },
+        });
+        return {
+          clientSecret: extIntent.client_secret,
+          paymentIntentId: extIntent.id,
+          amount: order.totalPrice,
+          currency: 'EUR',
+          testMode: isTestMode,
+          isExtension: true,
+        };
+      }
 
       // Kaution aus Produkt lesen
       const depositAmountEur = Number(order.productVariant.product.depositAmount ?? 0);
@@ -108,22 +134,41 @@ export class PaymentsService {
       }
       const depositAmountCents = Math.round(depositAmountEur * 100);
 
-      const depositIntent = await this.stripe.paymentIntents.create({
-        amount: depositAmountCents,
+      // ── EINE Zahlung für Miete + Kaution ──────────────────────────────
+      // Früher waren das ZWEI PaymentIntents. Der zweite (Kaution) konnte
+      // aber nie bestätigt werden, weil Stripe die Wiederverwendung einer
+      // Zahlungsmethode ohne Customer-Objekt verbietet → die Kaution blieb
+      // dauerhaft "unvollständig" und wurde NIE eingezogen.
+      // Jetzt: eine Zahlung, eine Bestätigung. Die Kaution wird später per
+      // TEIL-Rückerstattung (Refund über den Kautionsbetrag) zurückgegeben.
+      const totalWithDepositCents = amountCents + depositAmountCents;
+
+      const rentalPaymentIntent = await this.stripe.paymentIntents.create({
+        amount: totalWithDepositCents,
         currency: 'eur',
         payment_method_types: ['card'],
-        capture_method: 'manual',
-        setup_future_usage: 'off_session',
-        metadata: { orderId: order.id, orderType: OrderType.RENTAL, userId, type: 'deposit_hold' },
+        metadata: {
+          orderId: order.id,
+          orderType: OrderType.RENTAL,
+          userId,
+          type: 'rental_with_deposit',
+          depositAmount: String(depositAmountEur),
+          rentalAmount: String(order.totalPrice),
+        },
       });
 
       return {
+        // Beide Namen, damit App und Web funktionieren
+        clientSecret: rentalPaymentIntent.client_secret,
         rentalClientSecret: rentalPaymentIntent.client_secret,
-        depositClientSecret: depositIntent.client_secret,
+        paymentIntentId: rentalPaymentIntent.id,
         rentalPaymentIntentId: rentalPaymentIntent.id,
-        depositPaymentIntentId: depositIntent.id,
+        // Kein separates Kautions-Secret mehr — ist in der Zahlung enthalten
+        depositClientSecret: null,
         rentalAmount: order.totalPrice,
         depositAmount: depositAmountEur,
+        totalCharged: totalWithDepositCents / 100,
+        depositIncluded: true,
         currency: 'EUR',
         testMode: isTestMode,
       };
@@ -134,12 +179,15 @@ export class PaymentsService {
     const { orderId, orderType, type } = paymentIntent.metadata;
     if (!orderId) return;
 
-    if (type === 'deposit_hold') {
+    // Kaution: 'deposit_charge' (Option A, sofort abgebucht) oder
+    // 'deposit_hold' (altes Modell) — beide speichern die Stripe-ID,
+    // damit später Rückerstattung/Einbehalt möglich ist.
+    if (type === 'deposit_charge' || type === 'deposit_hold') {
       const rental = await this.rentalRepo.findOne({ where: { orderId } });
       if (rental) {
         await this.depositRepo.update({ rentalId: rental.id }, { stripeHoldId: paymentIntent.id });
       }
-      this.logger.log(`Kaution autorisiert: ${paymentIntent.id}`);
+      this.logger.log(`Kaution erfasst: ${paymentIntent.id}`);
       return;
     }
 
@@ -149,10 +197,108 @@ export class PaymentsService {
         stripePaymentIntentId: paymentIntent.id,
       });
 
+      // Feature 5: Gehört diese Zahlung zu einer Mietverlängerung?
+      const ext = await manager.getRepository(RentalExtension).findOne({
+        where: { orderId },
+      });
+      if (ext && ext.status !== ExtensionStatus.PAID) {
+        await manager.getRepository(RentalExtension).update(ext.id, {
+          status: ExtensionStatus.PAID,
+          paidAt: new Date(),
+        });
+        // Verlängerungs-Order direkt auf DELIVERED — es gibt nichts zu
+        // versenden, das Kleid ist bereits beim Kunden. Sonst würde sie
+        // im Händler-Portal als offener Versand-Auftrag erscheinen.
+        await manager.getRepository(Order).update(orderId, {
+          status: OrderStatus.DELIVERED,
+        });
+        const extRental = await manager.getRepository(Rental).findOne({
+          where: { id: ext.rentalId },
+        });
+        if (extRental) {
+          await manager.getRepository(Rental).update(extRental.id, {
+            endDate: ext.newEndDate,
+            durationDays: Number(extRental.durationDays) + Number(ext.extraDays),
+            // War die Miete überfällig → durch Verlängerung wieder aktiv
+            status: extRental.status === RentalStatus.OVERDUE
+              ? RentalStatus.ACTIVE
+              : extRental.status,
+          });
+        }
+        // ── Provision für die Verlängerung ──────────────────────────
+        // WICHTIG: Ohne das bekäme der Händler 0,00 € für die Verlängerung!
+        // Die Gebühr enthält KEINE Versandkosten → nichts abziehen.
+        const extOrder = await manager.getRepository(Order).findOne({
+          where: { id: orderId },
+          relations: ['productVariant', 'productVariant.product'],
+        });
+        if (extOrder) {
+          const extRate = COMMISSION_RATES[OrderType.RENTAL] ?? 0.15;
+          const extGross = Number(extOrder.totalPrice);
+          const extPlatform = Math.round(extGross * extRate * 100) / 100;
+          const extMerchant = Math.round((extGross - extPlatform) * 100) / 100;
+
+          const extCommission = manager.getRepository(Commission).create({
+            orderId,
+            merchantId: extOrder.productVariant.product.merchantId,
+            grossPrice: extGross,
+            rate: extRate * 100,
+            platformAmount: extPlatform,
+            merchantAmount: extMerchant,
+            type: OrderType.RENTAL as any,
+          });
+          await manager.getRepository(Commission).save(extCommission);
+          await manager.getRepository(Order).update(orderId, {
+            commissionAmount: extPlatform,
+            merchantAmount: extMerchant,
+          });
+
+          // Verlängerung ist sofort verdient (kein Versand, keine Lieferung
+          // abzuwarten) → direkt ins verfügbare Guthaben, nicht "pending".
+          const extMerchantProfile = await manager
+            .getRepository(MerchantProfile)
+            .findOne({ where: { id: extOrder.productVariant.product.merchantId } });
+          if (extMerchantProfile && extMerchant > 0) {
+            await manager.getRepository(MerchantProfile).update(
+              extMerchantProfile.id,
+              {
+                balancePaid: Math.round(
+                  (Number(extMerchantProfile.balancePaid) + extMerchant) * 100,
+                ) / 100,
+              },
+            );
+          }
+          this.logger.log(
+            `Verlängerung: Provision ${extPlatform}€, Händler ${extMerchant}€`,
+          );
+        }
+
+        this.logger.log(
+          `Verlängerung bezahlt: Rental ${ext.rentalId} läuft bis ${ext.newEndDate}`,
+        );
+        return; // keine neue Miete aktivieren
+      }
+
       if (orderType === OrderType.RENTAL) {
         const rental = await manager.getRepository(Rental).findOne({ where: { orderId } });
         if (rental) {
           await manager.getRepository(Rental).update(rental.id, { status: RentalStatus.ACTIVE });
+
+          // Miete + Kaution wurden in EINER Zahlung eingezogen.
+          // Die Kaution auf genau diesen PaymentIntent verweisen — darüber
+          // läuft später die (Teil-)Rückerstattung.
+          if (type === 'rental_with_deposit' || paymentIntent.metadata?.depositAmount) {
+            await manager.getRepository(Deposit).update(
+              { rentalId: rental.id },
+              {
+                stripeHoldId: paymentIntent.id,
+                status: DepositStatus.HELD,
+              },
+            );
+            this.logger.log(
+              `Kaution eingezogen (in Mietzahlung enthalten): ${paymentIntent.id}`,
+            );
+          }
         }
       }
 
@@ -163,14 +309,12 @@ export class PaymentsService {
       if (order) {
         const rate = COMMISSION_RATES[order.type as OrderType] ?? 0.15;
         const gross = Number(order.totalPrice);
-        // Rental: Provision nur auf Mietgebühr (ohne Versandkosten)
-        // Versandkosten vom Produkt lesen
+        // Provision NIE auf Versandkosten — der Versand bleibt beim Händler.
+        // Gilt für Miete UND Kauf.
         const shippingCostDb = order.type === OrderType.RENTAL
           ? Number((order as any).productVariant?.product?.shippingCost ?? 0)
-          : 0;
-        const commissionBase = order.type === OrderType.RENTAL
-          ? Math.max(0, gross - shippingCostDb)
-          : gross;
+          : Number((order as any).shippingCost ?? (order as any).productVariant?.product?.shippingCost ?? 0);
+        const commissionBase = Math.max(0, gross - shippingCostDb);
         const platformAmount = Math.round(commissionBase * rate * 100) / 100;
         const merchantAmount  = Math.round((gross - platformAmount) * 100) / 100;
 
@@ -289,12 +433,29 @@ export class PaymentsService {
     });
   }
 
+  /// Erstattet die Kaution zurück.
+  /// WICHTIG: Die Zahlung enthält Miete + Kaution. Es darf deshalb NUR der
+  /// Kautionsbetrag erstattet werden (Teil-Refund), sonst bekäme der Kunde
+  /// auch die Miete zurück!
+  async refundDeposit(paymentIntentId: string, amountEur?: number) {
+    const params: any = { payment_intent: paymentIntentId };
+    if (amountEur != null && amountEur > 0) {
+      params.amount = Math.round(amountEur * 100);
+    }
+    await this.stripe.refunds.create(params);
+    this.logger.log(
+      `Kaution zurückerstattet: ${paymentIntentId}` +
+      (amountEur != null ? ` (€${amountEur})` : ' (voll)'),
+    );
+  }
+
   async resolveDeposit(rentalId: string, capture: boolean, reason: string) {
     const deposit = await this.depositRepo.findOne({ where: { rentalId } });
     if (!deposit?.stripeHoldId || deposit.status !== DepositStatus.HELD) return;
 
     if (capture) {
-      await this.stripe.paymentIntents.capture(deposit.stripeHoldId);
+      // Option A: Kaution wurde bereits abgebucht. Einbehalten = nur Status
+      // setzen, das Geld bleibt beim Plattform-/Händlerkonto.
       await this.depositRepo.update(deposit.id, {
         status: DepositStatus.RETAINED,
         releasedAt: new Date(),
@@ -302,7 +463,12 @@ export class PaymentsService {
         retainedAmount: deposit.amount,
       });
     } else {
-      await this.stripe.paymentIntents.cancel(deposit.stripeHoldId);
+      // Pünktliche Rückgabe: NUR den Kautionsbetrag zurückerstatten
+      // (die Zahlung enthält auch die Miete!).
+      await this.stripe.refunds.create({
+        payment_intent: deposit.stripeHoldId,
+        amount: Math.round(Number(deposit.amount) * 100),
+      });
       await this.depositRepo.update(deposit.id, {
         status: DepositStatus.RELEASED,
         releasedAt: new Date(),
@@ -310,7 +476,7 @@ export class PaymentsService {
         retainedAmount: 0,
       });
     }
-    this.logger.log(`Kaution ${capture ? 'einbehalten' : 'freigegeben'}: ${deposit.stripeHoldId}`);
+    this.logger.log(`Kaution ${capture ? 'einbehalten' : 'zurückerstattet'}: ${deposit.stripeHoldId}`);
   }
 
   async refundOrder(orderId: string, reason: string) {

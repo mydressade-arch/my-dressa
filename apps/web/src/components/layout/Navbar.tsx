@@ -82,8 +82,11 @@ export function Navbar() {
             </button>
 
             {/* Logo */}
-            <Link href="/" style={{ fontFamily:"'Playfair Display', serif", fontSize:'clamp(18px,2.2vw,22px)', fontWeight:700, letterSpacing:'-0.03em', color:'#1c1b1b', textDecoration:'none', flexShrink:0 }}>
-              My Dressa
+            <Link href="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none', flexShrink:0 }}>
+              <img src="/mark.svg" alt="" width={26} height={26} style={{ display:'block' }} />
+              <span style={{ fontFamily:"'Playfair Display', serif", fontSize:'clamp(18px,2.2vw,22px)', fontWeight:700, letterSpacing:'-0.03em', color:'#1c1b1b' }}>
+                My Dressa
+              </span>
             </Link>
 
             {/* Center Nav */}

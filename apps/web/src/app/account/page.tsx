@@ -37,6 +37,18 @@ function AccountPageInner() {
   const [loading, setLoading] = useState(true)
   const [returnTracking, setReturnTracking] = useState<Record<string,string>>({})
   const [submittingReturn, setSubmittingReturn] = useState<string|null>(null)
+  const [confirmingReturn, setConfirmingReturn] = useState<string|null>(null)
+  const [confirmedReturns, setConfirmedReturns] = useState<Record<string, boolean>>({})
+
+  const confirmReturnAsCustomer = async (rentalId: string) => {
+    setConfirmingReturn(rentalId)
+    try {
+      await rentalsApi.confirmReturnCustomer(rentalId)
+      setConfirmedReturns(cr => ({ ...cr, [rentalId]: true }))
+    } catch {
+      alert('Bestätigung fehlgeschlagen')
+    } finally { setConfirmingReturn(null) }
+  }
 
   const [merchantStatus, setMerchantStatus] = useState<'none'|'pending'|'approved'|'rejected'|'active'>('none')
   const [merchantReason, setMerchantReason] = useState<string|null>(null)
@@ -328,6 +340,30 @@ function AccountPageInner() {
                             style={{ fontSize:11, color:'#0C447C', fontFamily:'monospace', display:'block', marginTop:6 }}>
                             ↩ {r.returnTrackingNumber}
                           </a>
+                        )}
+                        {/* Feature 6: Kunde bestätigt Rücksendung */}
+                        {['active','pending_return','overdue','delivered'].includes(r.status) &&
+                          !r.customerConfirmedReturn && !confirmedReturns[r.id] && (
+                          <button
+                            onClick={() => confirmReturnAsCustomer(r.id)}
+                            disabled={confirmingReturn===r.id}
+                            style={{ marginTop:10, padding:'8px 14px', fontSize:12, fontWeight:600, background:'#fff', color:'#1c1b1b', border:'1px solid #9E896A', cursor:'pointer', display:'block', width:'100%' }}>
+                            {confirmingReturn===r.id ? '...' : t('Rücksendung bestätigen','Confirm I sent it back')}
+                          </button>
+                        )}
+                        {(r.customerConfirmedReturn || confirmedReturns[r.id]) && r.status !== 'returned' && (
+                          <p style={{ marginTop:8, fontSize:11, color:'#27500A' }}>
+                            ✓ {t('Rücksendung bestätigt — warte auf Händler','Return confirmed — waiting for merchant')}
+                          </p>
+                        )}
+                        {/* Feature 5: Miete verlängern */}
+                        {['active','overdue'].includes(r.status) &&
+                          !r.customerConfirmedReturn && !confirmedReturns[r.id] && (
+                          <button
+                            onClick={() => router.push(`/rentals/${r.id}/extend`)}
+                            style={{ marginTop:8, padding:'8px 14px', fontSize:12, fontWeight:600, background:'#9E896A', color:'#fff', border:'none', cursor:'pointer', display:'block', width:'100%' }}>
+                            {t('Miete verlängern','Extend rental')}
+                          </button>
                         )}
                       </div>
                     </div>

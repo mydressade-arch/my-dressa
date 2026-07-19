@@ -9,12 +9,14 @@ const SEV_LABEL: Record<string, string> = {
   moderate: 'Mittel',
   severe:   'Schwer',
   lost:     'Verloren',
+  late:     'Verspätet',
 }
 const SEV_STYLE: Record<string, {bg:string,color:string}> = {
   minor:    { bg:'#FAEEDA', color:'#633806' },
   moderate: { bg:'#FCEBEB', color:'#791F1F' },
   severe:   { bg:'#FCEBEB', color:'#ba1a1a' },
   lost:     { bg:'#f1edec', color:'#1c1b1b' },
+  late:     { bg:'#FAEEDA', color:'#8a5a00' },
 }
 
 export default function AdminDamageReportsPage() {
@@ -56,8 +58,8 @@ export default function AdminDamageReportsPage() {
       await api.patch(endpoint, body)
       toast(
         noteModal.action === 'release'
-          ? '✓ Kaution an Kunde zurückgegeben — Betrag auf Karte wieder verfügbar'
-          : '✗ Kaution einbehalten — Betrag abgebucht',
+          ? '✓ Kaution komplett an Kunde zurückerstattet (Stripe Refund)'
+          : '✗ Kautions-Entscheidung ausgeführt — Restbetrag geht an den Kunden zurück',
         noteModal.action === 'release' ? 'success' : 'info'
       )
       setNoteModal(null)
@@ -196,15 +198,15 @@ export default function AdminDamageReportsPage() {
                   Kaution wird abgebucht (Stripe Capture). Kunde erhält nichts zurück.
                 </div>
                 <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>
-                  Betrag an Händler (€) — optional
+                  Betrag, der einbehalten wird (€)
                 </label>
                 <input type="number" step="0.01" min="0"
                   value={merchantAmt} onChange={e => setMerchantAmt(e.target.value)}
-                  placeholder="z.B. 30.00 — leer = kein Transfer"
+                  placeholder="z.B. 30.00 — leer = komplette Kaution einbehalten"
                   style={{ width:'100%', padding:'10px 14px', fontSize:13, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const, marginBottom: merchantAmt ? 8 : 16 }} />
                 {merchantAmt && (
                   <div style={{ background:'#E6F1FB', padding:'8px 12px', fontSize:12, color:'#0C447C', marginBottom:12 }}>
-                    💡 €{merchantAmt} werden per Stripe Transfer an den Händler überwiesen.
+                    💡 €{merchantAmt} werden einbehalten und an den Händler überwiesen. Der Rest der Kaution geht automatisch an den Kunden zurück.
                   </div>
                 )}
               </>

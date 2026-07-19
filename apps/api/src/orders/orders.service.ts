@@ -57,12 +57,16 @@ export class OrdersService {
       throw new BadRequestException('Produkt ist ausverkauft');
     }
 
+    const shippingCost = Number(variant.product.shippingCost ?? 0);
     const order = this.orderRepo.create({
       userId,
       productVariantId: dto.productVariantId,
       type: OrderType.PURCHASE,
       status: OrderStatus.PENDING,
-      totalPrice: variant.product.salePrice,
+      // Kaufpreis + Versand (Versand stellt der Händler pro Produkt ein,
+      // kann 0 sein = versandkostenfrei). Wie bei der Miete.
+      totalPrice: Number(variant.product.salePrice) + shippingCost,
+      shippingCost,
       shippingAddress: dto.shippingAddress || {},
     });
     await this.orderRepo.save(order);
@@ -127,24 +131,28 @@ export class OrdersService {
 
     this.logger.log(`Order ${orderId} shipped by merchant ${merchantId} — DHL: ${trackingNumber}`);
 
-    // Versand-E-Mail an Kunde
-    try {
-      const fullOrder = await this.orderRepo.findOne({
-        where: { id: orderId },
-        relations: ['user', 'productVariant', 'productVariant.product'],
-      });
-      if (fullOrder?.user?.email) {
-        await this.notifications.sendShippingNotification(fullOrder.user.email, {
-          firstName:     fullOrder.user.firstName,
-          orderNumber:   orderId.substring(0, 8).toUpperCase(),
-          productName:   fullOrder.productVariant?.product?.title || 'Produkt',
-          trackingNumber,
-          trackingUrl:   trackingUrl || `https://www.dhl.de/de/privatkunden/pakete-empfangen/verfolgen.html?piececode=${trackingNumber}`,
+    // Versand-E-Mail an Kunde — BEWUSST NICHT awaited.
+    // Sonst wartet die HTTP-Antwort auf den Mailserver (1-3 Sek. Verzögerung
+    // im Händler-Portal). Die Mail geht im Hintergrund raus.
+    void (async () => {
+      try {
+        const fullOrder = await this.orderRepo.findOne({
+          where: { id: orderId },
+          relations: ['user', 'productVariant', 'productVariant.product'],
         });
+        if (fullOrder?.user?.email) {
+          await this.notifications.sendShippingNotification(fullOrder.user.email, {
+            firstName:     fullOrder.user.firstName,
+            orderNumber:   orderId.substring(0, 8).toUpperCase(),
+            productName:   fullOrder.productVariant?.product?.title || 'Produkt',
+            trackingNumber,
+            trackingUrl:   trackingUrl || `https://www.dhl.de/de/privatkunden/pakete-empfangen/verfolgen.html?piececode=${trackingNumber}`,
+          });
+        }
+      } catch (e: any) {
+        this.logger.warn(`Versand-E-Mail fehlgeschlagen: ${e.message}`);
       }
-    } catch (e: any) {
-      this.logger.warn(`Versand-E-Mail fehlgeschlagen: ${e.message}`);
-    }
+    })();
 
     return { message: `Versand bestätigt. Sendungsnummer: ${trackingNumber}` };
   }
@@ -172,23 +180,25 @@ export class OrdersService {
       });
     }
 
-    // Lieferungs-E-Mail an Kunde
-    try {
-      const fullOrder = await this.orderRepo.findOne({
-        where: { id: orderId },
-        relations: ['user', 'productVariant', 'productVariant.product'],
-      });
-      if (fullOrder?.user?.email) {
-        await this.notifications.sendDeliveredNotification(fullOrder.user.email, {
-          firstName:   fullOrder.user.firstName,
-          orderNumber: orderId.substring(0, 8).toUpperCase(),
-          productName: fullOrder.productVariant?.product?.title || 'Produkt',
-          orderType:   fullOrder.type,
+    // Lieferungs-E-Mail an Kunde — nicht awaited (siehe shipOrder)
+    void (async () => {
+      try {
+        const fullOrder = await this.orderRepo.findOne({
+          where: { id: orderId },
+          relations: ['user', 'productVariant', 'productVariant.product'],
         });
+        if (fullOrder?.user?.email) {
+          await this.notifications.sendDeliveredNotification(fullOrder.user.email, {
+            firstName:   fullOrder.user.firstName,
+            orderNumber: orderId.substring(0, 8).toUpperCase(),
+            productName: fullOrder.productVariant?.product?.title || 'Produkt',
+            orderType:   fullOrder.type,
+          });
+        }
+      } catch (e: any) {
+        this.logger.warn(`Lieferungs-E-Mail fehlgeschlagen: ${e.message}`);
       }
-    } catch (e: any) {
-      this.logger.warn(`Lieferungs-E-Mail fehlgeschlagen: ${e.message}`);
-    }
+    })();
 
     return { message: 'Als geliefert markiert' };
   }

@@ -173,12 +173,26 @@ a, button { -webkit-tap-highlight-color: transparent; }
   .hero-section { height: auto !important; min-height: 70vh !important; }
 }
 
-/* ── 10. PRODUKT-GRID (auto-fill hält Karten konsistent) ──────────────────── */
+/* ── 10. PRODUKT-GRID (feste Spaltenzahl, Karten immer gleich groß) ────────── */
+/* Desktop groß: 4 Spalten */
+@media (min-width: 1101px) {
+  .product-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+}
+/* Desktop klein / Tablet quer: 3 Spalten */
+@media (min-width: 901px) and (max-width: 1100px) {
+  .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+}
+/* Tablet: 3 Spalten */
+@media (min-width: 641px) and (max-width: 900px) {
+  .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+}
+/* Handy: 2 Spalten */
 @media (max-width: 640px) {
   .product-grid { grid-template-columns: repeat(2,1fr) !important; gap: 12px !important; }
 }
+/* Sehr klein: 2 Spalten beibehalten (Karten bleiben Karten) */
 @media (max-width: 400px) {
-  .product-grid { grid-template-columns: 1fr !important; }
+  .product-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
 }
 
 /* ── 11. PRODUCTS PAGE — Filter-Sidebar ───────────────────────────────────── */
@@ -194,4 +208,53 @@ a, button { -webkit-tap-highlight-color: transparent; }
   .products-sidebar.filters-open { display: block; margin-bottom: 24px; }
   /* Sticky aus wenn gestapelt */
   .products-sidebar > div { position: static !important; top: auto !important; }
+}
+
+/* ── 12. PRODUKTKARTE — CTA-Buttons ───────────────────────────────────────── */
+/* Bei zwei Buttons ("Mieten €110" + "Kaufen €599") nebeneinander wird es auf
+   schmalen Karten zu eng (Handy 2-Spalten ≈ 158px, Tablet 3-Spalten ≈ 230px).
+   Deshalb ab 1100px abwärts untereinander stapeln — voller Kartenbreite. */
+@media (max-width: 1100px) {
+  .product-card-ctas {
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+}
+
+/* ── 13. PRODUKTDETAIL — Thumbnail-Leiste ─────────────────────────────────── */
+/* Dezente Scrollbar, damit die Leiste auf dem Handy nicht "abgeschnitten" wirkt */
+.thumb-strip::-webkit-scrollbar { height: 4px; }
+.thumb-strip::-webkit-scrollbar-thumb { background: #d4cfcd; }
+.thumb-strip::-webkit-scrollbar-track { background: transparent; }
+
+/* ── 14. KREISLAUF-SEKTION ────────────────────────────────────────────────── */
+/* Der Ring braucht Platz. Unter 860px wird gestapelt, sonst überlappen die
+   vier Stationen einander. */
+@media (max-width: 860px) {
+  .cycle-ring { display: none !important; }
+  .cycle-list { display: block !important; }
+}
+
+/* ── 15. QUALITÄTSDETAILS ─────────────────────────────────────────────────── */
+/* Sichtbarer Fokusrahmen für Tastaturbedienung (nur bei Tastatur, nicht bei
+   Maus — :focus-visible statt :focus). */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #9E896A;
+  outline-offset: 2px;
+}
+
+/* Wer im Betriebssystem "Bewegung reduzieren" eingestellt hat, bekommt keine
+   Animationen. Das ist eine Barrierefreiheits-Anforderung, keine Kür. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .pc-img { transform: none !important; }
 }

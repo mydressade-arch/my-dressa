@@ -338,6 +338,44 @@ export class NotificationsService {
     );
   }
 
+  // ─── Überfällig: Strafe ausgelöst ───────────────────────────────────────────
+  async sendOverduePenalty(to: string, details: {
+    firstName: string;
+    productTitle: string;
+    penaltyAmount: number;
+  }) {
+    const html = layout(`
+      ${heading('Mietartikel überfällig — Strafgebühr')}
+      <p style="font-family:sans-serif;font-size:14px;color:#5e5e5b;line-height:1.7;margin:0 0 24px;">
+        Hallo ${details.firstName}, dein Mietartikel <strong>${details.productTitle}</strong>
+        wurde nicht innerhalb der vereinbarten Mietdauer zurückgegeben.
+      </p>
+      <div style="background:#FCEBEB;padding:14px 18px;margin:0 0 24px;border-left:3px solid #ba1a1a;">
+        <p style="font-family:sans-serif;font-size:13px;color:#791F1F;margin:0;line-height:1.6;">
+          Gemäß den Mietbedingungen wurde die <strong>Kaution einbehalten</strong>${
+            details.penaltyAmount > 0
+              ? ` und eine zusätzliche <strong>Strafgebühr von ${details.penaltyAmount.toFixed(2)} €</strong> erhoben`
+              : ''
+          }.
+        </p>
+      </div>
+      <div style="background:#fdf8f8;padding:20px;margin:0 0 28px;">
+        ${row('Produkt', details.productTitle)}
+        ${row('Strafgebühr', `${details.penaltyAmount.toFixed(2)} €`)}
+      </div>
+      <p style="font-family:sans-serif;font-size:13px;color:#5e5e5b;line-height:1.7;margin:0 0 24px;">
+        Bitte sende den Artikel umgehend zurück. Bei Fragen kontaktiere unseren Support.
+      </p>
+      <a href="${this.frontendUrl}/account" style="${BUTTON_STYLE}">Meine Mieten ansehen →</a>
+    `, this.frontendUrl);
+
+    await this.sendEmail(
+      to,
+      `Mietartikel überfällig — Strafgebühr für ${details.productTitle}`,
+      html
+    );
+  }
+
   // ─── 6. Kaution freigegeben ─────────────────────────────────────────────────
   async sendDepositReleased(to: string, firstName: string, details: {
     productTitle: string;

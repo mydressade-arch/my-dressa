@@ -3,13 +3,17 @@ import { useLangStore } from '@/store/lang.store'
 import Link from 'next/link'
 import { ProductCard } from '@/components/product/ProductCard'
 import { useState, useEffect } from 'react'
-import { productsApi } from '@/lib/api'
+import { productsApi, settingsApi } from '@/lib/api'
 
-const HERO_IMG    = 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1600&q=80'
-const DRESS_IMG   = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=900&q=80'
-const SUIT_IMG    = 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=600&q=80'
-const ACCESS_IMG  = 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&q=80'
-const VINTAGE_IMG = 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=900&q=80'
+// Fallback-Bilder. Der Admin kann sie im Panel überschreiben; diese Werte
+// greifen, solange nichts gesetzt ist oder das Laden scheitert.
+const DEFAULT_IMAGES = {
+  hero:    'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1600&q=80',
+  dress:   'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=900&q=80',
+  suit:    'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=600&q=80',
+  access:  'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&q=80',
+  vintage: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=900&q=80',
+}
 
 const DEMO_PRODUCTS = [
   { id: 'demo-1', title: 'Silk Evening Gown', merchantName: 'Villa Rossi', rentalPrice: 89, salePrice: 1290, imageUrl: 'https://images.unsplash.com/photo-1566479179817-0b0c4036e8c8?w=600&q=80', isForRent: true, isForSale: true, isAvailable: true },
@@ -27,9 +31,15 @@ export default function HomePage() {
   const { t } = useLangStore()
   const [featuredProducts, setFeaturedProducts] = useState<any[]>(DEMO_PRODUCTS)
   const [mounted, setMounted] = useState(false)
+  const [images, setImages] = useState(DEFAULT_IMAGES)
 
   useEffect(() => {
     setMounted(true)
+    settingsApi.homeImages()
+      .then(({ data }: any) => {
+        if (data?.images) setImages({ ...DEFAULT_IMAGES, ...data.images })
+      })
+      .catch(() => {})
     productsApi.list({ limit: 4, status: 'active' })
       .then(({ data }: any) => {
         const items = data?.items || data || []
@@ -40,9 +50,12 @@ export default function HomePage() {
           rentalPrice: p.rentalPrice,
           salePrice: p.salePrice,
           imageUrl: p.images?.[0]?.url,
+          images: p.images,
           isForRent: p.isForRent,
           isForSale: p.isForSale,
           isAvailable: p.status === 'active',
+          availableNow: p.availableNow,
+          nextAvailableDate: p.nextAvailableDate,
         })))
       })
       .catch(() => {})
@@ -54,7 +67,7 @@ export default function HomePage() {
 
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
       <section style={{ position:'relative', height:'92vh', minHeight:600, overflow:'hidden' }}>
-        <img src={HERO_IMG} alt="Hero" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+        <img src={images.hero} alt="Hero" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
         <div style={{ position:'absolute', inset:0, background:'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.55) 100%)' }} />
         <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', padding:'0 24px' }}>
           <p style={{ fontSize:11, fontWeight:600, letterSpacing:'0.18em', textTransform:'uppercase', color:'#d4b896', marginBottom:20 }}>
@@ -117,7 +130,7 @@ export default function HomePage() {
       <section style={{ padding:'0 clamp(16px,4vw,40px) clamp(40px,6vw,80px)', maxWidth:1200, margin:'0 auto', width:'100%' }}>
         <div className="responsive-grid-2" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:16, marginBottom:16 }}>
           <div style={{ position:'relative', overflow:'hidden', height:480 }}>
-            <img src={DRESS_IMG} alt="Abendmode" className="collection-img" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+            <img src={images.dress} alt="Abendmode" className="collection-img" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
             <div style={{ position:'absolute', bottom:0, left:0, right:0, padding:28, background:'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }}>
               <p style={{ color:'rgba(253,248,248,0.7)', fontSize:11, letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:6 }}>
                 {mounted ? t('Kollektion', 'Collection') : 'Kollektion'}
@@ -132,8 +145,8 @@ export default function HomePage() {
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
             {[
-              { img: SUIT_IMG, label: mounted ? t('Business', 'Business') : 'Business', href: '/products?category=Anzüge' },
-              { img: ACCESS_IMG, label: mounted ? t('Accessoires', 'Accessories') : 'Accessoires', href: '/products?category=Accessoires' },
+              { img: images.suit, label: mounted ? t('Business', 'Business') : 'Business', href: '/products?category=Anzüge' },
+              { img: images.access, label: mounted ? t('Accessoires', 'Accessories') : 'Accessoires', href: '/products?category=Accessoires' },
             ].map(c => (
               <div key={c.label} style={{ position:'relative', overflow:'hidden', flex:1 }}>
                 <img src={c.img} alt={c.label} className="collection-img" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
@@ -149,7 +162,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── How it works ──────────────────────────────────────────────────── */}
+      {/* ── So funktioniert es ─────────────────────────────────────────────── */}
       <section style={{ padding:'clamp(40px,5vw,80px) clamp(16px,4vw,40px)', background:'#fdf8f8' }}>
         <div style={{ maxWidth:900, margin:'0 auto', width:'100%', textAlign:'center' }}>
           <p style={{ fontSize:11, fontWeight:600, letterSpacing:'0.15em', textTransform:'uppercase', color:'#9E896A', marginBottom:12 }}>
@@ -179,7 +192,7 @@ export default function HomePage() {
 
       {/* ── Vintage Banner ─────────────────────────────────────────────────── */}
       <section style={{ position:'relative', height:400, overflow:'hidden' }}>
-        <img src={VINTAGE_IMG} alt="Vintage" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+        <img src={images.vintage} alt="Vintage" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
         <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', textAlign:'center', padding:40 }}>
           <div>
             <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:'clamp(28px,4vw,48px)', fontWeight:700, color:'#fdf8f8', marginBottom:16 }}>

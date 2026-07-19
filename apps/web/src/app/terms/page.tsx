@@ -56,7 +56,7 @@ export default function TermsPage() {
         {
           title: t('6. Mietbedingungen', '6. Rental Terms'),
           content: t(
-            'Bei Mietbestellungen gelten zusätzlich die Mietbedingungen. Die maximale Mietdauer beträgt 7 Tage. Eine Kaution wird bei der Bestellung autorisiert (Hold) und nach erfolgreicher Rückgabe freigegeben. Bei Beschädigungen oder Verlust wird die Kaution ganz oder teilweise einbehalten. Der Mieter ist verpflichtet, das Kleidungsstück in gepflegtem Zustand zurückzusenden.',
+            'Bei Mietbestellungen gelten zusätzlich die Mietbedingungen. Die Mietdauer wird pro Artikel angegeben und ist beim Buchen ersichtlich. Eine Kaution wird bei der Bestellung erhoben und nach erfolgreicher Rückgabe erstattet. Bei Beschädigung, Verlust oder verspäteter Rückgabe kann die Kaution ganz oder teilweise einbehalten und eine Strafgebühr erhoben werden. Der Mieter ist verpflichtet, das Kleidungsstück fristgerecht und in gepflegtem Zustand zurückzusenden.',
             'For rental orders, the rental terms apply additionally. The maximum rental period is 7 days. A deposit is authorized (held) upon ordering and released after successful return. In case of damage or loss, the deposit will be retained in full or in part. The renter is obligated to return the garment in well-maintained condition.'
           )
         },

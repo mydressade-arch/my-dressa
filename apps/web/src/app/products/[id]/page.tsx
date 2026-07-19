@@ -44,9 +44,9 @@ function ProductDetail() {
 
   if (loading) return (
     <div style={{ maxWidth: 1440, margin: '0 auto', padding:'clamp(24px,3vw,48px) clamp(16px,4vw,64px)' }}>
-      <div style={{ display: 'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap: 64 }}>
-        <div style={{ background: '#f1edec', aspectRatio: '3/4', animation: 'pulse 1.5s infinite' }} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:'clamp(24px,4vw,64px)' }}>
+        <div style={{ background: '#f1edec', aspectRatio: '3/4', animation: 'pulse 1.5s infinite', minWidth: 0 }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
           {[40, 60, 100, 60].map((h, i) => <div key={i} style={{ height: h, background: '#f1edec', borderRadius: 4 }} />)}
         </div>
       </div>
@@ -55,7 +55,7 @@ function ProductDetail() {
   if (!product) return <div style={{ padding: 80, textAlign: 'center', color: '#5e5e5b' }}>Produkt nicht gefunden</div>
 
   const images = product.images?.length > 0 ? product.images : [{ url: PLACEHOLDER }]
-  const sizes  = [...new Set((product.variants || []).map((v: any) => v.size))]
+  const sizes  = [...new Set((product.variants || []).filter((v: any) => Number(v.stockQuantity) > 0).map((v: any) => v.size))]
   const colors = [...new Set((product.variants || []).map((v: any) => v.color))]
 
   return (
@@ -69,9 +69,9 @@ function ProductDetail() {
         <span style={{ color: '#1c1b1b' }}>{product.title}</span>
       </nav>
 
-      <div style={{ display: 'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap: 64 }}>
+      <div style={{ display: 'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:'clamp(24px,4vw,64px)' }}>
         {/* Left: Images */}
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div style={{ position: 'relative', paddingBottom: '125%', overflow: 'hidden', background: '#f1edec', marginBottom: 12 }}>
             <img
               src={images[activeImg]?.url || PLACEHOLDER}
@@ -81,10 +81,17 @@ function ProductDetail() {
             />
           </div>
           {images.length > 1 && (
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="thumb-strip" style={{
+              display: 'flex', gap: 8,
+              overflowX: 'auto', overflowY: 'hidden',
+              paddingBottom: 4,
+              scrollbarWidth: 'thin' as const,
+              WebkitOverflowScrolling: 'touch' as any,
+            }}>
               {images.map((img: any, i: number) => (
                 <button key={i} onClick={() => setActiveImg(i)} style={{
-                  width: 72, height: 90, overflow: 'hidden', border: `2px solid ${activeImg === i ? '#1c1b1b' : 'transparent'}`,
+                  width: 72, height: 90, flexShrink: 0,
+                  overflow: 'hidden', border: `2px solid ${activeImg === i ? '#1c1b1b' : 'transparent'}`,
                   padding: 0, cursor: 'pointer', background: 'none',
                 }}>
                   <img src={img.url} alt="" onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER }}
@@ -96,8 +103,8 @@ function ProductDetail() {
         </div>
 
         {/* Right: Details */}
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:12 }}>
             <a href={`/products?merchant=${product.merchantId}`}
               style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#9E896A', textDecoration:'none', display:'flex', alignItems:'center', gap:4 }}>
               <span className="material-symbols-outlined" style={{ fontSize:14 }}>storefront</span>
@@ -111,7 +118,7 @@ function ProductDetail() {
               </a>
             )}
           </div>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 36, fontWeight: 700, lineHeight: 1.15, color: '#1c1b1b', marginBottom: 16 }}>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(26px,4.5vw,36px)', fontWeight: 700, lineHeight: 1.15, color: '#1c1b1b', marginBottom: 16, overflowWrap: 'break-word' }}>
             {product.title}
           </h1>
           <p style={{ fontSize: 14, lineHeight: 1.7, color: '#5e5e5b', marginBottom: 28 }}>
@@ -146,14 +153,15 @@ function ProductDetail() {
                 <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', background: '#064E3B', color: '#fff', padding: '3px 8px' }}>Available Now</span>
               </div>
               <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, marginBottom: 4 }}>
-                €{product.rentalPrice} <span style={{ fontSize: 16, fontWeight: 400, color: '#5e5e5b' }}>/ day</span>
+                €{product.rentalPrice} <span style={{ fontSize: 16, fontWeight: 400, color: '#5e5e5b' }}>/ Miete</span>
               </p>
-              <p style={{ fontSize: 12, color: '#5e5e5b', marginBottom: 16 }}>Max 7 Tage. Kaution: €{Number(product.depositAmount) || 50}.</p>
+              <p style={{ fontSize: 12, color: '#5e5e5b', marginBottom: 16 }}>{Number(product.rentalDurationDays || 10)} Tage Mietdauer. Kaution: €{Number(product.depositAmount) || 50}.</p>
 
               {showCalendar && selectedVariant ? (
                 <RentalCalendar
                   productVariantId={selectedVariant.id}
                   rentalPricePerDay={product.rentalPrice}
+                  rentalDurationDays={Number(product.rentalDurationDays || 10)}
                   shippingCost={Number(product.shippingCost || 0)}
                   depositAmount={product.depositAmount != null ? Number(product.depositAmount) : 50}
                   stockQuantity={selectedVariant?.stockQuantity}
