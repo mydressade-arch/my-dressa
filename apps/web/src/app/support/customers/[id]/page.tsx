@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
 import Link from 'next/link'
+import { Icon } from '@/components/ui/Icon'
 
 export default function SupportCustomerDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -33,7 +34,7 @@ export default function SupportCustomerDetailPage() {
     <div style={{ maxWidth: 800 }}>
       <button onClick={() => router.push('/support/customers')}
         style={{ background:'none', border:'none', cursor:'pointer', fontSize:13, color:'#5e5e5b', marginBottom:20, display:'flex', alignItems:'center', gap:4 }}>
-        <span className="material-symbols-outlined" style={{ fontSize:16 }}>arrow_back</span>
+        <Icon name="arrow_back" style={{ fontSize:16 }} />
         {t('Zurück', 'Back')}
       </button>
 

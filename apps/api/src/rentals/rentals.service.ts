@@ -64,13 +64,26 @@ export class RentalsService {
     endDate: string,
   ): Promise<{ available: boolean; blockedRanges: { start: string; end: string }[] }> {
 
-    // Alle aktiven Buchungen für diese Variante laden
+    // Alle aktiven Buchungen für diese Variante laden.
+    // WICHTIG: PENDING-Mieten (angelegt, aber noch nicht bezahlt) blockieren
+    // nur für ein kurzes Reservierungsfenster (30 Min). Läuft die Zahlung
+    // nicht durch, wird der Termin automatisch wieder frei — sonst würde eine
+    // abgebrochene Zahlung den Kalender dauerhaft blockieren.
+    const RESERVATION_WINDOW_MIN = 30;
+    const cutoff = new Date(Date.now() - RESERVATION_WINDOW_MIN * 60 * 1000);
+
     const activeRentals = await this.rentalRepo
       .createQueryBuilder('r')
       .where('r.productVariantId = :variantId', { variantId: productVariantId })
       .andWhere('r.status NOT IN (:...excluded)', {
         excluded: [RentalStatus.CANCELLED, RentalStatus.RETURNED],
       })
+      // PENDING nur zählen, wenn es NOCH im Reservierungsfenster liegt.
+      // Bezahlte/aktive Mieten (nicht PENDING) blockieren immer.
+      .andWhere(
+        '(r.status != :pending OR r.createdAt > :cutoff)',
+        { pending: RentalStatus.PENDING, cutoff },
+      )
       .select(['r.startDate', 'r.endDate', 'r.status'])
       .getMany();
 
@@ -95,6 +108,14 @@ export class RentalsService {
 
   // ─── CREATE RENTAL (atomare Transaktion) ─────────────────────
   async create(userId: string, dto: CreateRentalDto, ipAddress: string) {
+    // E-Mail-Verifizierung ist zum MIETEN erforderlich.
+    const renter = await this.userRepo.findOne({ where: { id: userId } });
+    if (!renter?.isVerified) {
+      throw new ForbiddenException(
+        'Bitte bestätige zuerst deine E-Mail-Adresse, um mieten zu können.',
+      );
+    }
+
     // DSGVO-Einwilligung ist Pflicht (verhindert auch 500-Crash).
     if (!dto.consent || dto.consent.liabilityAccepted !== true) {
       throw new BadRequestException(
@@ -146,19 +167,12 @@ export class RentalsService {
       throw new BadRequestException('Dieses Produkt ist nicht zur Miete verfügbar');
     }
 
-    // Feature 1: Mietdauer aus dem Produkt (Händler hat sie gewählt).
-    // Fallback auf den ersten vom Admin erlaubten Wert.
-    const allowedDurations = await this.settingsService.getRentalDurations();
+    // Mietdauer aus dem Produkt — der Händler bestimmt sie frei.
+    // Es gibt KEINE feste Liste erlaubter Werte mehr. Nur ein minimaler
+    // Schutz gegen ungültige Werte (0 oder negativ).
     let durationDays = Number(variant.product.rentalDurationDays);
     if (!Number.isFinite(durationDays) || durationDays <= 0) {
-      durationDays = allowedDurations[0] ?? 10;
-    }
-    // Sicherheit: nur erlaubte Dauern zulassen
-    if (!allowedDurations.includes(durationDays)) {
-      this.logger.warn(
-        `Produkt ${variant.product.id} hat unerlaubte Mietdauer ${durationDays} — nutze ${allowedDurations[0]}`,
-      );
-      durationDays = allowedDurations[0] ?? 10;
+      durationDays = 1; // Notfall-Minimum, sollte praktisch nie vorkommen
     }
     const endDate = addDays(startDate, durationDays);
     const endDateStr = endDate.toISOString().split('T')[0];
@@ -610,7 +624,7 @@ export class RentalsService {
 
     // Gebühr pro Option: anteilig zum Mietpreis, OHNE Versandkosten
     const basePrice = Number(product.rentalPrice);
-    const baseDays = Number(product.rentalDurationDays) || durations[0] || 10;
+    const baseDays = Number(product.rentalDurationDays) || 1;
     const options = durations.map((days) => ({
       extraDays: days,
       // Tagespreis × zusätzliche Tage (kaufmännisch gerundet, kein Versand!)

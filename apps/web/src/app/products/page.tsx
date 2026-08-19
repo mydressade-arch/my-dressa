@@ -4,6 +4,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { productsApi } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
 import { ProductCard } from '@/components/product/ProductCard'
+import { Icon } from '@/components/ui/Icon'
 
 const DEFAULT_CATEGORIES = ['All','Abendmode','Casual','Vintage','Accessories','Suits']
 const SIZES = ['XS','S','M','L','XL','XXL']
@@ -136,12 +137,12 @@ function ProductsInner() {
             {searchInput && (
               <button type="button" onClick={() => { setSearchInput(''); setSearch(''); updateUrl({ category, forRent, forSale, size: selectedSize }) }}
                 style={{ padding:'10px 8px', background:'none', border:'none', cursor:'pointer', color:'#9e9e9b', display:'flex', alignItems:'center' }}>
-                <span className="material-symbols-outlined" style={{ fontSize:16 }}>close</span>
+                <Icon name="close" style={{ fontSize:16 }} />
               </button>
             )}
             <button type="submit"
               style={{ padding:'10px 14px', background:'#1c1b1b', color:'#fff', border:'none', cursor:'pointer', display:'flex', alignItems:'center', flexShrink:0 }}>
-              <span className="material-symbols-outlined" style={{ fontSize:18 }}>search</span>
+              <Icon name="search" style={{ fontSize:18 }} />
             </button>
           </form>
         </div>
@@ -166,7 +167,7 @@ function ProductsInner() {
       {/* Filter-Button nur auf Mobile */}
       <button onClick={() => setFiltersOpen(o => !o)} className="filter-toggle-btn"
         style={{ display:'none', alignItems:'center', gap:8, width:'100%', padding:'12px 16px', marginBottom:16, background:'#fff', border:'1px solid #c4c7c7', cursor:'pointer', fontSize:13, fontWeight:600, color:'#1c1b1b' }}>
-        <span className="material-symbols-outlined" style={{ fontSize:18 }}>tune</span>
+        <Icon name="tune" style={{ fontSize:18 }} />
         {filtersOpen ? (mounted ? t('Filter ausblenden', 'Hide Filters') : 'Filter') : (mounted ? t('Filter anzeigen', 'Show Filters') : 'Filter')}
         {hasFilters && <span style={{ marginLeft:'auto', background:'#9E896A', color:'#fff', fontSize:11, fontWeight:700, padding:'1px 8px', borderRadius:10 }}>!</span>}
       </button>
@@ -256,7 +257,7 @@ function ProductsInner() {
             </div>
           ) : products.length === 0 ? (
             <div style={{ textAlign:'center', padding:'80px 0', borderTop:'1px solid #e8e3e1' }}>
-              <span className="material-symbols-outlined" style={{ fontSize:'clamp(28px,4vw,48px)', color:'#d4cfcd', display:'block', marginBottom:16 }}>search_off</span>
+              <Icon name="search_off" style={{ fontSize:'clamp(28px,4vw,48px)', color:'#d4cfcd', display:'block', marginBottom:16 }} />
               <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:22, fontWeight:700, marginBottom:8, color:'#1c1b1b' }}>
                 No pieces found
               </h3>
@@ -272,7 +273,7 @@ function ProductsInner() {
             </div>
           ) : (
             <div className="product-grid" style={{ display:'grid', gridTemplateColumns:'repeat(4, minmax(0, 1fr))', gap:20 }}>
-              {products.map((p: any) => (
+              {products.map((p: any, i: number) => (
                 <ProductCard
                   key={p.id} id={p.id} title={p.title}
                   merchantName={p.merchant?.shopName || 'My Dressa'}
@@ -283,6 +284,7 @@ function ProductsInner() {
                   isAvailable={true}
                   availableNow={p.availableNow}
                   nextAvailableDate={p.nextAvailableDate}
+                  priority={i < 4}
                 />
               ))}
             </div>
@@ -320,7 +322,7 @@ function FilterToggle({ label, sublabel, active, onClick, accent }: any) {
         background: active ? (accent || '#1c1b1b') : 'transparent',
         display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0,
       }}>
-        {active && <span className="material-symbols-outlined" style={{ fontSize:11, color:'#fff', lineHeight:1 }}>check</span>}
+        {active && <Icon name="check" style={{ fontSize:11, color:'#fff', lineHeight:1 }} />}
       </div>
     </button>
   )
@@ -331,7 +333,7 @@ function Chip({ label, onRemove, gold }: { label:string, onRemove:()=>void, gold
     <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:12, fontWeight:500, padding:'3px 10px', background: gold ? 'rgba(158,137,106,0.12)' : '#f1edec', border:`1px solid ${gold ? '#9E896A' : '#d4cfcd'}`, color: gold ? '#9E896A' : '#1c1b1b' }}>
       {label}
       <button onClick={onRemove} style={{ background:'none', border:'none', cursor:'pointer', padding:0, display:'flex', lineHeight:1 }}>
-        <span className="material-symbols-outlined" style={{ fontSize:13, color: gold ? '#9E896A' : '#5e5e5b' }}>close</span>
+        <Icon name="close" style={{ fontSize:13, color: gold ? '#9E896A' : '#5e5e5b' }} />
       </button>
     </span>
   )
@@ -341,7 +343,7 @@ export default function ProductsPage() {
   return (
     <Suspense fallback={
       <div style={{ padding:80, textAlign:'center', color:'#9e9e9b' }}>
-        <span className="material-symbols-outlined" style={{ fontSize:32, display:'block', marginBottom:8 }}>sync</span>
+        <Icon name="sync" style={{ fontSize:32, display:'block', marginBottom:8 }} />
         Loading...
       </div>
     }>

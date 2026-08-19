@@ -50,6 +50,10 @@ export class ProductsService {
       isForRent: dto.isForRent ?? false, status: ProductStatus.ACTIVE,
       shippingCost:   dto.shippingCost ?? 0,
       depositAmount:  dto.depositAmount ?? null,
+      // WICHTIG: diese Felder wurden vorher NICHT gespeichert → blieben auf
+      // dem DB-Default (10). Deshalb stand im Checkout immer 10 Tage.
+      ...(dto.rentalDurationDays != null && { rentalDurationDays: dto.rentalDurationDays }),
+      ...(dto.penaltyAmount != null && { penaltyAmount: dto.penaltyAmount }),
     });
     await this.productRepo.save(product);
     const variantList = dto.variants?.length ? dto.variants : [{ size: 'ONE SIZE', color: '', stockQuantity: 1 }];

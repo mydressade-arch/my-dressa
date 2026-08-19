@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ProductVariant } from '../products/product-variant.entity';
 import { ConfigModule } from '@nestjs/config';
 import { PaymentsService } from './payments.service';
 import { PaymentsController } from './payments.controller';
@@ -22,7 +23,7 @@ import { MerchantPayout } from '../commissions/merchant-payout.entity';
     ConfigModule,
     NotificationsModule,
     TypeOrmModule.forFeature([
-      Order, Rental, Deposit, Commission, MerchantProfile, MerchantPayout, PayoutReceipt, RentalExtension,
+      Order, Rental, Deposit, Commission, MerchantProfile, MerchantPayout, PayoutReceipt, RentalExtension, ProductVariant,
     ]),
   ],
   controllers: [PaymentsController, StripeWebhookController, BankAccountController],

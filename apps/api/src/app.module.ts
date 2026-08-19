@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { ProductsModule } from './products/products.module';
 import { RentalsModule } from './rentals/rentals.module';
 import { SettingsModule } from './settings/settings.module';
+import { NewsletterModule } from './newsletter/newsletter.module';
 import { PaymentsModule } from './payments/payments.module';
 import { OrdersModule } from './orders/orders.module';
 import { CommissionsModule } from './commissions/commissions.module';
@@ -57,6 +58,7 @@ import { MerchantRequestsModule } from './merchant-requests/merchant-requests.mo
     SupportModule,
     MerchantRequestsModule,
     SettingsModule,
+    NewsletterModule,
   ],
 })
 export class AppModule {}

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { api } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
 import { useUI } from '@/components/ui/UIProvider'
+import { Icon } from '@/components/ui/Icon'
 
 export default function ContactPage() {
   const { t } = useLangStore()
@@ -56,7 +57,7 @@ export default function ContactPage() {
           {sent ? (
             <div style={{ textAlign: 'center', padding: '64px 0' }}>
               <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#EAF3DE', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 32, color: '#27500A' }}>check_circle</span>
+                <Icon name="check_circle" style={{ fontSize: 32, color: '#27500A' }} />
               </div>
               <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, marginBottom: 12 }}>
                 {t('Nachricht gesendet ✓', 'Message Sent ✓')}
@@ -134,7 +135,7 @@ export default function ContactPage() {
             ].map(({ icon, label, val, href }) => (
               <div key={label} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
                 <div style={{ width: 44, height: 44, background: '#fdf8f8', border: '1px solid #e8e3e1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#9E896A' }}>{icon}</span>
+                  <Icon name={icon} style={{ fontSize: 20, color: '#9E896A' }} />
                 </div>
                 <div>
                   <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9e9e9b', marginBottom: 3 }}>{label}</p>

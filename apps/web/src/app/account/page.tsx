@@ -7,6 +7,9 @@ import { useUI } from '@/components/ui/UIProvider'
 import { useLangStore } from '@/store/lang.store'
 import { useAuthStore } from '@/store/auth.store'
 import { api } from '@/lib/api'
+import { Icon } from '@/components/ui/Icon'
+import { VerificationBanner } from '@/components/auth/VerificationBanner'
+import { PasswordInput } from '@/components/ui/PasswordInput'
 
 const TABS = ['My Orders','My Rentals','Profile']
 const PH = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='80'%3E%3Crect fill='%23f1edec' width='64' height='80'/%3E%3C/svg%3E"
@@ -144,6 +147,9 @@ function AccountPageInner() {
 
   return (
     <div style={{ maxWidth:1440, margin:'0 auto', width:'100%', padding:'clamp(20px,2vw,40px) clamp(16px,4vw,64px)' }}>
+      <div style={{ marginBottom: 20 }}>
+        <VerificationBanner />
+      </div>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:32 }}>
         <div>
           <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:32, fontWeight:700, marginBottom:4 }}>{t("Mein Konto", "My Account")}</h1>
@@ -176,7 +182,7 @@ function AccountPageInner() {
             <div>
               {orders.length === 0 ? (
                 <div style={{ textAlign:'center', padding:'64px 0', border:'1px solid #c4c7c7' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize:'clamp(24px,3vw,40px)', color:'#c4c7c7', display:'block', marginBottom:12 }}>shopping_bag</span>
+                  <Icon name="shopping_bag" style={{ fontSize:'clamp(24px,3vw,40px)', color:'#c4c7c7', display:'block', marginBottom:12 }} />
                   <p style={{ color:'#5e5e5b', marginBottom:20 }}>No orders yet</p>
                   <Link href="/products" style={{ background:'#1c1b1b', color:'#fff', padding:'12px 24px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textDecoration:'none' }}>
                     Start Shopping
@@ -206,14 +212,14 @@ function AccountPageInner() {
                           <a href={`https://www.dhl.de/de/privatkunden/pakete-empfangen/verfolgen.html?piececode=${o.trackingNumber}`}
                             target="_blank" rel="noopener noreferrer"
                             style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', padding:'7px 12px', background:'#E6F1FB', color:'#0C447C', textDecoration:'none', display:'inline-flex', alignItems:'center', gap:5 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize:14 }}>local_shipping</span>
+                            <Icon name="local_shipping" style={{ fontSize:14 }} />
                             DHL {o.trackingNumber}
                           </a>
                         )}
                         {/* Status Info */}
                         {o.status === 'shipped' && (
                           <div style={{ fontSize:11, color:'#0C447C', background:'#E6F1FB', padding:'6px 12px', display:'flex', alignItems:'center', gap:5 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize:14 }}>local_shipping</span>
+                            <Icon name="local_shipping" style={{ fontSize:14 }} />
                             Paket ist unterwegs
                           </div>
                         )}
@@ -227,25 +233,25 @@ function AccountPageInner() {
                               toast('Rückgabe beantragt — Händler wird benachrichtigt', 'info')
                             } catch(e:any) { toast(e.response?.data?.message||'Fehler', 'error') }
                           }} style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', padding:'6px 12px', background:'#FAEEDA', color:'#633806', border:'1px solid #f8dfbb', cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize:14 }}>undo</span>
+                            <Icon name="undo" style={{ fontSize:14 }} />
                             Rückgabe beantragen
                           </button>
                         )}
                         {o.returnRequested && !o.returnApproved && (
                           <div style={{ fontSize:11, color:'#633806', background:'#FAEEDA', padding:'6px 12px', display:'flex', alignItems:'center', gap:4 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize:14 }}>schedule</span>
+                            <Icon name="schedule" style={{ fontSize:14 }} />
                             Rückgabe ausstehend
                           </div>
                         )}
                         {o.status === 'returned' && (
                           <div style={{ fontSize:11, color:'#27500A', background:'#EAF3DE', padding:'6px 12px', display:'flex', alignItems:'center', gap:4 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize:14 }}>payments</span>
+                            <Icon name="payments" style={{ fontSize:14 }} />
                             {t('Erstattet ✓', 'Refunded ✓')}
                           </div>
                         )}
                         {o.status === 'delivered' && !o.returnRequested && (
                           <div style={{ fontSize:11, color:'#27500A', background:'#EAF3DE', padding:'6px 12px', display:'flex', alignItems:'center', gap:5 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize:14 }}>check_circle</span>
+                            <Icon name="check_circle" style={{ fontSize:14 }} />
                             Geliefert ✓
                           </div>
                         )}
@@ -282,7 +288,7 @@ function AccountPageInner() {
             <div>
               {rentals.length === 0 ? (
                 <div style={{ textAlign:'center', padding:'64px 0', border:'1px solid #c4c7c7' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize:'clamp(24px,3vw,40px)', color:'#c4c7c7', display:'block', marginBottom:12 }}>calendar_month</span>
+                  <Icon name="calendar_month" style={{ fontSize:'clamp(24px,3vw,40px)', color:'#c4c7c7', display:'block', marginBottom:12 }} />
                   <p style={{ color:'#5e5e5b', marginBottom:20 }}>No active rentals</p>
                   <Link href="/products?forRent=true" style={{ background:'#9E896A', color:'#fff', padding:'12px 24px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textDecoration:'none' }}>
                     Browse Rentals
@@ -297,7 +303,7 @@ function AccountPageInner() {
                           {r.order?.productVariant?.product?.title || 'Product'}
                         </p>
                         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-                          <span className="material-symbols-outlined" style={{ fontSize:16, color:'#9E896A' }}>calendar_month</span>
+                          <Icon name="calendar_month" style={{ fontSize:16, color:'#9E896A' }} />
                           <span style={{ fontSize:13, color:'#5e5e5b' }}>{r.startDate} → {r.endDate} ({r.durationDays} days)</span>
                         </div>
                         {badge(r.status)}
@@ -434,13 +440,13 @@ function AccountPageInner() {
                   {twoFaEnabled ? 'Mit aktivem 2FA: aktuelles Passwort + Authenticator-Code erforderlich' : 'Aktuelles Passwort eingeben, dann neues setzen'}
                 </p>
                 <div style={{ display:'flex', flexDirection:'column', gap:12, maxWidth:360 }}>
-                  <input type="password" value={pwForm.oldPassword} onChange={e=>setPwForm(f=>({...f, oldPassword:e.target.value}))}
+                  <PasswordInput value={pwForm.oldPassword} onChange={e=>setPwForm(f=>({...f, oldPassword:e.target.value}))}
                     placeholder="Aktuelles Passwort"
                     style={{ padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none' }} />
-                  <input type="password" value={pwForm.newPassword} onChange={e=>setPwForm(f=>({...f, newPassword:e.target.value}))}
+                  <PasswordInput value={pwForm.newPassword} onChange={e=>setPwForm(f=>({...f, newPassword:e.target.value}))}
                     placeholder="Neues Passwort (min. 8 Zeichen)"
                     style={{ padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none' }} />
-                  <input type="password" value={pwForm.confirm} onChange={e=>setPwForm(f=>({...f, confirm:e.target.value}))}
+                  <PasswordInput value={pwForm.confirm} onChange={e=>setPwForm(f=>({...f, confirm:e.target.value}))}
                     placeholder="Neues Passwort bestätigen"
                     style={{ padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none' }} />
                   {twoFaEnabled && (
@@ -498,7 +504,7 @@ function AccountPageInner() {
                 {merchantStatus === 'active' ? (
                   <div>
                     <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 0', marginBottom:16 }}>
-                      <span className="material-symbols-outlined" style={{ fontSize:24, color:'#27500A' }}>verified</span>
+                      <Icon name="verified" style={{ fontSize:24, color:'#27500A' }} />
                       <div>
                         <p style={{ fontSize:14, fontWeight:600, color:'#27500A' }}>Active Merchant</p>
                         <p style={{ fontSize:12, color:'#5e5e5b' }}>Your shop is live on My Dressa</p>
@@ -512,7 +518,7 @@ function AccountPageInner() {
                 ) : merchantStatus === 'pending' ? (
                   <div style={{ background:'#FAEEDA', padding:20, border:'1px solid #f8dfbb' }}>
                     <div style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize:24, color:'#633806', flexShrink:0 }}>hourglass_empty</span>
+                      <Icon name="hourglass_empty" style={{ fontSize:24, color:'#633806', flexShrink:0 }} />
                       <div>
                         <p style={{ fontSize:14, fontWeight:600, color:'#633806', marginBottom:4 }}>Application Pending</p>
                         <p style={{ fontSize:13, color:'#633806', lineHeight:1.6 }}>
@@ -525,7 +531,7 @@ function AccountPageInner() {
                   <div>
                     <div style={{ background:'#FCEBEB', padding:20, border:'1px solid #f5c2c2', marginBottom:16 }}>
                       <div style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize:24, color:'#791F1F', flexShrink:0 }}>cancel</span>
+                        <Icon name="cancel" style={{ fontSize:24, color:'#791F1F', flexShrink:0 }} />
                         <div>
                           <p style={{ fontSize:14, fontWeight:600, color:'#791F1F', marginBottom:4 }}>Application Declined</p>
                           <p style={{ fontSize:13, color:'#791F1F', lineHeight:1.6 }}>
@@ -570,7 +576,7 @@ function AccountPageInner() {
                     <div style={{ display:'flex', gap:20, marginBottom:20 }}>
                       {[['checkroom','List pieces'],['payments','Earn revenue'],['star','10% fee']].map(([icon,label])=>(
                         <div key={icon} style={{ textAlign:'center' }}>
-                          <span className="material-symbols-outlined" style={{ fontSize:24, color:'#9E896A', display:'block', marginBottom:4 }}>{icon}</span>
+                          <Icon name={icon} style={{ fontSize:24, color:'#9E896A', display:'block', marginBottom:4 }} />
                           <p style={{ fontSize:12, color:'#5e5e5b' }}>{label}</p>
                         </div>
                       ))}

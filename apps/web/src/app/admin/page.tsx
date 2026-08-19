@@ -3,6 +3,7 @@ import { useLangStore } from '@/store/lang.store'
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import { SalesChart } from '@/components/admin/SalesChart'
+import { Icon } from '@/components/ui/Icon'
 
 export default function AdminDashboardPage() {
   const { t } = useLangStore()
@@ -51,7 +52,7 @@ export default function AdminDashboardPage() {
                 <p style={{ fontSize:24, fontWeight:700, color:'#1c1b1b' }}>{card.value}</p>
               </div>
               <div style={{ width:36, height:36, borderRadius:'50%', background:card.bg, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                <span className="material-symbols-outlined" style={{ fontSize:18, color:card.color }}>{card.icon}</span>
+                <Icon name={card.icon} style={{ fontSize:18, color:card.color }} />
               </div>
             </div>
           </div>
@@ -85,7 +86,7 @@ export default function AdminDashboardPage() {
           <div style={{ height:280, background:'#fdf8f8', display:'flex', alignItems:'center', justifyContent:'center', color:'#9e9e9b' }}>Laden...</div>
         ) : !chart.some(d => d.purchases > 0 || d.rentals > 0) ? (
           <div style={{ height:280, background:'#fdf8f8', display:'flex', alignItems:'center', justifyContent:'center', color:'#9e9e9b', flexDirection:'column', gap:8 }}>
-            <span className="material-symbols-outlined" style={{ fontSize:'clamp(24px,3vw,40px)', color:'#c4c7c7' }}>bar_chart</span>
+            <Icon name="bar_chart" style={{ fontSize:'clamp(24px,3vw,40px)', color:'#c4c7c7' }} />
             Noch keine Daten
           </div>
         ) : (
@@ -104,7 +105,7 @@ export default function AdminDashboardPage() {
           <a key={item.href} href={item.href}
             style={{ background:'#fff', border:'1px solid #c4c7c7', padding:'16px 20px', textDecoration:'none', display:'flex', alignItems:'center', gap:12, transition:'border-color 0.15s' }}>
             <div style={{ width:40, height:40, borderRadius:'50%', background:item.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-              <span className="material-symbols-outlined" style={{ fontSize:20, color:item.color }}>{item.icon}</span>
+              <Icon name={item.icon} style={{ fontSize:20, color:item.color }} />
             </div>
             <span style={{ fontSize:13, fontWeight:600, color:'#1c1b1b' }}>{item.label}</span>
           </a>

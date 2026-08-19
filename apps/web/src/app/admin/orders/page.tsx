@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
+import { Icon } from '@/components/ui/Icon'
 
 const STATUS_FILTERS = ['all', 'pending', 'paid', 'shipped', 'delivered', 'returned', 'cancelled']
 const NEXT_STATUSES: Record<string, string[]> = {
@@ -139,7 +140,7 @@ export default function AdminOrdersPage() {
         <div style={{ display:'flex', gap:10, flexWrap:'wrap', alignItems:'center' }}>
           {/* Suche */}
           <div style={{ flex:1, minWidth:200, position:'relative' as const }}>
-            <span className="material-symbols-outlined" style={{ position:'absolute' as const, left:10, top:'50%', transform:'translateY(-50%)', fontSize:16, color:'#9e9e9b' }}>search</span>
+            <Icon name="search" style={{ position:'absolute' as const, left:10, top:'50%', transform:'translateY(-50%)', fontSize:16, color:'#9e9e9b' }} />
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder={t('Suche: ID, E-Mail, Produkt...', 'Search: ID, email, product...')}
               style={{ width:'100%', padding:'8px 12px 8px 34px', fontSize:12, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }} />
@@ -148,7 +149,7 @@ export default function AdminOrdersPage() {
           {/* Datum Von */}
           <div style={{ display:'flex', alignItems:'center', gap:6 }}>
             <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.08em', color:'#5e5e5b', whiteSpace:'nowrap' as const }}>
-              <span className="material-symbols-outlined" style={{ fontSize:14, verticalAlign:'middle', marginRight:4 }}>calendar_today</span>
+              <Icon name="calendar_today" style={{ fontSize:14, verticalAlign:'middle', marginRight:4 }} />
               {t('Von', 'From')}
             </label>
             <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
@@ -182,7 +183,7 @@ export default function AdminOrdersPage() {
           {(dateFrom || dateTo || search) && (
             <button onClick={() => { setDateFrom(''); setDateTo(''); setSearch('') }}
               style={{ padding:'7px 12px', fontSize:11, fontWeight:600, background:'none', border:'1px solid #ba1a1a', cursor:'pointer', color:'#ba1a1a', display:'flex', alignItems:'center', gap:4 }}>
-              <span className="material-symbols-outlined" style={{ fontSize:13 }}>close</span>
+              <Icon name="close" style={{ fontSize:13 }} />
               {t('Reset', 'Reset')}
             </button>
           )}
@@ -260,7 +261,7 @@ export default function AdminOrdersPage() {
                       <a href={o.trackingUrl || `https://www.dhl.de/de/privatkunden/pakete-empfangen/verfolgen.html?piececode=${o.trackingNumber}`}
                         target="_blank" rel="noopener noreferrer"
                         style={{ fontSize:11, color:'#185FA5', fontFamily:'monospace', textDecoration:'none', display:'flex', alignItems:'center', gap:4 }}>
-                        <span className="material-symbols-outlined" style={{ fontSize:14 }}>local_shipping</span>
+                        <Icon name="local_shipping" style={{ fontSize:14 }} />
                         {o.trackingNumber}
                       </a>
                     ) : (
@@ -287,7 +288,7 @@ export default function AdminOrdersPage() {
                       {/* Rücksende-Tracking wenn vorhanden */}
                   {o.rentals?.[0]?.returnTrackingNumber && (
                     <div style={{ padding:'6px 10px', display:'flex', alignItems:'center', gap:5, background:'#E6F1FB', marginBottom:4 }}>
-                      <span className="material-symbols-outlined" style={{ fontSize:12, color:'#0C447C' }}>undo</span>
+                      <Icon name="undo" style={{ fontSize:12, color:'#0C447C' }} />
                       <a href={`https://www.dhl.de/de/privatkunden/pakete-empfangen/verfolgen.html?piececode=${o.rentals[0].returnTrackingNumber}`}
                         target="_blank" rel="noopener noreferrer"
                         style={{ fontSize:10, color:'#0C447C', fontFamily:'monospace', textDecoration:'none', fontWeight:700 }}>
@@ -349,7 +350,7 @@ export default function AdminOrdersPage() {
 
             {damageReports.length === 0 ? (
               <div style={{ textAlign:'center', padding:'32px 0', color:'#5e5e5b' }}>
-                <span className="material-symbols-outlined" style={{ fontSize:32, display:'block', marginBottom:8, color:'#c4c7c7' }}>check_circle</span>
+                <Icon name="check_circle" style={{ fontSize:32, display:'block', marginBottom:8, color:'#c4c7c7' }} />
                 Keine Schadensmeldungen für diese Bestellung
               </div>
             ) : (

@@ -45,6 +45,14 @@ export class OrdersService {
   private stripe: Stripe;
 
   async createPurchaseOrder(userId: string, dto: CreateOrderDto) {
+    // E-Mail-Verifizierung ist zum KAUFEN erforderlich.
+    const buyer = await this.userRepo.findOne({ where: { id: userId } });
+    if (!buyer?.isVerified) {
+      throw new ForbiddenException(
+        'Bitte bestätige zuerst deine E-Mail-Adresse, um kaufen zu können.',
+      );
+    }
+
     const variant = await this.variantRepo.findOne({
       where: { id: dto.productVariantId },
       relations: ['product'],

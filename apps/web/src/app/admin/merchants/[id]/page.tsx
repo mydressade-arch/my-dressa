@@ -3,6 +3,7 @@ import { useLangStore } from '@/store/lang.store'
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
+import { Icon } from '@/components/ui/Icon'
 
 const STATUS_STYLE: Record<string, {bg:string,color:string}> = {
   active:    { bg:'#EAF3DE', color:'#27500A' },
@@ -41,7 +42,7 @@ export default function AdminMerchantDetailPage() {
       <div style={{ display:'flex', alignItems:'center', gap:16, marginBottom:24 }}>
         <button onClick={() => router.push('/admin/merchants')}
           style={{ background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', gap:4, color:'#5e5e5b', fontSize:13 }}>
-          <span className="material-symbols-outlined" style={{ fontSize:16 }}>arrow_back</span>
+          <Icon name="arrow_back" style={{ fontSize:16 }} />
           Alle Händler
         </button>
       </div>
@@ -102,7 +103,7 @@ export default function AdminMerchantDetailPage() {
                     <img src={img} alt={p.title} style={{ width:'100%', height:180, objectFit:'cover', display:'block' }} />
                   ) : (
                     <div style={{ width:'100%', height:180, background:'#f1edec', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize:'clamp(24px,3vw,40px)', color:'#c4c7c7' }}>checkroom</span>
+                      <Icon name="checkroom" style={{ fontSize:'clamp(24px,3vw,40px)', color:'#c4c7c7' }} />
                     </div>
                   )}
                   <div style={{ padding:16 }}>
@@ -114,7 +115,7 @@ export default function AdminMerchantDetailPage() {
                     </div>
                     <div style={{ display:'flex', gap:12, fontSize:12, color:'#5e5e5b' }}>
                       {p.isForSale && <span>Kauf: €{Number(p.salePrice||0).toFixed(2)}</span>}
-                      {p.isForRent && <span>Miete: €{Number(p.rentalPrice||0).toFixed(2)}/Tag</span>}
+                      {p.isForRent && <span>Miete: €{Number(p.rentalPrice||0).toFixed(2)}</span>}
                     </div>
                     {p.isForRent && p.depositAmount && (
                       <p style={{ fontSize:11, color:'#0C447C', marginTop:4 }}>

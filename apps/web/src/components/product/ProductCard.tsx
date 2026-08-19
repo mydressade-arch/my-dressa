@@ -17,6 +17,7 @@ export interface ProductCardProps {
   initialSaved?: boolean
   availableNow?: boolean
   nextAvailableDate?: string | null
+  priority?: boolean
 }
 
 /**
@@ -30,7 +31,7 @@ export interface ProductCardProps {
  */
 export function ProductCard(props: ProductCardProps) {
   if (!NEW_DESIGN) {
-    const { images, availableNow, nextAvailableDate, ...classic } = props
+    const { images, availableNow, nextAvailableDate, priority, ...classic } = props
     return <ProductCardClassic {...classic} />
   }
   return <ProductCardNew {...props} />

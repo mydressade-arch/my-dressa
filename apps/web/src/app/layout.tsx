@@ -14,6 +14,7 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.mydressa.de'),
   title: {
     default: 'My Dressa | Luxuriöse Mode mieten & kaufen',
     template: '%s | My Dressa',
@@ -27,6 +28,21 @@ export const metadata: Metadata = {
     locale: 'de_DE',
     type: 'website',
     images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'My Dressa' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'My Dressa | Luxuriöse Mode mieten & kaufen',
+    description: 'Entdecke kuratierte Designer-Mode. Mieten für den Moment, kaufen für die Ewigkeit.',
+    images: ['/og-image.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+    },
   },
   icons: {
     icon: [
@@ -49,12 +65,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
-          rel="stylesheet"
-        />
       </head>
       <body suppressHydrationWarning>
+        {/* Strukturierte Daten für Google (Organisation) */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'OnlineStore',
+              name: 'My Dressa',
+              description: 'Kuratierte Designer-Mode zum Mieten und Kaufen.',
+              url: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.mydressa.de',
+              logo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.mydressa.de'}/icon-192.png`,
+              image: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.mydressa.de'}/og-image.png`,
+            }),
+          }}
+        />
         <LangProvider>
         <UIProvider>
           <Navbar />

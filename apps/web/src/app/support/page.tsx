@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
 import Link from 'next/link'
+import { Icon } from '@/components/ui/Icon'
 
 export default function SupportDashboard() {
   const { t } = useLangStore()
@@ -49,7 +50,7 @@ export default function SupportDashboard() {
                 <p style={{ fontSize:28, fontWeight:700, color:'#1c1b1b' }}>{c.value ?? '—'}</p>
               </div>
               <div style={{ width:40, height:40, borderRadius:'50%', background:c.bg, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                <span className="material-symbols-outlined" style={{ fontSize:20, color:c.color }}>{c.icon}</span>
+                <Icon name={c.icon} style={{ fontSize:20, color:c.color }} />
               </div>
             </div>
           </div>
@@ -66,7 +67,7 @@ export default function SupportDashboard() {
           <Link key={item.href} href={item.href}
             style={{ background:'#fff', border:'1px solid #c4c7c7', padding:'16px 20px', textDecoration:'none', display:'flex', alignItems:'center', gap:12 }}>
             <div style={{ width:40, height:40, borderRadius:'50%', background:item.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-              <span className="material-symbols-outlined" style={{ fontSize:20, color:item.color }}>{item.icon}</span>
+              <Icon name={item.icon} style={{ fontSize:20, color:item.color }} />
             </div>
             <span style={{ fontSize:13, fontWeight:600, color:'#1c1b1b' }}>{item.label}</span>
           </Link>

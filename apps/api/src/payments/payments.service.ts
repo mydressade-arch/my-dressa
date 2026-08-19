@@ -9,6 +9,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import Stripe from 'stripe';
 
 import { Order, OrderStatus, OrderType } from '../orders/order.entity';
+import { ProductVariant } from '../products/product-variant.entity';
 import { Rental, RentalStatus } from '../rentals/rental.entity';
 import { RentalExtension, ExtensionStatus } from '../rentals/rental-extension.entity';
 import { Deposit, DepositStatus } from '../rentals/deposit.entity';
@@ -42,6 +43,8 @@ export class PaymentsService {
     private readonly merchantRepo: Repository<MerchantProfile>,
     @InjectRepository(MerchantPayout)
     private readonly payoutRepo: Repository<MerchantPayout>,
+    @InjectRepository(ProductVariant)
+    private readonly variantRepo: Repository<ProductVariant>,
     private readonly config: ConfigService,
     private readonly dataSource: DataSource,
     private readonly notifications: NotificationsService,
@@ -385,7 +388,43 @@ export class PaymentsService {
   async handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
     const { orderId } = paymentIntent.metadata;
     if (!orderId) return;
+
+    // Order laden (für Typ + Variante), dann stornieren
+    const order = await this.orderRepo.findOne({
+      where: { id: orderId },
+      relations: ['productVariant'],
+    });
     await this.orderRepo.update(orderId, { status: OrderStatus.CANCELLED });
+
+    // Bei einem KAUF: den reservierten Bestand wieder freigeben,
+    // sonst erscheint das Produkt fälschlich als "ausverkauft".
+    try {
+      if (order && order.type === OrderType.PURCHASE && order.productVariant) {
+        await this.variantRepo.increment(
+          { id: order.productVariant.id },
+          'stockQuantity',
+          1,
+        );
+        this.logger.warn(`Bestand für Variante ${order.productVariant.id} zurückgegeben (Zahlung fehlgeschlagen)`);
+      }
+    } catch (e: any) {
+      this.logger.warn(`Bestand-Rückgabe nach Zahlungsfehler fehlgeschlagen: ${e.message}`);
+    }
+
+    // Auch die zugehörige Miete stornieren, damit der Kalender-Termin
+    // sofort wieder frei wird (sonst blockiert die PENDING-Miete weiter).
+    try {
+      const rental = await this.rentalRepo.findOne({ where: { orderId } });
+      if (rental && rental.status === RentalStatus.PENDING) {
+        await this.rentalRepo.update(rental.id, {
+          status: RentalStatus.CANCELLED,
+        });
+        this.logger.warn(`Miete ${rental.id} storniert (Zahlung fehlgeschlagen)`);
+      }
+    } catch (e: any) {
+      this.logger.warn(`Miete-Storno nach Zahlungsfehler fehlgeschlagen: ${e.message}`);
+    }
+
     this.logger.warn(`Zahlung fehlgeschlagen: Order ${orderId}`);
   }
 
@@ -493,16 +532,31 @@ export class PaymentsService {
   }
 
   async createMerchantStripeAccount(merchantId: string, email: string) {
-    const account = await this.stripe.accounts.create({
-      type: 'express',
-      country: 'DE',
-      email,
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true },
-      },
-      business_profile: { mcc: '5691' },
-    });
+    let account: Stripe.Account;
+    try {
+      account = await this.stripe.accounts.create({
+        type: 'express',
+        country: 'DE',
+        email,
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        business_profile: { mcc: '5691' },
+      });
+    } catch (e: any) {
+      // Häufigster Fall: Stripe Connect ist im Stripe-Konto nicht aktiviert.
+      this.logger.error(`Stripe-Konto-Erstellung fehlgeschlagen: ${e.message}`);
+      if (e?.message?.includes('signed up for Connect') || e?.message?.includes('Connect')) {
+        throw new BadRequestException(
+          'Zahlungen sind noch nicht eingerichtet. Der Betreiber muss zuerst ' +
+          'Stripe Connect im Stripe-Dashboard aktivieren (dashboard.stripe.com/connect).',
+        );
+      }
+      throw new BadRequestException(
+        'Stripe-Konto konnte nicht erstellt werden. Bitte später erneut versuchen.',
+      );
+    }
 
     await this.merchantRepo.update(merchantId, { stripeAccountId: account.id });
 

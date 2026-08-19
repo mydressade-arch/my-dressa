@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { commissionsApi, api } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
+import { Icon } from '@/components/ui/Icon'
 
 const STATUS_STYLE: Record<string, {bg:string,color:string}> = {
   pending:    { bg:'#FAEEDA', color:'#633806' },
@@ -89,7 +90,7 @@ export default function MerchantEarningsPage() {
         ].map(({ label, value, icon, color }) => (
           <div key={label} style={{ background:'#fff', border:'1px solid #c4c7c7', padding:24 }}>
             <div style={{ width:40, height:40, background:'#f1edec', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:16 }}>
-              <span className="material-symbols-outlined" style={{ fontSize:20, color }}>{icon}</span>
+              <Icon name={icon} style={{ fontSize:20, color }} />
             </div>
             <p style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', marginBottom:6 }}>{label}</p>
             <p style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700 }}>{value}</p>
@@ -100,7 +101,7 @@ export default function MerchantEarningsPage() {
       {/* Webhook Warning */}
       {webhookNote && (
         <div style={{ background:'#FAEEDA', border:'1px solid #f8dfbb', padding:'14px 20px', marginBottom:20, display:'flex', gap:10, alignItems:'flex-start' }}>
-          <span className="material-symbols-outlined" style={{ fontSize:20, color:'#633806', flexShrink:0 }}>warning</span>
+          <Icon name="warning" style={{ fontSize:20, color:'#633806', flexShrink:0 }} />
           <div>
             <p style={{ fontSize:13, fontWeight:600, color:'#633806', marginBottom:3 }}>Earnings werden noch nicht angezeigt</p>
             <p style={{ fontSize:12, color:'#633806', lineHeight:1.6 }}>
@@ -169,7 +170,7 @@ export default function MerchantEarningsPage() {
 
       {/* Commission Info */}
       <div style={{ background:'#f7f3f2', border:'1px solid #c4c7c7', padding:20, marginBottom:32, display:'flex', gap:12, alignItems:'flex-start' }}>
-        <span className="material-symbols-outlined" style={{ fontSize:20, color:'#9E896A', flexShrink:0 }}>info</span>
+        <Icon name="info" style={{ fontSize:20, color:'#9E896A', flexShrink:0 }} />
         <div style={{ fontSize:13, color:'#5e5e5b', lineHeight:1.6 }}>
           <strong style={{ color:'#1c1b1b' }}>Commission:</strong> My Dressa berechnet 15% auf Verkäufe und 10% auf Mieten. Versandkosten gehen vollständig an dich.
         </div>

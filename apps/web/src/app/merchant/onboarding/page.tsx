@@ -5,6 +5,7 @@ import { authApi } from '@/lib/api'
 import { useAuthStore } from '@/store/auth.store'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { Icon } from '@/components/ui/Icon'
 
 export default function MerchantOnboardingPage() {
   const { user, loadUser } = useAuthStore()
@@ -35,7 +36,7 @@ export default function MerchantOnboardingPage() {
       <div className="w-full max-w-lg">
         <div className="text-center mb-12">
           <div className="w-16 h-16 flex items-center justify-center mx-auto mb-6" style={{ background: '#f1edec' }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 32, color: '#9E896A' }}>storefront</span>
+            <Icon name="storefront" style={{ fontSize: 32, color: '#9E896A' }} />
           </div>
           <h1 className="font-serif text-3xl font-bold mb-3">Become a Merchant</h1>
           <p className="text-secondary text-sm max-w-sm mx-auto leading-relaxed">
@@ -52,7 +53,7 @@ export default function MerchantOnboardingPage() {
             ].map(({ icon, label }) => (
               <div key={icon}>
                 <div className="w-10 h-10 flex items-center justify-center mx-auto mb-2" style={{ background: '#f1edec' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#9E896A' }}>{icon}</span>
+                  <Icon name={icon} style={{ fontSize: 20, color: '#9E896A' }} />
                 </div>
                 <p className="text-xs font-semibold text-secondary">{label}</p>
               </div>

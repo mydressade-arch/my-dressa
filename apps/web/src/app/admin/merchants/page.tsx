@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import Link from 'next/link'
 import { useLangStore } from '@/store/lang.store'
+import { Icon } from '@/components/ui/Icon'
 
 export default function AdminMerchantsPage() {
   const { t } = useLangStore()
@@ -108,7 +109,7 @@ export default function AdminMerchantsPage() {
                 <td style={{ padding:'14px 16px' }}>
                   <button onClick={() => showBank(m.id, m.shopName)}
                     style={{ fontSize:11, fontWeight:600, padding:'5px 10px', background:'none', border:'1px solid #c4c7c7', cursor:'pointer', color:'#5e5e5b', display:'flex', alignItems:'center', gap:4 }}>
-                    <span className="material-symbols-outlined" style={{ fontSize:13 }}>account_balance</span>
+                    <Icon name="account_balance" style={{ fontSize:13 }} />
                     IBAN
                   </button>
                 </td>
@@ -132,7 +133,7 @@ export default function AdminMerchantsPage() {
             ) : bankModal.data?.hasBank ? (
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                 <div style={{ background:'#FAEEDA', padding:'8px 12px', fontSize:12, color:'#633806', display:'flex', gap:6, alignItems:'center' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize:14 }}>lock</span>
+                  <Icon name="lock" style={{ fontSize:14 }} />
                   Vertraulich — nur für interne Nutzung
                 </div>
                 {[
@@ -148,13 +149,13 @@ export default function AdminMerchantsPage() {
                 ))}
                 <button onClick={() => navigator.clipboard.writeText(bankModal.data.iban)}
                   style={{ padding:'10px', background:'#1c1b1b', color:'#fff', border:'none', fontSize:12, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:6, justifyContent:'center' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize:14 }}>content_copy</span>
+                  <Icon name="content_copy" style={{ fontSize:14 }} />
                   IBAN kopieren
                 </button>
               </div>
             ) : (
               <div style={{ textAlign:'center', padding:'32px 0', color:'#5e5e5b' }}>
-                <span className="material-symbols-outlined" style={{ fontSize:36, display:'block', marginBottom:8, color:'#c4c7c7' }}>account_balance</span>
+                <Icon name="account_balance" style={{ fontSize:36, display:'block', marginBottom:8, color:'#c4c7c7' }} />
                 <p style={{ fontSize:13 }}>Keine Bankverbindung hinterlegt</p>
                 <p style={{ fontSize:12, color:'#9e9e9b', marginTop:4 }}>Händler muss IBAN unter Merchant → Bankverbindung eingeben</p>
               </div>

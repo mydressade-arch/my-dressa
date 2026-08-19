@@ -1,8 +1,10 @@
+import { Icon } from '@/components/ui/Icon'
+
 export default function SustainabilityPage() {
   return (
     <div>
       <div style={{ background:'#064E3B', padding:'clamp(40px,5vw,80px) clamp(16px,4vw,64px)', textAlign:'center' }}>
-        <span className="material-symbols-outlined" style={{ fontSize:'clamp(28px,4vw,48px)', color:'#9E896A', display:'block', marginBottom:16 }}>eco</span>
+        <Icon name="eco" style={{ fontSize:'clamp(28px,4vw,48px)', color:'#9E896A', display:'block', marginBottom:16 }} />
         <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:'clamp(28px,4vw,48px)', fontWeight:700, color:'#f4f0ef', marginBottom:16 }}>Sustainable Fashion</h1>
         <p style={{ fontSize:16, color:'rgba(244,240,239,0.75)', maxWidth:540, margin:'0 auto', width:'100%' }}>Every rental is a step toward a more sustainable fashion industry.</p>
       </div>
@@ -23,7 +25,7 @@ export default function SustainabilityPage() {
               'Circular fashion model reduces demand for new production.',
               'Partner with eco-conscious merchants committed to sustainability.'].map(t=>(
               <div key={t} style={{ display:'flex', gap:12, marginBottom:14, alignItems:'flex-start' }}>
-                <span className="material-symbols-outlined" style={{ fontSize:18, color:'#064E3B', flexShrink:0, marginTop:2 }}>check_circle</span>
+                <Icon name="check_circle" style={{ fontSize:18, color:'#064E3B', flexShrink:0, marginTop:2 }} />
                 <p style={{ fontSize:15, color:'#5e5e5b', lineHeight:1.6 }}>{t}</p>
               </div>
             ))}

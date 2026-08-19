@@ -46,14 +46,24 @@ export class AuthService {
       phone: dto.phone,
       emailVerificationToken: verificationToken,
       role: UserRole.CUSTOMER,
-      isVerified: this.config.get('NODE_ENV') === 'development',
+      // Neue Nutzer starten IMMER unverifiziert. Sie können sich einloggen
+      // und stöbern, aber für Kauf/Miete/Verkauf müssen sie ihre E-Mail
+      // bestätigen. (Früher: im Dev-Modus auto-verifiziert — das versteckte
+      // die Verifizierung und war ein Sicherheitsrisiko.)
+      isVerified: false,
     });
     await this.userRepo.save(user);
 
     this.logger.log(`Neuer User: ${user.email} | VerifyToken: ${verificationToken}`);
 
-    // E-Mail Verifizierung senden
-    await this.notifications.sendEmailVerification(user.email, user.firstName, verificationToken);
+    // E-Mail Verifizierung im HINTERGRUND senden — die Registrierung soll
+    // NICHT auf den E-Mail-Versand warten (der kann je nach Anbieter
+    // mehrere Sekunden bis Minuten dauern). Fehler werden nur geloggt.
+    this.notifications
+      .sendEmailVerification(user.email, user.firstName, verificationToken)
+      .catch((e) =>
+        this.logger.error(`Verifizierungs-E-Mail fehlgeschlagen für ${user.email}: ${e.message}`),
+      );
 
     return {
       message: 'Registrierung erfolgreich. Bitte bestätige deine E-Mail.',
@@ -65,15 +75,44 @@ export class AuthService {
     const user = await this.userRepo.findOne({
       where: { emailVerificationToken: token },
     });
-    if (!user) throw new BadRequestException('Ungültiger Token');
+    if (!user) throw new BadRequestException('Ungültiger oder bereits verwendeter Link');
     user.isVerified = true;
     user.emailVerificationToken = null;
     await this.userRepo.save(user);
 
-    // Willkommens-E-Mail nach Verifizierung
-    await this.notifications.sendWelcome(user.email, user.firstName);
+    // Willkommens-E-Mail im HINTERGRUND (darf die Verifizierung NICHT
+    // blockieren — sonst schlägt der Verify-Link fehl, wenn der E-Mail-
+    // Versand hängt, obwohl die Verifizierung schon erfolgreich war).
+    this.notifications
+      .sendWelcome(user.email, user.firstName)
+      .catch((e) =>
+        this.logger.error(`Willkommens-E-Mail fehlgeschlagen für ${user.email}: ${e.message}`),
+      );
 
-    return { message: 'E-Mail verifiziert' };
+    return { message: 'E-Mail verifiziert', success: true };
+  }
+
+  /** Verifizierungs-E-Mail erneut senden (für eingeloggte, noch nicht
+   *  verifizierte Nutzer, die z.B. beim Kaufen dazu aufgefordert werden). */
+  async resendVerification(userId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new BadRequestException('Nutzer nicht gefunden');
+    if (user.isVerified) {
+      return { alreadyVerified: true, message: 'Du bist bereits verifiziert.' };
+    }
+    // Neuen Token erzeugen (falls keiner mehr da ist)
+    const token = user.emailVerificationToken || randomBytes(32).toString('hex');
+    user.emailVerificationToken = token;
+    await this.userRepo.save(user);
+
+    // Im Hintergrund senden (nicht blockieren)
+    this.notifications
+      .sendEmailVerification(user.email, user.firstName, token)
+      .catch((e) =>
+        this.logger.error(`Resend Verifizierung fehlgeschlagen für ${user.email}: ${e.message}`),
+      );
+
+    return { alreadyVerified: false, message: 'Bestätigungs-E-Mail wurde erneut gesendet.' };
   }
 
   async validateUser(email: string, password: string): Promise<User | null> {
@@ -85,9 +124,9 @@ export class AuthService {
   }
 
   async login(user: User, twoFaCode?: string) {
-    if (!user.isVerified) {
-      throw new UnauthorizedException('Bitte zuerst E-Mail bestätigen');
-    }
+    // Hinweis: E-Mail-Verifizierung wird NICHT mehr beim Login verlangt.
+    // Nutzer können sich einloggen und stöbern. Die Verifizierung wird erst
+    // bei Kauf/Miete/Verkauf geprüft (siehe requireVerified in den Services).
     // 2FA prüfen wenn aktiviert
     if (user.twoFaEnabled && user.twoFaSecret) {
       if (!twoFaCode) {
@@ -111,6 +150,7 @@ export class AuthService {
         lastName: user.lastName,
         role: user.role,
         twoFaEnabled: user.twoFaEnabled || false,
+        isVerified: user.isVerified || false,
       },
     };
   }

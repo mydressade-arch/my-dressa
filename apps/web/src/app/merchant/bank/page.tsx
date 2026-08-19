@@ -3,6 +3,7 @@ import { useLangStore } from '@/store/lang.store'
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import { useUI } from '@/components/ui/UIProvider'
+import { Icon } from '@/components/ui/Icon'
 
 export default function MerchantBankPage() {
   const { t } = useLangStore()
@@ -45,7 +46,7 @@ export default function MerchantBankPage() {
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
             <div style={{ display:'flex', alignItems:'center', gap:10 }}>
               <div style={{ width:40, height:40, borderRadius:'50%', background:'#EAF3DE', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                <span className="material-symbols-outlined" style={{ fontSize:20, color:'#27500A' }}>account_balance</span>
+                <Icon name="account_balance" style={{ fontSize:20, color:'#27500A' }} />
               </div>
               <div>
                 <p style={{ fontWeight:600, fontSize:15 }}>{bankData.accountName}</p>
@@ -67,7 +68,7 @@ export default function MerchantBankPage() {
             )}
           </div>
           <div style={{ background:'#E6F1FB', padding:'10px 14px', marginTop:16, fontSize:12, color:'#0C447C', display:'flex', gap:8 }}>
-            <span className="material-symbols-outlined" style={{ fontSize:16 }}>lock</span>
+            <Icon name="lock" style={{ fontSize:16 }} />
             IBAN ist AES-256 verschlüsselt. Nur Admins sehen die vollständige IBAN.
           </div>
         </div>
@@ -93,7 +94,7 @@ export default function MerchantBankPage() {
             ))}
           </div>
           <div style={{ background:'#FAEEDA', padding:'10px 14px', marginTop:16, fontSize:12, color:'#633806', display:'flex', gap:8 }}>
-            <span className="material-symbols-outlined" style={{ fontSize:16 }}>security</span>
+            <Icon name="security" style={{ fontSize:16 }} />
             Deine IBAN wird verschlüsselt. My Dressa sieht nur die letzten 4 Stellen.
           </div>
           <div style={{ display:'flex', gap:10, marginTop:20 }}>

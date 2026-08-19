@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { wishlistApi } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
 import { useAuthStore } from '@/store/auth.store'
+import { Icon } from '@/components/ui/Icon'
 
 interface ProductCardNewProps {
   id: string
@@ -19,6 +20,7 @@ interface ProductCardNewProps {
   initialSaved?: boolean
   availableNow?: boolean
   nextAvailableDate?: string | null
+  priority?: boolean
 }
 
 const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='533' viewBox='0 0 400 533'%3E%3Crect fill='%23f1edec' width='400' height='533'/%3E%3Ctext fill='%23c4c7c7' font-family='sans-serif' font-size='14' text-anchor='middle' x='200' y='270'%3EMy Dressa%3C/text%3E%3C/svg%3E"
@@ -35,6 +37,7 @@ export function ProductCardNew({
   imageUrl, images, isForRent, isForSale,
   initialSaved = false,
   availableNow, nextAvailableDate,
+  priority = false,
 }: ProductCardNewProps) {
   const { user } = useAuthStore()
   const { t, lang } = useLangStore() as any
@@ -77,7 +80,8 @@ export function ProductCardNew({
           <img
             src={primary}
             alt={title}
-            loading="lazy"
+            loading={priority ? 'eager' : 'lazy'}
+            fetchPriority={priority ? 'high' : 'auto'}
             onLoad={() => setLoaded(true)}
             onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER }}
             className="pc-img"
@@ -145,11 +149,11 @@ export function ProductCardNew({
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'background 0.2s ease',
             }}>
-            <span className="material-symbols-outlined" style={{
+            <Icon name="favorite" style={{
               fontSize: 18,
               color: saved ? '#fff' : '#1c1b1b',
               fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0",
-            }}>favorite</span>
+            }} />
           </button>
         </div>
       </Link>

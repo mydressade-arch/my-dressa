@@ -4,6 +4,7 @@ import { useLangStore } from '@/store/lang.store'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
+import { Icon } from '@/components/ui/Icon'
 
 export default function MerchantLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthStore()
@@ -51,7 +52,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
                   ? 'bg-surface-container text-primary font-semibold'
                   : 'text-secondary hover:text-primary hover:bg-surface-container-low'
               }`}>
-              <span className="material-symbols-outlined" style={{ fontSize: 20 }}>{item.icon}</span>
+              <Icon name={item.icon} style={{ fontSize: 20 }} />
               {item.label}
             </Link>
           ))}

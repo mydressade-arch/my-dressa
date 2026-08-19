@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { ProductCard } from '@/components/product/ProductCard'
 import { useState, useEffect } from 'react'
 import { productsApi, settingsApi } from '@/lib/api'
+import { Icon } from '@/components/ui/Icon'
+import { NewsletterSignup } from '@/components/home/NewsletterSignup'
 
 // Fallback-Bilder. Der Admin kann sie im Panel überschreiben; diese Werte
 // greifen, solange nichts gesetzt ist oder das Laden scheitert.
@@ -99,7 +101,7 @@ export default function HomePage() {
             { icon:'lock', text: mounted ? t('Sichere Zahlung', 'Secure Payment') : 'Sichere Zahlung' },
           ].map(item => (
             <div key={item.icon} style={{ display:'flex', alignItems:'center', gap:10, justifyContent:'center' }}>
-              <span className="material-symbols-outlined" style={{ fontSize:18, color:'#9E896A' }}>{item.icon}</span>
+              <Icon name={item.icon} style={{ fontSize:18, color:'#9E896A' }} />
               <span style={{ fontSize:12, color:'rgba(253,248,248,0.7)', fontWeight:500, letterSpacing:'0.05em' }}>{item.text}</span>
             </div>
           ))}
@@ -117,7 +119,7 @@ export default function HomePage() {
           </h2>
         </div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px, 1fr))', gap:24 }}>
-          {featuredProducts.map(p => <ProductCard key={p.id} {...p} />)}
+          {featuredProducts.map((p, i) => <ProductCard key={p.id} {...p} priority={i < 4} />)}
         </div>
         <div style={{ textAlign:'center', marginTop:48 }}>
           <Link href="/products" style={{ padding:'clamp(14px,2vw,16px) clamp(16px,4vw,40px)', background:'#1c1b1b', color:'#fdf8f8', textDecoration:'none', fontSize:12, fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase' }}>
@@ -179,7 +181,7 @@ export default function HomePage() {
             ].map(s => (
               <div key={s.num} style={{ textAlign:'center' }}>
                 <div style={{ width:64, height:64, borderRadius:'50%', background:'#EAF3DE', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize:28, color:'#27500A' }}>{s.icon}</span>
+                  <Icon name={s.icon} style={{ fontSize:28, color:'#27500A' }} />
                 </div>
                 <p style={{ fontSize:11, fontWeight:600, color:'#9E896A', letterSpacing:'0.1em', marginBottom:8 }}>{s.num}</p>
                 <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:700, color:'#1c1b1b', marginBottom:8 }}>{s.title}</h3>
@@ -210,23 +212,7 @@ export default function HomePage() {
 
       {/* ── Newsletter ─────────────────────────────────────────────────────── */}
       <section style={{ padding:'clamp(40px,6vw,80px) clamp(16px,5vw,64px)', background:'#1c1b1b', textAlign:'center' }}>
-        <div style={{ maxWidth:480, margin:'0 auto', width:'100%' }}>
-          <p style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.12em', color:'#9E896A', marginBottom:12 }}>
-            {mounted ? t('Exklusiver Zugang', 'Exclusive Access') : 'Exklusiver Zugang'}
-          </p>
-          <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:32, fontWeight:700, color:'#fdf8f8', marginBottom:12 }}>Join the Inner Circle</h2>
-          <p style={{ color:'rgba(244,240,239,0.5)', fontSize:14, lineHeight:1.7, marginBottom:36 }}>
-            {mounted ? t('Neue Kollektionen, private Sales und Fashion Insights direkt in dein Postfach.', 'New collections, private sales and fashion insights directly to your inbox.') : 'Neue Kollektionen, private Sales und Fashion Insights direkt in dein Postfach.'}
-          </p>
-          <div style={{ display:'flex', border:'1px solid rgba(244,240,239,0.15)' }}>
-            <input type="email" placeholder="deine@email.de"
-              suppressHydrationWarning
-              style={{ flex:1, padding:'16px 20px', fontSize:14, background:'transparent', border:'none', outline:'none', color:'#fdf8f8', borderRight:'1px solid rgba(244,240,239,0.15)' }} />
-            <button style={{ padding:'16px 24px', background:'#9E896A', color:'#fff', border:'none', cursor:'pointer', fontSize:12, fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', flexShrink:0 }}>
-              Subscribe
-            </button>
-          </div>
-        </div>
+        <NewsletterSignup />
       </section>
     </>
   )
