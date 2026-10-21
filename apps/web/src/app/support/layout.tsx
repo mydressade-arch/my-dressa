@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { useLangStore } from '@/store/lang.store'
 import Link from 'next/link'
 import { LangSwitcher } from '@/lib/lang'
+import { Icon } from '@/components/ui/Icon'
 
 export default function SupportLayout({ children }: { children: React.ReactNode }) {
   const { user, loadUser } = useAuthStore()
@@ -33,6 +34,7 @@ export default function SupportLayout({ children }: { children: React.ReactNode 
     { href: '/support',           icon: 'dashboard',  label: t('Dashboard', 'Dashboard') },
     { href: '/support/orders',    icon: 'package_2',  label: t('Bestellungen', 'Orders') },
     { href: '/support/customers', icon: 'group',      label: t('Kunden', 'Customers') },
+    { href: '/support/verify',    icon: 'verified',   label: t('Verifizierung', 'Verification') },
     { href: '/support/damage',    icon: 'report',     label: t('Schadensmeldungen', 'Damage Reports') },
   ]
 
@@ -50,7 +52,7 @@ export default function SupportLayout({ children }: { children: React.ReactNode 
           {NAV.map(item => (
             <Link key={item.href} href={item.href}
               style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 20px', textDecoration:'none', whiteSpace:'nowrap', color: pathname===item.href ? '#fdf8f8' : 'rgba(253,248,248,0.5)', background: pathname===item.href ? 'rgba(255,255,255,0.08)' : 'transparent', fontSize:13, fontWeight: pathname===item.href ? 600 : 400 }}>
-              <span className="material-symbols-outlined" style={{ fontSize:18 }}>{item.icon}</span>
+              <Icon name={item.icon} style={{ fontSize:18 }} />
               {item.label}
             </Link>
           ))}

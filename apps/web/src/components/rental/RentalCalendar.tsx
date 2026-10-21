@@ -4,6 +4,7 @@ import { format, addDays, isBefore, isAfter, startOfDay, parseISO, eachDayOfInte
 import { useLangStore } from '@/store/lang.store'
 import { rentalsApi } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
+import { Icon } from '@/components/ui/Icon'
 
 interface Props {
   productVariantId: string
@@ -15,7 +16,7 @@ interface Props {
   onConfirm: (startDate: string, endDate: string) => void
 }
 
-export function RentalCalendar({ productVariantId, rentalPricePerDay, rentalDurationDays = 10, shippingCost = 0, depositAmount, stockQuantity, onConfirm }: Props) {
+export function RentalCalendar({ productVariantId, rentalPricePerDay, rentalDurationDays = 1, shippingCost = 0, depositAmount, stockQuantity, onConfirm }: Props) {
   const depositValue = depositAmount ? Number(depositAmount) : 0;
   const { t } = useLangStore()
   const today = startOfDay(new Date())
@@ -99,10 +100,10 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, rentalDura
         </p>
         <div style={{ display:'flex', gap:6 }}>
           <button onClick={prevMonth} style={{ width:28, height:28, border:'1px solid #c4c7c7', background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <span className="material-symbols-outlined" style={{ fontSize:16 }}>chevron_left</span>
+            <Icon name="chevron_left" style={{ fontSize:16 }} />
           </button>
           <button onClick={nextMonth} style={{ width:28, height:28, border:'1px solid #c4c7c7', background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <span className="material-symbols-outlined" style={{ fontSize:16 }}>chevron_right</span>
+            <Icon name="chevron_right" style={{ fontSize:16 }} />
           </button>
         </div>
       </div>
@@ -190,11 +191,11 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, rentalDura
 
       {/* Info */}
       <div style={{ marginTop:12, padding:'10px 14px', background:'#f7f3f2', border:'1px solid #e8e3e1', fontSize:12, color:'#5e5e5b', display:'flex', gap:8, alignItems:'flex-start' }}>
-        <span className="material-symbols-outlined" style={{ fontSize:15, color:'#9E896A', flexShrink:0, marginTop:1 }}>info</span>
+        <Icon name="info" style={{ fontSize:15, color:'#9E896A', flexShrink:0, marginTop:1 }} />
         <span>Rote Tage sind bereits vergeben. Mietdauer: {RENTAL_DAYS} Tage. Kaution €{depositValue} wird beim Buchen abgebucht und bei pünktlicher Rückgabe erstattet.</span>
       </div>
       <div style={{ marginTop:8, padding:'10px 14px', background:'#E6F1FB', border:'1px solid #cce0ff', fontSize:12, color:'#0C447C', display:'flex', gap:8, alignItems:'flex-start' }}>
-        <span className="material-symbols-outlined" style={{ fontSize:15, color:'#0C447C', flexShrink:0, marginTop:1 }}>local_shipping</span>
+        <Icon name="local_shipping" style={{ fontSize:15, color:'#0C447C', flexShrink:0, marginTop:1 }} />
         <span><strong>Lieferzeit:</strong> DHL liefert in 1–2 Werktagen. Startdatum mind. 2 Tage vor der Feier wählen. Rückgabe spätestens 2–3 Tage danach.</span>
       </div>
 
@@ -228,7 +229,7 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, rentalDura
           {/* Stock Warning */}
           {stockQuantity != null && stockQuantity < 3 && stockQuantity > 0 && (
             <div style={{ background:'#FAEEDA', border:'1px solid #f8dfbb', padding:'8px 12px', marginBottom:12, display:'flex', alignItems:'center', gap:8, fontSize:12, color:'#633806' }}>
-              <span className="material-symbols-outlined" style={{ fontSize:16 }}>warning</span>
+              <Icon name="warning" style={{ fontSize:16 }} />
               Nur noch <strong>{stockQuantity}</strong> {stockQuantity === 1 ? 'Stück' : 'Stücke'} verfügbar
             </div>
           )}

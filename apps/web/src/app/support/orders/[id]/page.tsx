@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
 import { useUI } from '@/components/ui/UIProvider'
+import { Icon } from '@/components/ui/Icon'
 
 const STATUS_OPTS = ['pending','paid','shipped','delivered','returned','cancelled']
 const SUPPORT_CAN_SET = ['shipped','delivered','cancelled'] // Support darf NICHT auf paid setzen
@@ -79,7 +80,7 @@ export default function SupportOrderDetailPage() {
     <div style={{ maxWidth: '800px' }}>
       <button onClick={() => router.push('/support/orders')}
         style={{ background:'none', border:'none', cursor:'pointer', fontSize:13, color:'#5e5e5b', marginBottom:20, display:'flex', alignItems:'center', gap:4 }}>
-        <span className="material-symbols-outlined" style={{ fontSize:16 }}>arrow_back</span>
+        <Icon name="arrow_back" style={{ fontSize:16 }} />
         {t('Zurück', 'Back')}
       </button>
 
@@ -110,7 +111,7 @@ export default function SupportOrderDetailPage() {
 
         {order.returnRequested && (
           <div style={{ background:'#FAEEDA', padding:'10px 14px', marginTop:12, fontSize:13, color:'#633806', display:'flex', gap:8 }}>
-            <span className="material-symbols-outlined" style={{ fontSize:16 }}>undo</span>
+            <Icon name="undo" style={{ fontSize:16 }} />
             {t('Rückgabe beantragt', 'Return requested')} — {order.returnReason}
           </div>
         )}

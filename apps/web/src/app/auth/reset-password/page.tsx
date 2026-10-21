@@ -1,9 +1,11 @@
 'use client'
 import { useLangStore } from '@/store/lang.store'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import Link from 'next/link'
+import { Icon } from '@/components/ui/Icon'
+import { PasswordInput } from '@/components/ui/PasswordInput'
 
 function ResetPasswordInner() {
   const { t } = useLangStore()
@@ -52,7 +54,7 @@ function ResetPasswordInner() {
         {done ? (
           <div style={{ textAlign:'center' }}>
             <div style={{ width:56, height:56, borderRadius:'50%', background:'#EAF3DE', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}>
-              <span className="material-symbols-outlined" style={{ fontSize:28, color:'#27500A' }}>check_circle</span>
+              <Icon name="check_circle" style={{ fontSize:28, color:'#27500A' }} />
             </div>
             <p style={{ fontSize:14, color:'#27500A', fontWeight:600, marginBottom:8 }}>Passwort geändert ✓</p>
             <p style={{ fontSize:13, color:'#5e5e5b' }}>Du wirst automatisch weitergeleitet...</p>
@@ -63,17 +65,17 @@ function ResetPasswordInner() {
               <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>
                 Neues Passwort
               </label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                placeholder="Mindestens 8 Zeichen" required minLength={8}
-                style={{ width:'100%', padding:'12px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }} />
+              <PasswordInput value={password} onChange={e => setPassword(e.target.value)}
+                placeholder="Mindestens 8 Zeichen" required
+                style={{ padding:'12px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none' }} />
             </div>
             <div>
               <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>
                 Passwort bestätigen
               </label>
-              <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)}
+              <PasswordInput value={confirm} onChange={e => setConfirm(e.target.value)}
                 placeholder="Passwort wiederholen" required
-                style={{ width:'100%', padding:'12px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }} />
+                style={{ padding:'12px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none' }} />
             </div>
 
             {error && (
@@ -97,7 +99,6 @@ function ResetPasswordInner() {
   )
 }
 
-import { Suspense } from 'react'
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={<div style={{ padding:80, textAlign:'center', color:'#9e9e9b' }}>Laden...</div>}>

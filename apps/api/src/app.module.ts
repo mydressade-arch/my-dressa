@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { ProductsModule } from './products/products.module';
 import { RentalsModule } from './rentals/rentals.module';
 import { SettingsModule } from './settings/settings.module';
+import { NewsletterModule } from './newsletter/newsletter.module';
 import { PaymentsModule } from './payments/payments.module';
 import { OrdersModule } from './orders/orders.module';
 import { CommissionsModule } from './commissions/commissions.module';
@@ -32,7 +33,10 @@ import { MerchantRequestsModule } from './merchant-requests/merchant-requests.mo
         autoLoadEntities: true,
         // synchronize IMMER false — wir nutzen nur Migrations
         synchronize: false,
-        logging: config.get('NODE_ENV') === 'development',
+        // Nur Fehler/Warnungen loggen — NICHT jede SQL-Query (flutet sonst
+        // die Konsole und verdeckt wichtige Log-Zeilen). Auf ['query'] setzen,
+        // wenn man mal alle SQL-Abfragen sehen will.
+        logging: ['error', 'warn', 'migration'],
       }),
       inject: [ConfigService],
     }),
@@ -57,6 +61,7 @@ import { MerchantRequestsModule } from './merchant-requests/merchant-requests.mo
     SupportModule,
     MerchantRequestsModule,
     SettingsModule,
+    NewsletterModule,
   ],
 })
 export class AppModule {}

@@ -51,6 +51,11 @@ export class User {
   @Column({ name: 'email_verification_token', type: 'varchar', nullable: true })
   emailVerificationToken: string | null;
 
+  // Stripe-Customer-ID — damit die Karte des Kunden gespeichert und für
+  // die Kautions-Reservierung wiederverwendet werden kann (Miet-Modell).
+  @Column({ name: 'stripe_customer_id', type: 'varchar', nullable: true })
+  stripeCustomerId: string | null;
+
   @Column({ name: 'refresh_token_hash', type: 'varchar', nullable: true })
   refreshTokenHash: string | null;
 

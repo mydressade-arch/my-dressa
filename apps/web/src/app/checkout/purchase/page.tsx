@@ -11,6 +11,7 @@ import {
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js'
+import { Icon } from '@/components/ui/Icon'
 
 const PH = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='260'%3E%3Crect fill='%23f1edec' width='200' height='260'/%3E%3C/svg%3E"
 
@@ -264,7 +265,7 @@ function StripePaymentForm({ orderId, amount, onBack }: {
 
       {error && (
         <div style={{ padding:'12px 14px', background:'#ffdad6', color:'#ba1a1a', fontSize:13, display:'flex', gap:8, alignItems:'center' }}>
-          <span className="material-symbols-outlined" style={{ fontSize:16 }}>error</span>
+          <Icon name="error" style={{ fontSize:16 }} />
           {error}
         </div>
       )}
@@ -281,7 +282,7 @@ function StripePaymentForm({ orderId, amount, onBack }: {
       </div>
 
       <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-        <span className="material-symbols-outlined" style={{ fontSize:14, color:'#9e9e9b' }}>lock</span>
+        <Icon name="lock" style={{ fontSize:14, color:'#9e9e9b' }} />
         <p style={{ fontSize:11, color:'#9e9e9b', margin:0 }}>Secured by Stripe · SSL encrypted</p>
       </div>
     </form>

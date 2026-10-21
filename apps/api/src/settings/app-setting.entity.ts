@@ -34,4 +34,7 @@ export const SETTING_KEYS = {
   HOME_SUIT_IMG: 'home_suit_img',
   HOME_ACCESS_IMG: 'home_access_img',
   HOME_VINTAGE_IMG: 'home_vintage_img',
+  // SEPA-Lastschrift (IBAN) beim KAUF erlauben ("true"/"false").
+  // Bei Miete immer nur Karte (Kaution braucht Reservierung).
+  ALLOW_SEPA_PURCHASE: 'allow_sepa_purchase',
 } as const;

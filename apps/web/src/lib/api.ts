@@ -15,23 +15,88 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Verhindert parallele Refresh-Aufrufe (nur einer gleichzeitig)
+let isRefreshing = false
+let refreshQueue: Array<(token: string | null) => void> = []
+
+function onRefreshed(token: string | null) {
+  refreshQueue.forEach((cb) => cb(token))
+  refreshQueue = []
+}
+
+async function tryRefreshToken(): Promise<string | null> {
+  if (typeof window === 'undefined') return null
+  const refreshToken = localStorage.getItem('refreshToken')
+  if (!refreshToken) return null
+  try {
+    // Eigener axios-Aufruf OHNE Interceptor, damit kein 401-Kreis entsteht
+    const res = await axios.post(`${API_URL}/auth/refresh`, { refreshToken })
+    const access = res.data?.accessToken as string | undefined
+    const newRefresh = res.data?.refreshToken as string | undefined
+    if (access && newRefresh) {
+      localStorage.setItem('accessToken', access)
+      localStorage.setItem('refreshToken', newRefresh)
+      return access
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
 api.interceptors.response.use(
   (res) => res,
-  (err) => {
-    if (err.response?.status === 401 && typeof window !== 'undefined') {
-      const url = err.config?.url || ''
-      const path = window.location.pathname
-      const isCheckout = path.startsWith('/checkout')
-      const isLogin    = path.startsWith('/auth/login')
-      const isAdmin    = path.startsWith('/admin')
-      const isMerchant = path.startsWith('/merchant')
-      const is2FA      = url.includes('/auth/2fa') || url.includes('/auth/login') || url.includes('/auth/change-password')
+  async (err) => {
+    const original = err.config || {}
+    const status = err.response?.status
+    const url = original.url || ''
 
-      // Nicht ausloggen bei: 2FA, Login, Checkout, Admin, Merchant
-      if (!isCheckout && !isLogin && !is2FA && !isAdmin && !isMerchant) {
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('refreshToken')
+    // Auth-Flow-Aufrufe NICHT automatisch erneuern
+    const isAuthFlow =
+      url.includes('/auth/login') ||
+      url.includes('/auth/2fa') ||
+      url.includes('/auth/change-password') ||
+      url.includes('/auth/register') ||
+      url.includes('/auth/refresh')
+
+    if (
+      status === 401 &&
+      typeof window !== 'undefined' &&
+      !isAuthFlow &&
+      !original._retried
+    ) {
+      // Läuft schon ein Refresh? Dann anstellen und warten.
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          refreshQueue.push((token) => {
+            if (token) {
+              original._retried = true
+              original.headers = original.headers || {}
+              original.headers.Authorization = `Bearer ${token}`
+              resolve(api(original))
+            } else {
+              reject(err)
+            }
+          })
+        })
       }
+
+      original._retried = true
+      isRefreshing = true
+      const newToken = await tryRefreshToken()
+      isRefreshing = false
+      onRefreshed(newToken)
+
+      if (newToken) {
+        // Ursprünglichen Request mit neuem Token wiederholen
+        original.headers = original.headers || {}
+        original.headers.Authorization = `Bearer ${newToken}`
+        return api(original)
+      }
+
+      // Refresh fehlgeschlagen → Session beenden
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
     }
     return Promise.reject(err)
   }
@@ -45,6 +110,7 @@ export const authApi = {
   becomeMerchant: (data: any)    => api.post('/auth/become-merchant', data),
   forgotPassword: (email: string) => api.post('/auth/forgot-password', { email }),
   verifyEmail:    (token: string) => api.get(`/auth/verify-email/${token}`),
+  resendVerification: () => api.post('/auth/resend-verification'),
 }
 
 export const productsApi = {
@@ -90,6 +156,7 @@ export const paymentsApi = {
 export const commissionsApi = {
   merchantStats:  () => api.get('/commissions/merchant-stats'),
   merchantPayouts: () => api.get('/commissions/merchant-payouts'),
+  merchantHistory: () => api.get('/commissions/merchant-history'),
   adminReport:    () => api.get('/commissions/admin-report'),
 }
 
@@ -106,6 +173,21 @@ export const wishlistApi = {
 }
 
 // Feature 1: Einstellungen (Mietdauern)
+export const newsletterApi = {
+  subscribe: (email: string) => api.post('/newsletter/subscribe', { email, source: 'homepage' }),
+  adminSubscribers: () => api.get('/newsletter/admin/subscribers'),
+}
+
+export const supportApi = {
+  lookupUser: (email: string) => api.get(`/users/support/lookup/${encodeURIComponent(email)}`),
+  resendVerification: (email: string) => api.post('/users/support/resend-verification', { email }),
+  verifyManually: (email: string) => api.post('/users/support/verify-manually', { email }),
+}
+
+export const adminApi = {
+  notifications: () => api.get('/admin/notifications'),
+}
+
 export const settingsApi = {
   rentalDurations: () => api.get('/settings/rental-durations'),
   productColors: () => api.get('/settings/product-colors'),
@@ -121,6 +203,9 @@ export const settingsApi = {
     })
   },
   adminGetAll: () => api.get('/settings/admin/all'),
+  paymentMethods: () => api.get('/settings/payment-methods'),
+  adminSetPaymentMethods: (allow: boolean) =>
+    api.put('/settings/admin/payment-methods', { allow }),
   adminSetRentalDurations: (durations: number[]) =>
     api.put('/settings/admin/rental-durations', { durations }),
   adminSetProductColors: (colors: string[]) =>

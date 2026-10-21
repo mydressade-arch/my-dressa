@@ -3,6 +3,7 @@ import { useLangStore } from '@/store/lang.store'
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import { useUI } from '@/components/ui/UIProvider'
+import { Icon } from '@/components/ui/Icon'
 
 const SEV_LABEL: Record<string, string> = {
   minor:    'Leicht',
@@ -97,7 +98,7 @@ export default function AdminDamageReportsPage() {
         </div>
       ) : reports.length === 0 ? (
         <div style={{ textAlign:'center', padding:'64px 0', border:'1px solid #c4c7c7', color:'#5e5e5b' }}>
-          <span className="material-symbols-outlined" style={{ fontSize:'clamp(24px,3vw,40px)', display:'block', marginBottom:12, color:'#c4c7c7' }}>check_circle</span>
+          <Icon name="check_circle" style={{ fontSize:'clamp(24px,3vw,40px)', display:'block', marginBottom:12, color:'#c4c7c7' }} />
           Keine Schadensmeldungen vorhanden
         </div>
       ) : (
@@ -131,12 +132,12 @@ export default function AdminDamageReportsPage() {
                     <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                       <button onClick={() => openNoteModal(r.id, 'release')} disabled={processing === r.id}
                         style={{ padding:'10px 20px', background:'#27500A', color:'#fff', border:'none', fontSize:12, fontWeight:600, textTransform:'uppercase', cursor:'pointer', display:'flex', alignItems:'center', gap:6, opacity:processing===r.id?0.5:1 }}>
-                        <span className="material-symbols-outlined" style={{ fontSize:16 }}>undo</span>
+                        <Icon name="undo" style={{ fontSize:16 }} />
                         ↩ Kaution → Kunde zurück
                       </button>
                       <button onClick={() => openNoteModal(r.id, 'retain')} disabled={processing === r.id}
                         style={{ padding:'10px 20px', background:'#ba1a1a', color:'#fff', border:'none', fontSize:12, fontWeight:600, textTransform:'uppercase', cursor:'pointer', display:'flex', alignItems:'center', gap:6, opacity:processing===r.id?0.5:1 }}>
-                        <span className="material-symbols-outlined" style={{ fontSize:16 }}>money_off</span>
+                        <Icon name="money_off" style={{ fontSize:16 }} />
                         ✗ Kaution einbehalten
                       </button>
                     </div>
@@ -168,9 +169,7 @@ export default function AdminDamageReportsPage() {
                     color: r.resolution.startsWith('✓') ? '#27500A' : '#791F1F',
                     display:'flex', alignItems:'center', gap:8,
                   }}>
-                    <span className="material-symbols-outlined" style={{ fontSize:16 }}>
-                      {r.resolution?.startsWith('✓') ? 'check_circle' : r.resolution?.startsWith('↩') ? 'undo' : 'cancel'}
-                    </span>
+                    <Icon name={r.resolution?.startsWith('✓') ? 'check_circle' : r.resolution?.startsWith('↩') ? 'undo' : 'cancel'} style={{ fontSize:16 }} />
                     {r.resolution}
                   </div>
                 )}

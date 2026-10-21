@@ -47,6 +47,14 @@ export class AuthController {
     return this.authService.verifyEmail(token);
   }
 
+  @Post('resend-verification')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Bestätigungs-E-Mail erneut senden' })
+  async resendVerification(@CurrentUser() user: User) {
+    return this.authService.resendVerification(user.id);
+  }
+
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Access Token erneuern' })

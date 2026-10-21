@@ -2,6 +2,7 @@
 import { useLangStore } from '@/store/lang.store'
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
+import { Icon } from '@/components/ui/Icon'
 
 export default function AdminRevenuePage() {
   const { t } = useLangStore()
@@ -34,7 +35,7 @@ export default function AdminRevenuePage() {
         ].map(({ label, value, icon, color }) => (
           <div key={label} className="bg-white border border-outline-variant p-6">
             <div className="w-10 h-10 flex items-center justify-center mb-4" style={{ background: '#f1edec' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 20, color }}>{icon}</span>
+              <Icon name={icon} style={{ fontSize: 20, color }} />
             </div>
             <p className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-2">{label}</p>
             <p className="font-serif text-3xl font-bold">{value}</p>

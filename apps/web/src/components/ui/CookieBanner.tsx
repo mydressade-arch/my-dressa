@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useLangStore } from '@/store/lang.store'
 import Link from 'next/link'
+import { Icon } from '@/components/ui/Icon'
 
 export function CookieBanner() {
   const { t } = useLangStore()
@@ -39,9 +40,7 @@ export function CookieBanner() {
     }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
         {/* Icon */}
-        <span className="material-symbols-outlined" style={{ fontSize: 24, color: '#9E896A', flexShrink: 0 }}>
-          cookie
-        </span>
+        <Icon name="cookie" style={{ fontSize: 24, color: '#9E896A', flexShrink: 0 }} />
 
         {/* Text */}
         <p style={{ flex: 1, fontSize: 13, color: 'rgba(253,248,248,0.75)', lineHeight: 1.6, margin: 0, minWidth: 200 }}>

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
+import { Icon } from '@/components/ui/Icon'
 
 export default function AdminPayoutsPage() {
   const { t } = useLangStore()
@@ -119,7 +120,7 @@ export default function AdminPayoutsPage() {
         </div>
       ) : payouts.length === 0 ? (
         <div style={{ textAlign:'center', padding:'64px 0', border:'1px solid #c4c7c7', color:'#5e5e5b' }}>
-          <span className="material-symbols-outlined" style={{ fontSize:'clamp(24px,3vw,40px)', display:'block', marginBottom:12, color:'#c4c7c7' }}>payments</span>
+          <Icon name="payments" style={{ fontSize:'clamp(24px,3vw,40px)', display:'block', marginBottom:12, color:'#c4c7c7' }} />
           {tab === 'pending' ? 'Keine offenen Auszahlungsanfragen' : 'Keine Auszahlungen vorhanden'}
         </div>
       ) : (
@@ -153,7 +154,7 @@ export default function AdminPayoutsPage() {
                       <a href={`https://dashboard.stripe.com/test/transfers/${p.stripeTransferId}`}
                         target="_blank" rel="noopener noreferrer"
                         style={{ fontSize:11, color:'#0C447C', fontFamily:'monospace', marginTop:6, display:'flex', alignItems:'center', gap:4, textDecoration:'none' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize:13 }}>open_in_new</span>
+                        <Icon name="open_in_new" style={{ fontSize:13 }} />
                         Stripe Transfer: {p.stripeTransferId}
                       </a>
                     )}
@@ -161,7 +162,7 @@ export default function AdminPayoutsPage() {
                       <div style={{ marginTop:8 }}>
                         <p style={{ fontSize:11, color:'#9e9e9b', marginBottom:6 }}>Manuell überwiesen</p>
                         <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', color:'#9E896A', cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
-                          <span className="material-symbols-outlined" style={{ fontSize:14 }}>upload</span>
+                          <Icon name="upload" style={{ fontSize:14 }} />
                           Quittung hochladen
                           <input type="file" accept="image/*,.pdf" style={{ display:'none' }}
                             onChange={e => {

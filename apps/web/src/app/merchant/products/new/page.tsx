@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { productsApi, api , settingsApi } from '@/lib/api'
 import { useUI } from '@/components/ui/UIProvider'
+import { Icon } from '@/components/ui/Icon'
 
 const DEFAULT_CATEGORIES = ['Abendmode','Casual','Vintage','Accessoires','Anzüge','Kleider','Schuhe']
 
@@ -41,7 +42,7 @@ export default function NewProductPage() {
   }, [])
   const [form, setForm] = useState({
     title: '', description: '', category: '',
-    salePrice: '', rentalPrice: '', shippingCost: '4.99', depositAmount: '', penaltyAmount: '', rentalDurationDays: 10,
+    salePrice: '', rentalPrice: '', shippingCost: '4.99', depositAmount: '', penaltyAmount: '', rentalDurationDays: '',
     isForSale: false, isForRent: false,
   })
 
@@ -69,6 +70,7 @@ export default function NewProductPage() {
     if (!form.title.trim()) return
     if (!form.isForSale && !form.isForRent) { toast('Bitte Verkauf oder Miete wählen', 'error'); return }
     if (form.isForRent && !form.depositAmount) { toast('Kaution für Miete erforderlich', 'error'); return }
+    if (form.isForRent && !(Number(form.rentalDurationDays) > 0)) { toast('Bitte Mietdauer (Tage) eingeben', 'error'); return }
     if (!variants.some(v => v.size && v.color)) { toast('Mindestens eine Variante mit Größe UND Farbe erforderlich', 'error'); return }
     setSaving(true)
     try {
@@ -82,7 +84,7 @@ export default function NewProductPage() {
         shippingCost:  parseFloat(form.shippingCost || '0'),
         depositAmount: form.isForRent ? parseFloat(form.depositAmount) : undefined,
         penaltyAmount: form.isForRent && form.penaltyAmount ? parseFloat(form.penaltyAmount) : undefined,
-        rentalDurationDays: form.isForRent ? Number(form.rentalDurationDays) : undefined,
+        rentalDurationDays: form.isForRent && Number(form.rentalDurationDays) > 0 ? Number(form.rentalDurationDays) : undefined,
         isForSale:     form.isForSale,
         isForRent:     form.isForRent,
         variants:      variants.filter(v => v.size && v.color),
@@ -109,7 +111,7 @@ export default function NewProductPage() {
       <div style={{ display:'flex', alignItems:'center', gap:16, marginBottom:28 }}>
         <button onClick={() => router.push('/merchant/products')}
           style={{ background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', gap:4, color:'#5e5e5b', fontSize:13 }}>
-          <span className="material-symbols-outlined" style={{ fontSize:16 }}>arrow_back</span>
+          <Icon name="arrow_back" style={{ fontSize:16 }} />
           Zurück
         </button>
         <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:26, fontWeight:700 }}>
@@ -170,7 +172,7 @@ export default function NewProductPage() {
             )}
             {form.isForRent && (
               <div>
-                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Mietpreis pro Tag (€) *</label>
+                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Mietpreis (fester Preis pro Miete) (€) *</label>
                 <input type="number" step="0.01" min="0" value={form.rentalPrice} onChange={up('rentalPrice')} placeholder="0.00"
                   style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }} />
               </div>
@@ -189,18 +191,11 @@ export default function NewProductPage() {
             )}
             {form.isForRent && (
               <div>
-                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#0C447C', display:'block', marginBottom:6 }}>Strafgebühr bei Nichtrückgabe (€)</label>
-                <input type="number" step="0.01" min="0" value={form.penaltyAmount} onChange={up('penaltyAmount')} placeholder="z.B. 80.00"
-                  style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }} />
-              </div>
-            )}
-            {form.isForRent && (
-              <div>
-                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#0C447C', display:'block', marginBottom:6 }}>Mietdauer</label>
-                <select value={form.rentalDurationDays} onChange={e => setForm(f => ({...f, rentalDurationDays: Number(e.target.value)}))}
-                  style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const, background:'#fff' }}>
-                  {durations.map(d => <option key={d} value={d}>{d} Tage</option>)}
-                </select>
+                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#0C447C', display:'block', marginBottom:6 }}>Mietdauer (Tage)</label>
+                <input type="number" min="1" step="1" value={form.rentalDurationDays}
+                  onChange={e => setForm(f => ({...f, rentalDurationDays: e.target.value}))}
+                  placeholder="z.B. 6"
+                  style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const, background:'#fff' }} />
               </div>
             )}
 
@@ -258,7 +253,7 @@ export default function NewProductPage() {
             ))}
             <button type="button" onClick={() => fileRef.current?.click()}
               style={{ width:100, height:120, border:'2px dashed #c4c7c7', background:'#fdf8f8', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4, color:'#9e9e9b' }}>
-              <span className="material-symbols-outlined" style={{ fontSize:28 }}>add_photo_alternate</span>
+              <Icon name="add_photo_alternate" style={{ fontSize:28 }} />
               <span style={{ fontSize:11 }}>Hinzufügen</span>
             </button>
           </div>

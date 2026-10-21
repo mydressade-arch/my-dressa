@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Icon } from '@/components/ui/Icon'
 
 export default function AboutPage() {
   return (
@@ -51,7 +52,7 @@ export default function AboutPage() {
               { icon:'security', title:'Trust & Safety', desc:'DSGVO-compliant, secure payments via Stripe, and transparent policies. Your data and money are always protected.' },
             ].map(({icon,title,desc})=>(
               <div key={title} style={{ background:'#fff', padding:28 }}>
-                <span className="material-symbols-outlined" style={{ fontSize:32, color:'#9E896A', display:'block', marginBottom:16 }}>{icon}</span>
+                <Icon name={icon} style={{ fontSize:32, color:'#9E896A', display:'block', marginBottom:16 }} />
                 <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:20, fontWeight:600, marginBottom:12 }}>{title}</h3>
                 <p style={{ fontSize:14, color:'#5e5e5b', lineHeight:1.7 }}>{desc}</p>
               </div>

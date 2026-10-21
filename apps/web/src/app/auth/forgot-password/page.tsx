@@ -3,6 +3,7 @@ import { useLangStore } from '@/store/lang.store'
 import { useState } from 'react'
 import Link from 'next/link'
 import { authApi } from '@/lib/api'
+import { Icon } from '@/components/ui/Icon'
 
 export default function ForgotPasswordPage() {
   const { t } = useLangStore()
@@ -31,7 +32,7 @@ export default function ForgotPasswordPage() {
         <div style={{ background: '#fff', border: '1px solid #c4c7c7', padding: 32 }}>
           {sent ? (
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <span className="material-symbols-outlined" style={{ fontSize:'clamp(24px,3vw,40px)', color: '#9E896A', display: 'block', marginBottom: 16 }}>mail</span>
+              <Icon name="mail" style={{ fontSize:'clamp(24px,3vw,40px)', color: '#9E896A', display: 'block', marginBottom: 16 }} />
               <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, marginBottom: 8 }}>Check your inbox</h3>
               <p style={{ fontSize: 14, color: '#5e5e5b', lineHeight: 1.6 }}>
                 If the email exists, a reset link was sent. Check your spam folder too.

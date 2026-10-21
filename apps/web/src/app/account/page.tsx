@@ -7,6 +7,9 @@ import { useUI } from '@/components/ui/UIProvider'
 import { useLangStore } from '@/store/lang.store'
 import { useAuthStore } from '@/store/auth.store'
 import { api } from '@/lib/api'
+import { Icon } from '@/components/ui/Icon'
+import { VerificationBanner } from '@/components/auth/VerificationBanner'
+import { PasswordInput } from '@/components/ui/PasswordInput'
 
 const TABS = ['My Orders','My Rentals','Profile']
 const PH = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='80'%3E%3Crect fill='%23f1edec' width='64' height='80'/%3E%3C/svg%3E"
@@ -40,13 +43,25 @@ function AccountPageInner() {
   const [confirmingReturn, setConfirmingReturn] = useState<string|null>(null)
   const [confirmedReturns, setConfirmedReturns] = useState<Record<string, boolean>>({})
 
-  const confirmReturnAsCustomer = async (rentalId: string) => {
+  // Rücksendung in EINEM Schritt melden: optionale Tracking-Nr. setzen (falls
+  // eingegeben) und die Rücksendung bestätigen. Der Händler entscheidet beim
+  // Empfang über den Zustand (gut → Kaution frei, Schaden → einziehen).
+  const reportReturn = async (rentalId: string) => {
     setConfirmingReturn(rentalId)
     try {
+      const tracking = returnTracking[rentalId]?.trim()
+      if (tracking) {
+        await api.patch(`/rentals/${rentalId}/set-return-tracking`, { trackingNumber: tracking })
+      }
       await rentalsApi.confirmReturnCustomer(rentalId)
       setConfirmedReturns(cr => ({ ...cr, [rentalId]: true }))
-    } catch {
-      alert('Bestätigung fehlgeschlagen')
+      setRentals(rs => rs.map(r => r.id === rentalId
+        ? { ...r, customerConfirmedReturn: true, returnTrackingNumber: tracking || r.returnTrackingNumber }
+        : r))
+      toast(t('Rücksendung gemeldet ✓ — der Händler wird benachrichtigt',
+              'Return reported ✓ — the merchant has been notified'), 'success')
+    } catch (e:any) {
+      toast(e.response?.data?.message || t('Rücksendung konnte nicht gemeldet werden','Could not report return'), 'error')
     } finally { setConfirmingReturn(null) }
   }
 
@@ -63,19 +78,6 @@ function AccountPageInner() {
   const [pwForm, setPwForm]             = useState({ oldPassword:'', newPassword:'', confirm:'', twoFaCode:'' })
   const [pwSaving, setPwSaving]         = useState(false)
   useEffect(() => { setTwoFaEnabled((user as any)?.twoFaEnabled || false) }, [user])
-
-  const submitReturnTracking = async (rentalId: string, orderId: string) => {
-    const tracking = returnTracking[rentalId]
-    if (!tracking?.trim()) return
-    setSubmittingReturn(rentalId)
-    try {
-      await api.patch(`/rentals/${rentalId}/set-return-tracking`, { trackingNumber: tracking.trim() })
-      toast('Rücksendung bestätigt ✓', 'success')
-      setRentals(rs => rs.map(r => r.id === rentalId ? {...r, returnTrackingNumber: tracking.trim()} : r))
-    } catch(e:any) {
-      toast(e.response?.data?.message || 'Fehler', 'error')
-    } finally { setSubmittingReturn(null) }
-  }
 
   useEffect(() => {
     if (!hydrated) return  // Noch nicht hydratiert
@@ -144,6 +146,9 @@ function AccountPageInner() {
 
   return (
     <div style={{ maxWidth:1440, margin:'0 auto', width:'100%', padding:'clamp(20px,2vw,40px) clamp(16px,4vw,64px)' }}>
+      <div style={{ marginBottom: 20 }}>
+        <VerificationBanner />
+      </div>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:32 }}>
         <div>
           <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:32, fontWeight:700, marginBottom:4 }}>{t("Mein Konto", "My Account")}</h1>
@@ -176,7 +181,7 @@ function AccountPageInner() {
             <div>
               {orders.length === 0 ? (
                 <div style={{ textAlign:'center', padding:'64px 0', border:'1px solid #c4c7c7' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize:'clamp(24px,3vw,40px)', color:'#c4c7c7', display:'block', marginBottom:12 }}>shopping_bag</span>
+                  <Icon name="shopping_bag" style={{ fontSize:'clamp(24px,3vw,40px)', color:'#c4c7c7', display:'block', marginBottom:12 }} />
                   <p style={{ color:'#5e5e5b', marginBottom:20 }}>No orders yet</p>
                   <Link href="/products" style={{ background:'#1c1b1b', color:'#fff', padding:'12px 24px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textDecoration:'none' }}>
                     Start Shopping
@@ -206,14 +211,14 @@ function AccountPageInner() {
                           <a href={`https://www.dhl.de/de/privatkunden/pakete-empfangen/verfolgen.html?piececode=${o.trackingNumber}`}
                             target="_blank" rel="noopener noreferrer"
                             style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', padding:'7px 12px', background:'#E6F1FB', color:'#0C447C', textDecoration:'none', display:'inline-flex', alignItems:'center', gap:5 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize:14 }}>local_shipping</span>
+                            <Icon name="local_shipping" style={{ fontSize:14 }} />
                             DHL {o.trackingNumber}
                           </a>
                         )}
                         {/* Status Info */}
                         {o.status === 'shipped' && (
                           <div style={{ fontSize:11, color:'#0C447C', background:'#E6F1FB', padding:'6px 12px', display:'flex', alignItems:'center', gap:5 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize:14 }}>local_shipping</span>
+                            <Icon name="local_shipping" style={{ fontSize:14 }} />
                             Paket ist unterwegs
                           </div>
                         )}
@@ -227,25 +232,25 @@ function AccountPageInner() {
                               toast('Rückgabe beantragt — Händler wird benachrichtigt', 'info')
                             } catch(e:any) { toast(e.response?.data?.message||'Fehler', 'error') }
                           }} style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', padding:'6px 12px', background:'#FAEEDA', color:'#633806', border:'1px solid #f8dfbb', cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize:14 }}>undo</span>
+                            <Icon name="undo" style={{ fontSize:14 }} />
                             Rückgabe beantragen
                           </button>
                         )}
                         {o.returnRequested && !o.returnApproved && (
                           <div style={{ fontSize:11, color:'#633806', background:'#FAEEDA', padding:'6px 12px', display:'flex', alignItems:'center', gap:4 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize:14 }}>schedule</span>
+                            <Icon name="schedule" style={{ fontSize:14 }} />
                             Rückgabe ausstehend
                           </div>
                         )}
                         {o.status === 'returned' && (
                           <div style={{ fontSize:11, color:'#27500A', background:'#EAF3DE', padding:'6px 12px', display:'flex', alignItems:'center', gap:4 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize:14 }}>payments</span>
+                            <Icon name="payments" style={{ fontSize:14 }} />
                             {t('Erstattet ✓', 'Refunded ✓')}
                           </div>
                         )}
                         {o.status === 'delivered' && !o.returnRequested && (
                           <div style={{ fontSize:11, color:'#27500A', background:'#EAF3DE', padding:'6px 12px', display:'flex', alignItems:'center', gap:5 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize:14 }}>check_circle</span>
+                            <Icon name="check_circle" style={{ fontSize:14 }} />
                             Geliefert ✓
                           </div>
                         )}
@@ -282,7 +287,7 @@ function AccountPageInner() {
             <div>
               {rentals.length === 0 ? (
                 <div style={{ textAlign:'center', padding:'64px 0', border:'1px solid #c4c7c7' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize:'clamp(24px,3vw,40px)', color:'#c4c7c7', display:'block', marginBottom:12 }}>calendar_month</span>
+                  <Icon name="calendar_month" style={{ fontSize:'clamp(24px,3vw,40px)', color:'#c4c7c7', display:'block', marginBottom:12 }} />
                   <p style={{ color:'#5e5e5b', marginBottom:20 }}>No active rentals</p>
                   <Link href="/products?forRent=true" style={{ background:'#9E896A', color:'#fff', padding:'12px 24px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textDecoration:'none' }}>
                     Browse Rentals
@@ -297,16 +302,30 @@ function AccountPageInner() {
                           {r.order?.productVariant?.product?.title || 'Product'}
                         </p>
                         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-                          <span className="material-symbols-outlined" style={{ fontSize:16, color:'#9E896A' }}>calendar_month</span>
+                          <Icon name="calendar_month" style={{ fontSize:16, color:'#9E896A' }} />
                           <span style={{ fontSize:13, color:'#5e5e5b' }}>{r.startDate} → {r.endDate} ({r.durationDays} days)</span>
                         </div>
                         {badge(r.status)}
                       </div>
                       <div style={{ textAlign:'right' }}>
-                        <p style={{ fontSize:13, fontWeight:600, marginBottom:4 }}>Deposit: €{Number(r.depositAmount || 50).toFixed(2)}</p>
-                        <p style={{ fontSize:12, color: r.status==='returned'?'#27500A':'#5e5e5b', marginBottom:8 }}>
-                          {r.status==='returned' ? t('✓ Freigegeben', '✓ Released') : t('Reserviert auf Karte', 'Held on card')}
-                        </p>
+                        <p style={{ fontSize:13, fontWeight:600, marginBottom:4 }}>{t('Kaution','Deposit')}: €{Number(r.depositAmount || 50).toFixed(2)}</p>
+                        {/* Kautions-Status klar für den Kunden:
+                            freigegeben / einbehalten / reserviert (nicht abgebucht) */}
+                        {(r.depositStatus === 'released' || (r.status === 'returned' && r.returnCondition === 'good')) ? (
+                          <p style={{ fontSize:12, color:'#27500A', marginBottom:8 }}>
+                            ✓ {t('Freigegeben — nichts abgebucht','Released — nothing charged')}
+                          </p>
+                        ) : (r.depositStatus === 'retained' || r.depositStatus === 'partially_retained') ? (
+                          <p style={{ fontSize:12, color:'#791F1F', marginBottom:8 }}>
+                            {t('Einbehalten','Retained')}: €{Number(r.depositRetained || 0).toFixed(2)}
+                            {Number(r.depositRetained || 0) < Number(r.depositAmount || 0) &&
+                              ` · ${t('Rest freigegeben','rest released')}`}
+                          </p>
+                        ) : (
+                          <p style={{ fontSize:12, color:'#5e5e5b', marginBottom:8 }}>
+                            🔒 {t('Auf deiner Karte reserviert — nicht abgebucht','Held on your card — not charged')}
+                          </p>
+                        )}
                         {/* Order Status Badge */}
                         {r.order?.status === 'delivered' && r.status !== 'returned' && (
                           <div style={{ fontSize:11, color:'#27500A', background:'#EAF3DE', padding:'4px 8px', marginBottom:8, display:'inline-block' }}>
@@ -314,47 +333,43 @@ function AccountPageInner() {
                           </div>
                         )}
 
-                        {/* Rücksendung bestätigen wenn aktiv */}
-                        {(r.order?.status === 'delivered' || r.status === 'delivered') && !r.returnTrackingNumber && (
+                        {/* Rücksendung melden — EIN Schritt, nur NACH Lieferung.
+                            Tracking-Nr. optional. Vorher (nur bezahlt/aktiv, noch
+                            nicht geliefert) gibt es nichts zurückzusenden. */}
+                        {(r.order?.status === 'delivered' || r.status === 'delivered') &&
+                          r.status !== 'returned' &&
+                          !r.customerConfirmedReturn && !confirmedReturns[r.id] && (
                           <div style={{ marginTop:8 }}>
-                            <p style={{ fontSize:11, color:'#5e5e5b', marginBottom:4, textAlign:'left' }}>DHL Rücksende-Nr.:</p>
-                            <div style={{ display:'flex', gap:6 }}>
-                              <input
-                                value={returnTracking[r.id]||''}
-                                onChange={e => setReturnTracking(rt => ({...rt, [r.id]: e.target.value}))}
-                                placeholder="Tracking Nr."
-                                style={{ padding:'6px 10px', fontSize:12, border:'1px solid #c4c7c7', outline:'none', width:130, fontFamily:'monospace' }}
-                              />
-                              <button
-                                onClick={() => submitReturnTracking(r.id, r.order?.id || r.orderId)}
-                                disabled={!returnTracking[r.id]?.trim() || submittingReturn===r.id}
-                                style={{ padding:'6px 10px', fontSize:11, fontWeight:600, background:'#9E896A', color:'#fff', border:'none', cursor:'pointer', opacity:(!returnTracking[r.id]?.trim()||submittingReturn===r.id)?0.5:1 }}>
-                                {submittingReturn===r.id ? '...' : 'Absenden'}
-                              </button>
-                            </div>
+                            <p style={{ fontSize:11, color:'#5e5e5b', marginBottom:4, textAlign:'left' }}>
+                              {t('DHL-Sendungsnr. (optional)','Tracking no. (optional)')}
+                            </p>
+                            <input
+                              value={returnTracking[r.id]||''}
+                              onChange={e => setReturnTracking(rt => ({...rt, [r.id]: e.target.value}))}
+                              placeholder={t('z. B. 00340434…','e.g. 00340434…')}
+                              style={{ padding:'6px 10px', fontSize:12, border:'1px solid #c4c7c7', outline:'none', width:'100%', boxSizing:'border-box', fontFamily:'monospace', marginBottom:8 }}
+                            />
+                            <button
+                              onClick={() => reportReturn(r.id)}
+                              disabled={confirmingReturn===r.id}
+                              style={{ padding:'8px 14px', fontSize:12, fontWeight:600, background:'#9E896A', color:'#fff', border:'none', cursor:'pointer', display:'block', width:'100%', opacity: confirmingReturn===r.id?0.5:1 }}>
+                              {confirmingReturn===r.id ? '...' : t('Rücksendung melden','Report my return')}
+                            </button>
                           </div>
                         )}
-                        {r.returnTrackingNumber && (
-                          <a href={`https://www.dhl.de/de/privatkunden/pakete-empfangen/verfolgen.html?piececode=${r.returnTrackingNumber}`}
-                            target="_blank" rel="noopener noreferrer"
-                            style={{ fontSize:11, color:'#0C447C', fontFamily:'monospace', display:'block', marginTop:6 }}>
-                            ↩ {r.returnTrackingNumber}
-                          </a>
-                        )}
-                        {/* Feature 6: Kunde bestätigt Rücksendung */}
-                        {['active','pending_return','overdue','delivered'].includes(r.status) &&
-                          !r.customerConfirmedReturn && !confirmedReturns[r.id] && (
-                          <button
-                            onClick={() => confirmReturnAsCustomer(r.id)}
-                            disabled={confirmingReturn===r.id}
-                            style={{ marginTop:10, padding:'8px 14px', fontSize:12, fontWeight:600, background:'#fff', color:'#1c1b1b', border:'1px solid #9E896A', cursor:'pointer', display:'block', width:'100%' }}>
-                            {confirmingReturn===r.id ? '...' : t('Rücksendung bestätigen','Confirm I sent it back')}
-                          </button>
-                        )}
                         {(r.customerConfirmedReturn || confirmedReturns[r.id]) && r.status !== 'returned' && (
-                          <p style={{ marginTop:8, fontSize:11, color:'#27500A' }}>
-                            ✓ {t('Rücksendung bestätigt — warte auf Händler','Return confirmed — waiting for merchant')}
-                          </p>
+                          <div style={{ marginTop:8 }}>
+                            <p style={{ fontSize:11, color:'#27500A' }}>
+                              ✓ {t('Rücksendung gemeldet — warte auf Händler','Return reported — waiting for merchant')}
+                            </p>
+                            {r.returnTrackingNumber && (
+                              <a href={`https://www.dhl.de/de/privatkunden/pakete-empfangen/verfolgen.html?piececode=${r.returnTrackingNumber}`}
+                                target="_blank" rel="noopener noreferrer"
+                                style={{ fontSize:11, color:'#0C447C', fontFamily:'monospace', display:'block', marginTop:6 }}>
+                                ↩ {r.returnTrackingNumber}
+                              </a>
+                            )}
+                          </div>
                         )}
                         {/* Feature 5: Miete verlängern */}
                         {['active','overdue'].includes(r.status) &&
@@ -434,13 +449,13 @@ function AccountPageInner() {
                   {twoFaEnabled ? 'Mit aktivem 2FA: aktuelles Passwort + Authenticator-Code erforderlich' : 'Aktuelles Passwort eingeben, dann neues setzen'}
                 </p>
                 <div style={{ display:'flex', flexDirection:'column', gap:12, maxWidth:360 }}>
-                  <input type="password" value={pwForm.oldPassword} onChange={e=>setPwForm(f=>({...f, oldPassword:e.target.value}))}
+                  <PasswordInput value={pwForm.oldPassword} onChange={e=>setPwForm(f=>({...f, oldPassword:e.target.value}))}
                     placeholder="Aktuelles Passwort"
                     style={{ padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none' }} />
-                  <input type="password" value={pwForm.newPassword} onChange={e=>setPwForm(f=>({...f, newPassword:e.target.value}))}
+                  <PasswordInput value={pwForm.newPassword} onChange={e=>setPwForm(f=>({...f, newPassword:e.target.value}))}
                     placeholder="Neues Passwort (min. 8 Zeichen)"
                     style={{ padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none' }} />
-                  <input type="password" value={pwForm.confirm} onChange={e=>setPwForm(f=>({...f, confirm:e.target.value}))}
+                  <PasswordInput value={pwForm.confirm} onChange={e=>setPwForm(f=>({...f, confirm:e.target.value}))}
                     placeholder="Neues Passwort bestätigen"
                     style={{ padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none' }} />
                   {twoFaEnabled && (
@@ -498,7 +513,7 @@ function AccountPageInner() {
                 {merchantStatus === 'active' ? (
                   <div>
                     <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 0', marginBottom:16 }}>
-                      <span className="material-symbols-outlined" style={{ fontSize:24, color:'#27500A' }}>verified</span>
+                      <Icon name="verified" style={{ fontSize:24, color:'#27500A' }} />
                       <div>
                         <p style={{ fontSize:14, fontWeight:600, color:'#27500A' }}>Active Merchant</p>
                         <p style={{ fontSize:12, color:'#5e5e5b' }}>Your shop is live on My Dressa</p>
@@ -512,7 +527,7 @@ function AccountPageInner() {
                 ) : merchantStatus === 'pending' ? (
                   <div style={{ background:'#FAEEDA', padding:20, border:'1px solid #f8dfbb' }}>
                     <div style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize:24, color:'#633806', flexShrink:0 }}>hourglass_empty</span>
+                      <Icon name="hourglass_empty" style={{ fontSize:24, color:'#633806', flexShrink:0 }} />
                       <div>
                         <p style={{ fontSize:14, fontWeight:600, color:'#633806', marginBottom:4 }}>Application Pending</p>
                         <p style={{ fontSize:13, color:'#633806', lineHeight:1.6 }}>
@@ -525,7 +540,7 @@ function AccountPageInner() {
                   <div>
                     <div style={{ background:'#FCEBEB', padding:20, border:'1px solid #f5c2c2', marginBottom:16 }}>
                       <div style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize:24, color:'#791F1F', flexShrink:0 }}>cancel</span>
+                        <Icon name="cancel" style={{ fontSize:24, color:'#791F1F', flexShrink:0 }} />
                         <div>
                           <p style={{ fontSize:14, fontWeight:600, color:'#791F1F', marginBottom:4 }}>Application Declined</p>
                           <p style={{ fontSize:13, color:'#791F1F', lineHeight:1.6 }}>
@@ -570,7 +585,7 @@ function AccountPageInner() {
                     <div style={{ display:'flex', gap:20, marginBottom:20 }}>
                       {[['checkroom','List pieces'],['payments','Earn revenue'],['star','10% fee']].map(([icon,label])=>(
                         <div key={icon} style={{ textAlign:'center' }}>
-                          <span className="material-symbols-outlined" style={{ fontSize:24, color:'#9E896A', display:'block', marginBottom:4 }}>{icon}</span>
+                          <Icon name={icon} style={{ fontSize:24, color:'#9E896A', display:'block', marginBottom:4 }} />
                           <p style={{ fontSize:12, color:'#5e5e5b' }}>{label}</p>
                         </div>
                       ))}

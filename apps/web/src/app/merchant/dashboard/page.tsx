@@ -6,12 +6,13 @@ import { productsApi, ordersApi, api } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { Icon } from '@/components/ui/Icon'
 
 function StatCard({ icon, label, value, sub }: any) {
   return (
     <div className="bg-white border border-outline-variant p-6">
       <div className="w-10 h-10 flex items-center justify-center mb-4" style={{background:'#f1edec'}}>
-        <span className="material-symbols-outlined" style={{fontSize:20,color:'#9E896A'}}>{icon}</span>
+        <Icon name={icon} style={{fontSize:20,color:'#9E896A'}} />
       </div>
       <p className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-2">{label}</p>
       <p className="font-serif text-3xl font-bold mb-1">{value}</p>
@@ -59,7 +60,7 @@ export default function MerchantDashboardPage() {
       {stripeConnected === false && (
         <div style={{ background:'#FAEEDA', border:'1px solid #f8dfbb', padding:'14px 20px', marginBottom:24, display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
           <div style={{ display:'flex', gap:10, alignItems:'center' }}>
-            <span className="material-symbols-outlined" style={{ fontSize:20, color:'#633806', flexShrink:0 }}>warning</span>
+            <Icon name="warning" style={{ fontSize:20, color:'#633806', flexShrink:0 }} />
             <p style={{ fontSize:13, color:'#633806' }}>
               <strong>Stripe nicht verbunden</strong> — Kunden können deine Produkte noch nicht kaufen oder mieten.
             </p>

@@ -1,3 +1,5 @@
+import { Icon } from '@/components/ui/Icon'
+
 export default function RentalPolicyPage() {
   return (
     <div style={{ maxWidth:860, margin:'0 auto', width:'100%', padding:'clamp(32px,4vw,64px) clamp(16px,4vw,40px)' }}>
@@ -15,7 +17,7 @@ export default function RentalPolicyPage() {
       ].map(({icon,title,desc})=>(
         <div key={title} style={{ display:'flex', gap:20, padding:'24px 0', borderBottom:'1px solid #f1edec' }}>
           <div style={{ width:48, height:48, background:'#f1edec', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-            <span className="material-symbols-outlined" style={{ fontSize:24, color:'#9E896A' }}>{icon}</span>
+            <Icon name={icon} style={{ fontSize:24, color:'#9E896A' }} />
           </div>
           <div>
             <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600, marginBottom:6 }}>{title}</h3>

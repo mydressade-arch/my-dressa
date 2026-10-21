@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useLangStore } from '@/store/lang.store'
+import { Icon } from '@/components/ui/Icon'
 
 /**
  * "So funktioniert's" — als Kreislauf, nicht als nummerierte Liste.
@@ -113,9 +114,7 @@ export function RentalCycle() {
                 background: '#1c1b1b',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#9E896A' }}>
-                  {s.icon}
-                </span>
+                <Icon name={s.icon} style={{ fontSize: 20, color: '#9E896A' }} />
               </div>
               <p style={{
                 fontFamily: "'Playfair Display', serif",
@@ -146,9 +145,7 @@ export function RentalCycle() {
                 background: '#1c1b1b',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#9E896A' }}>
-                  {s.icon}
-                </span>
+                <Icon name={s.icon} style={{ fontSize: 20, color: '#9E896A' }} />
               </div>
               <div style={{ minWidth: 0, paddingTop: 2 }}>
                 <p style={{
@@ -167,9 +164,7 @@ export function RentalCycle() {
           {/* Der Kreis schließt sich */}
           <div style={{ display: 'flex', gap: 16, alignItems: 'center', paddingTop: 4 }}>
             <div style={{ width: 44, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#9E896A' }}>
-                sync
-              </span>
+              <Icon name="sync" style={{ fontSize: 20, color: '#9E896A' }} />
             </div>
             <p style={{ fontSize: 12, color: '#9e9e9b', margin: 0, fontStyle: 'italic' }}>
               {mounted

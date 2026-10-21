@@ -4,6 +4,8 @@ import { useLangStore } from '@/store/lang.store'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
+import { Icon } from '@/components/ui/Icon'
+import { PasswordInput } from '@/components/ui/PasswordInput'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -36,7 +38,7 @@ export default function LoginPage() {
     <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#fdf8f8' }}>
       <div style={{ textAlign:'center', padding:40 }}>
         <div style={{ width:56, height:56, borderRadius:'50%', background:'#EAF3DE', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}>
-          <span className="material-symbols-outlined" style={{ fontSize:28, color:'#27500A' }}>check_circle</span>
+          <Icon name="check_circle" style={{ fontSize:28, color:'#27500A' }} />
         </div>
         <p style={{ fontFamily:"'Playfair Display', serif", fontSize:20, fontWeight:600, marginBottom:8 }}>
           {t('Du bist bereits angemeldet', 'You are already signed in')}
@@ -106,8 +108,8 @@ export default function LoginPage() {
               <label style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5e5e5b', display: 'block', marginBottom: 6 }}>
                 Password
               </label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required
-                style={{ width: '100%', padding: '12px 14px', fontSize: 14, border: '1px solid #c4c7c7', outline: 'none', background: '#fdf8f8', boxSizing: 'border-box' as const }} />
+              <PasswordInput value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required
+                style={{ padding: '12px 14px', fontSize: 14, border: '1px solid #c4c7c7', outline: 'none', background: '#fdf8f8' }} />
             </div>
 
             {error && !requires2FA && (

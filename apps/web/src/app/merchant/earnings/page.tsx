@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { commissionsApi, api } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
+import { useAuthStore } from '@/store/auth.store'
+import { Icon } from '@/components/ui/Icon'
 
 const STATUS_STYLE: Record<string, {bg:string,color:string}> = {
   pending:    { bg:'#FAEEDA', color:'#633806' },
@@ -13,6 +15,7 @@ const STATUS_STYLE: Record<string, {bg:string,color:string}> = {
 
 export default function MerchantEarningsPage() {
   const { t } = useLangStore()
+  const { user } = useAuthStore()
   const [stats, setStats]     = useState<any>(null)
   const [payouts, setPayouts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -22,16 +25,22 @@ export default function MerchantEarningsPage() {
   const [msg, setMsg]         = useState('')
   const [transfers, setTransfers] = useState<any[]>([])
   const [msgType, setMsgType] = useState<'ok'|'err'>('ok')
+  const [history, setHistory] = useState<any[]>([])
+  const [stripeStatus, setStripeStatus] = useState<any>(null)
 
   const load = () => {
     Promise.all([
       commissionsApi.merchantStats(),
       commissionsApi.merchantPayouts(),
       api.get('/payments/merchant/transfers').catch(() => ({ data: [] })),
-    ]).then(([s, p, tr]: any) => {
+      commissionsApi.merchantHistory().catch(() => ({ data: [] })),
+      api.get('/payments/merchant/stripe-status').catch(() => ({ data: null })),
+    ]).then(([s, p, tr, h, ss]: any) => {
       setStats(s.data)
       setPayouts(p.data || [])
       setTransfers(tr.data || [])
+      setHistory(h.data || [])
+      setStripeStatus(ss.data || null)
     }).catch(() => {}).finally(() => setLoading(false))
   }
 
@@ -65,7 +74,123 @@ export default function MerchantEarningsPage() {
     )
   }
 
+  // ── Export-Helfer ──────────────────────────────────────────────────────────
+  const fmtEur  = (n: number) => Number(n || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const fmtDate = (d: any) => new Date(d).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' })
+  const artLabel    = (type: string) => type === 'rental' ? 'Miete' : 'Kauf'
+  const statusLabel = (s: string) => s === 'paid' ? 'Ausgezahlt' : 'Ausstehend'
+  const merchantName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Händler'
+  const escapeHtml = (s: any) => String(s ?? '').replace(/[&<>"]/g, c => (({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'} as any)[c]))
+
+  const sumBy = (arr: any[], key: string, filterFn?: (h:any)=>boolean) =>
+    arr.filter(h => filterFn ? filterFn(h) : true).reduce((a, h) => a + Number(h[key] || 0), 0)
+
+  // CSV-Export — Excel-kompatibel (Semikolon-Trenner + UTF-8 BOM + dt. Zahlen)
+  const exportCSV = () => {
+    const esc = (v: any) => {
+      const s = String(v ?? '')
+      return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+    }
+    const header = ['Datum','Artikel','Größe','Art','Brutto (EUR)','Gebühr (EUR)','Dein Netto (EUR)','Status']
+    const lines = history.map(h => [
+      fmtDate(h.date), h.productTitle, h.size || '', artLabel(h.type),
+      fmtEur(h.gross), fmtEur(h.fee), fmtEur(h.net), statusLabel(h.status),
+    ].map(esc).join(';'))
+    const sumLine = ['','','','SUMME', fmtEur(sumBy(history,'gross')), fmtEur(sumBy(history,'fee')), fmtEur(sumBy(history,'net')), ''].map(esc).join(';')
+    const csv = '﻿' + [header.join(';'), ...lines, '', sumLine].join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `MyDressa_Einnahmen_${new Date().toISOString().slice(0,10)}.csv`
+    document.body.appendChild(a); a.click(); a.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  // PDF-Export — gestyltes Abrechnungs-Template, Druck-Dialog → "Als PDF speichern"
+  const exportPDF = () => {
+    const totGross = sumBy(history,'gross'), totFee = sumBy(history,'fee'), totNet = sumBy(history,'net')
+    const paidNet  = sumBy(history,'net', h => h.status==='paid')
+    const pendNet  = sumBy(history,'net', h => h.status!=='paid')
+    const rowsHtml = history.map(h => `
+      <tr>
+        <td>${fmtDate(h.date)}</td>
+        <td class="item">${escapeHtml(h.productTitle)}${h.size ? ` · ${escapeHtml(h.size)}` : ''}</td>
+        <td><span class="tag ${h.type==='rental'?'rent':'sale'}">${artLabel(h.type)}</span></td>
+        <td class="num">€${fmtEur(h.gross)}</td>
+        <td class="num fee">−€${fmtEur(h.fee)}</td>
+        <td class="num net">+€${fmtEur(h.net)}</td>
+        <td><span class="st ${h.status==='paid'?'paid':'pend'}">${statusLabel(h.status)}</span></td>
+      </tr>`).join('')
+    const today = new Date().toLocaleDateString('de-DE', { day:'2-digit', month:'long', year:'numeric' })
+    const html = `<!doctype html><html lang="de"><head><meta charset="utf-8">
+<title>My Dressa — Einnahmen-Abrechnung</title>
+<style>
+* { box-sizing:border-box; }
+body { font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif; color:#1c1b1b; margin:0; padding:40px; }
+.head { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #1c1b1b; padding-bottom:20px; margin-bottom:24px; }
+.brand { font-family:Georgia,'Times New Roman',serif; font-size:26px; font-weight:700; }
+.brand small { display:block; font-size:10px; font-weight:400; letter-spacing:0.25em; text-transform:uppercase; color:#9E896A; margin-top:3px; }
+.doc { text-align:right; font-size:12px; color:#5e5e5b; line-height:1.7; }
+.doc b { color:#1c1b1b; font-size:14px; }
+.meta { display:flex; justify-content:space-between; font-size:12px; color:#5e5e5b; margin-bottom:22px; }
+.meta b { color:#1c1b1b; }
+.cards { display:flex; gap:12px; margin-bottom:26px; }
+.card { flex:1; border:1px solid #e3dedd; padding:14px 16px; }
+.card .l { font-size:9px; text-transform:uppercase; letter-spacing:0.12em; color:#9e9e9b; margin-bottom:6px; }
+.card .v { font-size:19px; font-weight:700; font-family:Georgia,serif; }
+table { width:100%; border-collapse:collapse; font-size:11.5px; }
+thead th { text-align:left; font-size:9px; text-transform:uppercase; letter-spacing:0.1em; color:#9e9e9b; border-bottom:1.5px solid #1c1b1b; padding:8px 10px; }
+tbody td { padding:8px 10px; border-bottom:1px solid #f1edec; }
+.num { text-align:right; white-space:nowrap; } .fee { color:#9e5a5a; } .net { color:#064E3B; font-weight:700; } .item { font-weight:600; }
+.tag,.st { font-size:9px; font-weight:700; text-transform:uppercase; padding:2px 7px; }
+.tag.rent { background:#E6F1FB; color:#0C447C; } .tag.sale { background:#EAF3DE; color:#27500A; }
+.st.paid { background:#EAF3DE; color:#27500A; } .st.pend { background:#FAEEDA; color:#633806; }
+tfoot td { padding:12px 10px; border-top:2px solid #1c1b1b; font-weight:700; }
+.foot { margin-top:28px; padding-top:14px; border-top:1px solid #e3dedd; font-size:10px; color:#9e9e9b; line-height:1.7; }
+@page { margin:14mm; } @media print { body { padding:0; } }
+</style></head><body>
+<div class="head">
+  <div class="brand">My Dressa<small>Mode-Verleih</small></div>
+  <div class="doc"><b>Einnahmen-Abrechnung</b><br>Erstellt am ${today}</div>
+</div>
+<div class="meta">
+  <div><b>${escapeHtml(merchantName)}</b><br>${escapeHtml(user?.email || '')}</div>
+  <div style="text-align:right">${history.length} Transaktionen</div>
+</div>
+<div class="cards">
+  <div class="card"><div class="l">Gesamt verdient</div><div class="v">€${fmtEur(totNet)}</div></div>
+  <div class="card"><div class="l">Ausgezahlt</div><div class="v">€${fmtEur(paidNet)}</div></div>
+  <div class="card"><div class="l">Ausstehend</div><div class="v">€${fmtEur(pendNet)}</div></div>
+</div>
+<table>
+  <thead><tr>
+    <th>Datum</th><th>Artikel</th><th>Art</th>
+    <th style="text-align:right">Brutto</th><th style="text-align:right">Gebühr</th>
+    <th style="text-align:right">Dein Netto</th><th>Status</th>
+  </tr></thead>
+  <tbody>${rowsHtml}</tbody>
+  <tfoot><tr>
+    <td colspan="3">SUMME</td>
+    <td class="num">€${fmtEur(totGross)}</td>
+    <td class="num">−€${fmtEur(totFee)}</td>
+    <td class="num net">+€${fmtEur(totNet)}</td>
+    <td></td>
+  </tr></tfoot>
+</table>
+<div class="foot">
+  My Dressa berechnet 15 % Provision auf Verkäufe und 10 % auf Mieten. Versandkosten gehen vollständig an den Händler.<br>
+  Diese Abrechnung wurde automatisch erstellt und dient zur Übersicht. My Dressa · Made in Germany.
+</div>
+<script>window.onload=function(){setTimeout(function(){window.print()},350)}<\/script>
+</body></html>`
+    const w = window.open('', '_blank')
+    if (!w) { notify(t('Bitte Pop-ups erlauben, um das PDF zu erstellen','Please allow pop-ups to generate the PDF'), 'err'); return }
+    w.document.open(); w.document.write(html); w.document.close()
+  }
+
   const pendingAmount = Number(stats?.pendingPayout || 0)
+  const upcomingAmount = Number(stats?.upcomingPayout || 0)
   const hasOpenRequest = Number(stats?.openRequests || 0) > 0
   const webhookNote = stats?.webhookNote
 
@@ -80,6 +205,40 @@ export default function MerchantEarningsPage() {
         </div>
       )}
 
+      {/* Stripe-Aktivierung — prominent, wenn noch nicht vollständig eingerichtet.
+          Ohne aktives Stripe-Konto kann der Händler KEINE Auszahlungen erhalten. */}
+      {stripeStatus && !(stripeStatus.connected && stripeStatus.onboardingComplete) && (
+        <div style={{ background:'#FAEEDA', border:'1px solid #f0cd92', padding:'20px 24px', marginBottom:24, display:'flex', gap:16, alignItems:'center', flexWrap:'wrap' }}>
+          <div style={{ width:44, height:44, background:'#fff', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            <Icon name="account_balance" style={{ fontSize:22, color:'#635BFF' }} />
+          </div>
+          <div style={{ flex:1, minWidth:220 }}>
+            <p style={{ fontSize:15, fontWeight:700, color:'#633806', marginBottom:3 }}>
+              {t('Stripe-Konto einrichten', 'Set up your Stripe account')}
+            </p>
+            <p style={{ fontSize:13, color:'#633806', lineHeight:1.6 }}>
+              {stripeStatus.connected
+                ? t('Fast fertig — bitte schließe die Verifizierung ab, damit Auszahlungen möglich sind.',
+                    'Almost done — finish verification so you can receive payouts.')
+                : t('Richte dein Stripe-Konto ein, um deine Einnahmen ausgezahlt zu bekommen.',
+                    'Set up Stripe to receive your earnings as payouts.')}
+            </p>
+          </div>
+          <a href="/merchant/stripe"
+            style={{ background:'#635BFF', color:'#fff', textDecoration:'none', padding:'12px 24px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', flexShrink:0 }}>
+            {stripeStatus.connected ? t('Verifizierung abschließen','Finish verification') : t('Stripe einrichten','Set up Stripe')}
+          </a>
+        </div>
+      )}
+      {stripeStatus && stripeStatus.connected && stripeStatus.onboardingComplete && (
+        <div style={{ background:'#EAF3DE', border:'1px solid #c5dda8', padding:'12px 20px', marginBottom:24, display:'flex', gap:10, alignItems:'center' }}>
+          <Icon name="verified" style={{ fontSize:20, color:'#27500A' }} />
+          <span style={{ fontSize:13, color:'#27500A', fontWeight:600 }}>
+            {t('Stripe aktiv — Auszahlungen möglich', 'Stripe active — payouts enabled')}
+          </span>
+        </div>
+      )}
+
       {/* Stats */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:16, marginBottom:32 }}>
         {[
@@ -89,7 +248,7 @@ export default function MerchantEarningsPage() {
         ].map(({ label, value, icon, color }) => (
           <div key={label} style={{ background:'#fff', border:'1px solid #c4c7c7', padding:24 }}>
             <div style={{ width:40, height:40, background:'#f1edec', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:16 }}>
-              <span className="material-symbols-outlined" style={{ fontSize:20, color }}>{icon}</span>
+              <Icon name={icon} style={{ fontSize:20, color }} />
             </div>
             <p style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', marginBottom:6 }}>{label}</p>
             <p style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700 }}>{value}</p>
@@ -97,10 +256,92 @@ export default function MerchantEarningsPage() {
         ))}
       </div>
 
+      {/* Detaillierter Einnahmen-Verlauf — pro Verkauf/Miete */}
+      <div style={{ background:'#fff', border:'1px solid #c4c7c7', marginBottom:32 }}>
+        <div style={{ padding:'20px 24px', borderBottom:'1px solid #c4c7c7', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:8 }}>
+          <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600 }}>
+            {t('Einnahmen-Verlauf', 'Earnings history')}
+          </h2>
+          {history.length > 0 && (
+            <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+              <span style={{ fontSize:12, color:'#5e5e5b' }}>
+                {history.length} {t('Transaktionen', 'transactions')}
+              </span>
+              <button onClick={exportCSV}
+                style={{ display:'flex', alignItems:'center', gap:6, background:'#fff', color:'#1c1b1b', border:'1px solid #c4c7c7', padding:'7px 12px', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em', cursor:'pointer' }}>
+                <Icon name="table_view" style={{ fontSize:16, color:'#27500A' }} /> CSV
+              </button>
+              <button onClick={exportPDF}
+                style={{ display:'flex', alignItems:'center', gap:6, background:'#fff', color:'#1c1b1b', border:'1px solid #c4c7c7', padding:'7px 12px', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em', cursor:'pointer' }}>
+                <Icon name="picture_as_pdf" style={{ fontSize:16, color:'#ba1a1a' }} /> PDF
+              </button>
+            </div>
+          )}
+        </div>
+        {loading ? (
+          <div style={{ padding:24 }}>{[1,2,3].map(i => <div key={i} style={{ height:44, background:'#f1edec', marginBottom:8 }} />)}</div>
+        ) : history.length === 0 ? (
+          <div style={{ padding:48, textAlign:'center', color:'#5e5e5b', fontSize:14 }}>
+            {t('Noch keine Einnahmen — sobald du etwas verkaufst oder vermietest, erscheint es hier.',
+               'No earnings yet — once you sell or rent something, it appears here.')}
+          </div>
+        ) : (
+          <div style={{ overflowX:'auto' }}>
+            <table style={{ width:'100%', fontSize:13, borderCollapse:'collapse', minWidth:640 }}>
+              <thead>
+                <tr style={{ borderBottom:'1px solid #c4c7c7', background:'#fdf8f8' }}>
+                  {[t('Datum','Date'), t('Artikel','Item'), t('Art','Type'), t('Brutto','Gross'), t('Gebühr','Fee'), t('Dein Netto','Your net'), t('Status','Status')].map(h => (
+                    <th key={h} style={{ padding:'12px 20px', textAlign:'left', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', whiteSpace:'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((h: any) => {
+                  const isRental = h.type === 'rental'
+                  return (
+                    <tr key={h.id} style={{ borderBottom:'1px solid #f1edec' }}>
+                      <td style={{ padding:'14px 20px', color:'#5e5e5b', whiteSpace:'nowrap' }}>
+                        {new Date(h.date).toLocaleDateString('de-DE', { day:'2-digit', month:'short', year:'numeric' })}
+                      </td>
+                      <td style={{ padding:'14px 20px', fontWeight:600, maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {h.productTitle}{h.size ? <span style={{ color:'#9e9e9b', fontWeight:400 }}> · {h.size}</span> : null}
+                      </td>
+                      <td style={{ padding:'14px 20px' }}>
+                        <span style={{ fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', padding:'3px 8px', background:isRental?'#E6F1FB':'#EAF3DE', color:isRental?'#0C447C':'#27500A', whiteSpace:'nowrap' }}>
+                          {isRental ? t('Miete','Rental') : t('Kauf','Sale')}
+                        </span>
+                      </td>
+                      <td style={{ padding:'14px 20px', color:'#5e5e5b', whiteSpace:'nowrap' }}>€{h.gross.toFixed(2)}</td>
+                      <td style={{ padding:'14px 20px', color:'#9e5a5a', whiteSpace:'nowrap' }}>−€{h.fee.toFixed(2)}</td>
+                      <td style={{ padding:'14px 20px', fontWeight:700, color:'#064E3B', whiteSpace:'nowrap' }}>+€{h.net.toFixed(2)}</td>
+                      <td style={{ padding:'14px 20px' }}>
+                        {(() => {
+                          const st = h.status === 'paid'
+                            ? { bg:'#EAF3DE', c:'#27500A', label:t('Ausgezahlt','Paid out') }
+                            : h.status === 'available'
+                              ? { bg:'#E6F1FB', c:'#0C447C', label:t('Auszahlbar','Available') }
+                              : { bg:'#FAEEDA', c:'#633806', label:t('In Arbeit','In progress') }
+                          return (
+                            <span title={h.status==='upcoming' ? t('Wird nach Rückgabe auszahlbar','Becomes available after return') : ''}
+                              style={{ fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', padding:'3px 8px', whiteSpace:'nowrap', background:st.bg, color:st.c }}>
+                              {st.label}
+                            </span>
+                          )
+                        })()}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {/* Webhook Warning */}
       {webhookNote && (
         <div style={{ background:'#FAEEDA', border:'1px solid #f8dfbb', padding:'14px 20px', marginBottom:20, display:'flex', gap:10, alignItems:'flex-start' }}>
-          <span className="material-symbols-outlined" style={{ fontSize:20, color:'#633806', flexShrink:0 }}>warning</span>
+          <Icon name="warning" style={{ fontSize:20, color:'#633806', flexShrink:0 }} />
           <div>
             <p style={{ fontSize:13, fontWeight:600, color:'#633806', marginBottom:3 }}>Earnings werden noch nicht angezeigt</p>
             <p style={{ fontSize:12, color:'#633806', lineHeight:1.6 }}>
@@ -122,9 +363,16 @@ export default function MerchantEarningsPage() {
               {hasOpenRequest
                 ? 'Du hast eine offene Auszahlungsanfrage — ein Admin wird sie bald bearbeiten.'
                 : pendingAmount > 0
-                  ? `€${pendingAmount.toFixed(2)} stehen zur Auszahlung bereit.`
-                  : 'Noch kein ausstehender Betrag vorhanden.'}
+                  ? `€${pendingAmount.toFixed(2)} ${t('sind jetzt auszahlbar.','are available for payout now.')}`
+                  : t('Aktuell kein auszahlbarer Betrag.','No amount available for payout right now.')}
             </p>
+            {upcomingAmount > 0 && (
+              <p style={{ fontSize:12, color:'#8a6d3b', lineHeight:1.6, marginTop:6, display:'flex', gap:6, alignItems:'center' }}>
+                <Icon name="schedule" style={{ fontSize:15, color:'#9E896A' }} />
+                {t(`€${upcomingAmount.toFixed(2)} aus laufenden Mieten werden nach der Rückgabe auszahlbar.`,
+                   `€${upcomingAmount.toFixed(2)} from active rentals will become available after return.`)}
+              </p>
+            )}
           </div>
 
           {!hasOpenRequest && pendingAmount > 0 && !showForm && (
@@ -169,7 +417,7 @@ export default function MerchantEarningsPage() {
 
       {/* Commission Info */}
       <div style={{ background:'#f7f3f2', border:'1px solid #c4c7c7', padding:20, marginBottom:32, display:'flex', gap:12, alignItems:'flex-start' }}>
-        <span className="material-symbols-outlined" style={{ fontSize:20, color:'#9E896A', flexShrink:0 }}>info</span>
+        <Icon name="info" style={{ fontSize:20, color:'#9E896A', flexShrink:0 }} />
         <div style={{ fontSize:13, color:'#5e5e5b', lineHeight:1.6 }}>
           <strong style={{ color:'#1c1b1b' }}>Commission:</strong> My Dressa berechnet 15% auf Verkäufe und 10% auf Mieten. Versandkosten gehen vollständig an dich.
         </div>

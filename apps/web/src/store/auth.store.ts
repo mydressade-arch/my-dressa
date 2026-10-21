@@ -9,6 +9,7 @@ interface User {
   lastName: string
   role: string
   twoFaEnabled?: boolean
+  isVerified?: boolean
 }
 
 interface AuthStore {

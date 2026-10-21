@@ -89,6 +89,23 @@ export class SettingsService {
   }
 
   /**
+   * SEPA-Lastschrift (IBAN) beim Kauf erlaubt? Standard: false (nur Karte).
+   * Bei Miete immer nur Karte — hier nicht relevant.
+   */
+  async getAllowSepaPurchase(): Promise<boolean> {
+    const raw = await this.get(SETTING_KEYS.ALLOW_SEPA_PURCHASE, 'false');
+    return raw === 'true';
+  }
+
+  async setAllowSepaPurchase(allow: boolean) {
+    return this.set(
+      SETTING_KEYS.ALLOW_SEPA_PURCHASE,
+      allow ? 'true' : 'false',
+      'SEPA-Lastschrift beim Kauf erlauben',
+    );
+  }
+
+  /**
    * Startseiten-Bilder. Der Admin kann jedes einzeln über das Panel ändern
    * (URL eintragen oder Bild hochladen). Fallback = die ursprünglichen Motive.
    */

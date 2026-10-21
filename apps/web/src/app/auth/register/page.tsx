@@ -4,6 +4,8 @@ import { useLangStore } from '@/store/lang.store'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api'
+import { Icon } from '@/components/ui/Icon'
+import { PasswordInput } from '@/components/ui/PasswordInput'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -34,7 +36,7 @@ export default function RegisterPage() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fdf8f8' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ width: 64, height: 64, background: '#064E3B', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-          <span className="material-symbols-outlined" style={{ color: '#fff', fontSize: 32 }}>check</span>
+          <Icon name="check" style={{ color: '#fff', fontSize: 32 }} />
         </div>
         <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, marginBottom: 8 }}>Account erstellt!</h2>
         <p style={{ color: '#5e5e5b', fontSize: 14 }}>Du wirst zum Login weitergeleitet...</p>
@@ -71,14 +73,24 @@ export default function RegisterPage() {
             ].map(([k,label,type,ph,req]) => (
               <div key={k as string}>
                 <label style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5e5e5b', display: 'block', marginBottom: 6 }}>{label as string}</label>
-                <input
-                  type={type as string}
-                  value={form[k as keyof typeof form]}
-                  onChange={up(k as string)}
-                  placeholder={ph as string}
-                  required={req as boolean}
-                  style={{ width: '100%', padding: '12px 14px', fontSize: 14, border: '1px solid #c4c7c7', outline: 'none', background: '#fdf8f8', boxSizing: 'border-box' }}
-                />
+                {type === 'password' ? (
+                  <PasswordInput
+                    value={form[k as keyof typeof form]}
+                    onChange={up(k as string)}
+                    placeholder={ph as string}
+                    required={req as boolean}
+                    style={{ padding: '12px 14px', fontSize: 14, border: '1px solid #c4c7c7', outline: 'none', background: '#fdf8f8' }}
+                  />
+                ) : (
+                  <input
+                    type={type as string}
+                    value={form[k as keyof typeof form]}
+                    onChange={up(k as string)}
+                    placeholder={ph as string}
+                    required={req as boolean}
+                    style={{ width: '100%', padding: '12px 14px', fontSize: 14, border: '1px solid #c4c7c7', outline: 'none', background: '#fdf8f8', boxSizing: 'border-box' }}
+                  />
+                )}
               </div>
             ))}
 

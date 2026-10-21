@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ProductVariant } from '../products/product-variant.entity';
 import { ConfigModule } from '@nestjs/config';
 import { PaymentsService } from './payments.service';
 import { PaymentsController } from './payments.controller';
 import { StripeWebhookController } from './stripe-webhook.controller';
 import { BankAccountService } from './bank-account.service';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { SettingsModule } from '../settings/settings.module';
 import { StorageService } from '../products/storage.service';
 import { BankAccountController } from './bank-account.controller';
 import { PayoutReceipt } from '../commissions/payout-receipt.entity';
@@ -15,14 +17,16 @@ import { RentalExtension } from '../rentals/rental-extension.entity';
 import { Deposit } from '../rentals/deposit.entity';
 import { Commission } from '../commissions/commission.entity';
 import { MerchantProfile } from '../users/merchant-profile.entity';
+import { User } from '../users/user.entity';
 import { MerchantPayout } from '../commissions/merchant-payout.entity';
 
 @Module({
   imports: [
     ConfigModule,
     NotificationsModule,
+    SettingsModule,
     TypeOrmModule.forFeature([
-      Order, Rental, Deposit, Commission, MerchantProfile, MerchantPayout, PayoutReceipt, RentalExtension,
+      Order, Rental, Deposit, Commission, MerchantProfile, MerchantPayout, PayoutReceipt, RentalExtension, ProductVariant, User,
     ]),
   ],
   controllers: [PaymentsController, StripeWebhookController, BankAccountController],

@@ -3,6 +3,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useLangStore } from '@/store/lang.store'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Icon } from '@/components/ui/Icon'
 
 function SuccessInner() {
   const params  = useSearchParams()
@@ -26,7 +27,7 @@ function SuccessInner() {
       <div style={{ textAlign:'center', maxWidth:480 }}>
         {/* Success Icon */}
         <div style={{ width:72, height:72, background:'#EAF3DE', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 24px' }}>
-          <span className="material-symbols-outlined" style={{ fontSize:36, color:'#27500A' }}>check_circle</span>
+          <Icon name="check_circle" style={{ fontSize:36, color:'#27500A' }} />
         </div>
 
         <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:32, fontWeight:700, marginBottom:12, color:'#1c1b1b' }}>
@@ -52,7 +53,7 @@ function SuccessInner() {
               ['package_2', 'Track your order status in My Account'],
             ].map(([icon, text]) => (
               <div key={icon} style={{ display:'flex', alignItems:'center', gap:10 }}>
-                <span className="material-symbols-outlined" style={{ fontSize:16, color:'#9E896A' }}>{icon}</span>
+                <Icon name={icon} style={{ fontSize:16, color:'#9E896A' }} />
                 <span style={{ fontSize:13, color:'#5e5e5b' }}>{text}</span>
               </div>
             ))}

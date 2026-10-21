@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { wishlistApi } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
 import { useAuthStore } from '@/store/auth.store'
+import { Icon } from '@/components/ui/Icon'
 
 interface ProductCardProps {
   id: string
@@ -86,9 +87,7 @@ export function ProductCardClassic({
               transition:'all 0.2s',
               opacity: toggling ? 0.6 : 1,
             }}>
-            <span className="material-symbols-outlined" style={{ fontSize:17, color: saved ? '#fff' : '#1c1b1b', fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0" }}>
-              favorite
-            </span>
+            <Icon name="favorite" style={{ fontSize:17, color: saved ? '#fff' : '#1c1b1b', fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0" }} />
           </button>
         </div>
       </Link>

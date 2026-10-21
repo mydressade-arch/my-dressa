@@ -1,12 +1,13 @@
 'use client'
 import Link from 'next/link'
+import { Icon } from '@/components/ui/Icon'
 
 export default function StripeRefreshPage() {
   return (
     <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', maxWidth: 400 }}>
         <div style={{ width: 64, height: 64, background: '#FAEEDA', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: 32, color: '#633806' }}>refresh</span>
+          <Icon name="refresh" style={{ fontSize: 32, color: '#633806' }} />
         </div>
         <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, marginBottom: 10 }}>
           Link abgelaufen

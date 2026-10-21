@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 import { LangSwitcher } from '@/lib/lang'
 import { useLangStore } from '@/store/lang.store'
+import { Icon } from '@/components/ui/Icon'
 
 export function Navbar() {
   const [mounted, setMounted] = useState(false)
@@ -76,9 +77,7 @@ export function Navbar() {
             {/* Hamburger (nur Mobile) */}
             <button className="navbar-hamburger" onClick={() => setMobileMenuOpen(o => !o)}
               style={{ display:'none', background:'none', border:'none', cursor:'pointer', padding:8, marginRight:4 }}>
-              <span className="material-symbols-outlined" style={{ fontSize:24, color:'#1c1b1b' }}>
-                {mobileMenuOpen ? 'close' : 'menu'}
-              </span>
+              <Icon name={mobileMenuOpen ? 'close' : 'menu'} style={{ fontSize:24, color:'#1c1b1b' }} />
             </button>
 
             {/* Logo */}
@@ -129,11 +128,11 @@ export function Navbar() {
                     placeholder="Search pieces..."
                     style={{ padding:'7px 14px', fontSize:13, background:'transparent', border:'none', outline:'none', width:220 }} />
                   <button type="submit" style={{ padding:'7px 12px', background:'#1c1b1b', color:'#fff', border:'none', cursor:'pointer', display:'flex', alignItems:'center' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize:16 }}>search</span>
+                    <Icon name="search" style={{ fontSize:16 }} />
                   </button>
                   <button type="button" onClick={() => { setSearchOpen(false); setQ('') }}
                     style={{ padding:'7px 10px', background:'none', border:'none', cursor:'pointer', color:'#5e5e5b', display:'flex', alignItems:'center' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize:16 }}>close</span>
+                    <Icon name="close" style={{ fontSize:16 }} />
                   </button>
                 </form>
               ) : (
@@ -165,9 +164,7 @@ export function Navbar() {
                     <span style={{ fontSize:12, fontWeight:600, color:'#1c1b1b', maxWidth:80, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                       {user.firstName}
                     </span>
-                    <span className="material-symbols-outlined" style={{ fontSize:16, color:'#5e5e5b', transition:'transform 0.2s', transform: profileOpen ? 'rotate(180deg)' : 'none' }}>
-                      expand_more
-                    </span>
+                    <Icon name="expand_more" style={{ fontSize:16, color:'#5e5e5b', transition:'transform 0.2s', transform: profileOpen ? 'rotate(180deg)' : 'none' }} />
                   </button>
 
                   {profileOpen && (
@@ -204,7 +201,7 @@ export function Navbar() {
                             onMouseEnter={e => (e.currentTarget.style.background = '#fdf8f8')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                           >
-                            <span className="material-symbols-outlined" style={{ fontSize:18, color:'#9E896A' }}>{item.icon}</span>
+                            <Icon name={item.icon} style={{ fontSize:18, color:'#9E896A' }} />
                             {item.label}
                           </Link>
                         </div>
@@ -217,7 +214,7 @@ export function Navbar() {
                         onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.background = '#fff5f5')}
                         onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = 'transparent')}
                       >
-                        <span className="material-symbols-outlined" style={{ fontSize:18 }}>logout</span>
+                        <Icon name="logout" style={{ fontSize:18 }} />
                         Sign Out
                       </button>
                     </div>
@@ -251,14 +248,14 @@ export function Navbar() {
               <input value={q} onChange={e => setQ(e.target.value)} placeholder={mounted ? t('Suchen...', 'Search...') : 'Suchen...'}
                 style={{ flex:1, padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none' }} />
               <button type="submit" style={{ padding:'10px 16px', background:'#1c1b1b', color:'#fff', border:'none', cursor:'pointer' }}>
-                <span className="material-symbols-outlined" style={{ fontSize:18 }}>search</span>
+                <Icon name="search" style={{ fontSize:18 }} />
               </button>
             </form>
 
             {/* Mobile Quick-Actions: Wishlist + Bag/Account */}
             <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)}
               style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 24px', fontSize:15, fontWeight:500, color:'#1c1b1b', textDecoration:'none', borderTop:'1px solid #f1edec' }}>
-              <span className="material-symbols-outlined" style={{ fontSize:20 }}>favorite_border</span>
+              <Icon name="favorite_border" style={{ fontSize:20 }} />
               {mounted ? t('Merkliste', 'Wishlist') : 'Merkliste'}
               {wishlistCount > 0 && (
                 <span style={{ marginLeft:'auto', background:'#9E896A', color:'#fff', fontSize:11, fontWeight:700, padding:'1px 8px', borderRadius:10 }}>{wishlistCount}</span>
@@ -266,7 +263,7 @@ export function Navbar() {
             </Link>
             <Link href={user ? '/account' : '/auth/login'} onClick={() => setMobileMenuOpen(false)}
               style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 24px', fontSize:15, fontWeight:500, color:'#1c1b1b', textDecoration:'none', borderTop:'1px solid #f1edec' }}>
-              <span className="material-symbols-outlined" style={{ fontSize:20 }}>shopping_bag</span>
+              <Icon name="shopping_bag" style={{ fontSize:20 }} />
               {mounted ? (user ? t('Mein Konto', 'My Account') : t('Anmelden', 'Sign In')) : 'Konto'}
             </Link>
           </div>
@@ -282,14 +279,14 @@ function IconBtn({ icon, href, onClick }: { icon:string, href?:string, onClick?:
     <Link href={href} style={style}
       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(28,27,27,0.06)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-      <span className="material-symbols-outlined" style={{ fontSize:22 }}>{icon}</span>
+      <Icon name={icon} style={{ fontSize:22 }} />
     </Link>
   )
   return (
     <button onClick={onClick} style={style}
       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(28,27,27,0.06)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-      <span className="material-symbols-outlined" style={{ fontSize:22 }}>{icon}</span>
+      <Icon name={icon} style={{ fontSize:22 }} />
     </button>
   )
 }

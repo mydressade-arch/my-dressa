@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
 import Link from 'next/link'
+import { Icon } from '@/components/ui/Icon'
 
 function VerifyEmailInner() {
   const searchParams = useSearchParams()
@@ -52,7 +53,7 @@ function VerifyEmailInner() {
         {status === 'success' && (
           <>
             <div style={{ width:64, height:64, borderRadius:'50%', background:'#EAF3DE', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px' }}>
-              <span className="material-symbols-outlined" style={{ fontSize:32, color:'#27500A' }}>check_circle</span>
+              <Icon name="check_circle" style={{ fontSize:32, color:'#27500A' }} />
             </div>
             <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:24, fontWeight:700, color:'#1c1b1b', marginBottom:12 }}>
               {t('E-Mail bestätigt ✓', 'Email verified ✓')}
@@ -70,7 +71,7 @@ function VerifyEmailInner() {
         {status === 'error' && (
           <>
             <div style={{ width:64, height:64, borderRadius:'50%', background:'#FCEBEB', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px' }}>
-              <span className="material-symbols-outlined" style={{ fontSize:32, color:'#ba1a1a' }}>error</span>
+              <Icon name="error" style={{ fontSize:32, color:'#ba1a1a' }} />
             </div>
             <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:24, fontWeight:700, color:'#1c1b1b', marginBottom:12 }}>
               {t('Bestätigung fehlgeschlagen', 'Verification failed')}

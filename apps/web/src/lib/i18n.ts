@@ -83,7 +83,7 @@ export const translations = {
     description:  { de: 'Beschreibung',     en: 'Description' },
     category:     { de: 'Kategorie',        en: 'Category' },
     salePrice:    { de: 'Verkaufspreis (€)', en: 'Sale Price (€)' },
-    rentalPrice:  { de: 'Mietpreis/Tag (€)', en: 'Rental Price/Day (€)' },
+    rentalPrice:  { de: 'Mietpreis (fester Preis) (€)', en: 'Rental Price (fixed) (€)' },
     shippingCost: { de: 'Versandkosten (€)', en: 'Shipping Cost (€)' },
     deposit:      { de: 'Kaution (€)',       en: 'Deposit (€)' },
     forSale:      { de: 'Zum Verkauf',       en: 'For Sale' },

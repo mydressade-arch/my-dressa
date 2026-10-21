@@ -8,10 +8,11 @@ import { ProductVariant } from '../products/product-variant.entity';
 import { User } from '../users/user.entity';
 import { MerchantProfile } from '../users/merchant-profile.entity';
 import { Rental } from '../rentals/rental.entity';
+import { Deposit } from '../rentals/deposit.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Order, ProductVariant, User, Rental, MerchantProfile]), NotificationsModule, ConfigModule],
+  imports: [TypeOrmModule.forFeature([Order, ProductVariant, User, Rental, Deposit, MerchantProfile]), NotificationsModule, ConfigModule],
   controllers: [OrdersController],
   providers: [OrdersService],
   exports: [OrdersService],

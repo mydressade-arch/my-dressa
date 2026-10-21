@@ -28,6 +28,25 @@ export class SettingsController {
     return { durations };
   }
 
+  /** Öffentlich: ist SEPA-Lastschrift beim Kauf erlaubt? (für Checkout) */
+  @Get('payment-methods')
+  @ApiOperation({ summary: 'Erlaubte Zahlungsmethoden beim Kauf' })
+  async getPaymentMethods() {
+    const allowSepa = await this.settingsService.getAllowSepaPurchase();
+    return { allowSepaPurchase: allowSepa };
+  }
+
+  /** Admin: SEPA-Lastschrift beim Kauf an/aus. { allow: true|false } */
+  @Put('admin/payment-methods')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '[Admin] SEPA-Lastschrift beim Kauf erlauben' })
+  async setPaymentMethods(@Body() body: { allow: boolean }) {
+    await this.settingsService.setAllowSepaPurchase(body.allow === true);
+    return { allowSepaPurchase: body.allow === true };
+  }
+
   /** Admin: alle Settings ansehen. */
   @Get('admin/all')
   @UseGuards(JwtAuthGuard, RolesGuard)

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
 import { useUI } from '@/components/ui/UIProvider'
+import { Icon } from '@/components/ui/Icon'
 
 interface MerchantRequest {
   id: string
@@ -76,7 +77,7 @@ export default function AdminMerchantRequestsPage() {
         </div>
       ) : requests.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 0', border: '1px solid #c4c7c7', color: '#5e5e5b' }}>
-          <span className="material-symbols-outlined" style={{ fontSize:'clamp(24px,3vw,40px)', display: 'block', marginBottom: 12 }}>check_circle</span>
+          <Icon name="check_circle" style={{ fontSize:'clamp(24px,3vw,40px)', display: 'block', marginBottom: 12 }} />
           No pending merchant applications
         </div>
       ) : (

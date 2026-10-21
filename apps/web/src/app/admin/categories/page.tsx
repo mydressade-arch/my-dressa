@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
+import { Icon } from '@/components/ui/Icon'
 
 interface Category {
   id: string
@@ -105,7 +106,7 @@ export default function AdminCategoriesPage() {
         </div>
         <button onClick={openCreate}
           style={{ display:'flex', alignItems:'center', gap:8, background:'#1c1b1b', color:'#fff', border:'none', padding:'12px 20px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', cursor:'pointer' }}>
-          <span className="material-symbols-outlined" style={{ fontSize:18 }}>add</span>
+          <Icon name="add" style={{ fontSize:18 }} />
           Neue Kategorie
         </button>
       </div>
@@ -233,11 +234,11 @@ export default function AdminCategoriesPage() {
                     <div style={{ display:'flex', gap:8 }}>
                       <button onClick={() => openEdit(cat)}
                         style={{ background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', color:'#5e5e5b', padding:4 }}>
-                        <span className="material-symbols-outlined" style={{ fontSize:18 }}>edit</span>
+                        <Icon name="edit" style={{ fontSize:18 }} />
                       </button>
                       <button onClick={() => setDeleteId(cat.id)}
                         style={{ background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', color:'#ba1a1a', padding:4 }}>
-                        <span className="material-symbols-outlined" style={{ fontSize:18 }}>delete</span>
+                        <Icon name="delete" style={{ fontSize:18 }} />
                       </button>
                     </div>
                   )}
@@ -250,7 +251,7 @@ export default function AdminCategoriesPage() {
 
       {/* Info */}
       <div style={{ marginTop:16, padding:'12px 16px', background:'#f7f3f2', border:'1px solid #e8e3e1', fontSize:12, color:'#5e5e5b', display:'flex', gap:8 }}>
-        <span className="material-symbols-outlined" style={{ fontSize:15, color:'#9E896A', flexShrink:0 }}>info</span>
+        <Icon name="info" style={{ fontSize:15, color:'#9E896A', flexShrink:0 }} />
         Kategorien werden sofort im Shop und im Händler-Formular angezeigt. Inaktive Kategorien sind nur hier sichtbar.
       </div>
     </div>

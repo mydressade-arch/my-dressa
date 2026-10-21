@@ -6,6 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order, OrderStatus, OrderType } from './order.entity';
 import { Rental, RentalStatus } from '../rentals/rental.entity';
+import { Deposit, DepositStatus } from '../rentals/deposit.entity';
 import { ProductVariant } from '../products/product-variant.entity';
 import { User } from '../users/user.entity';
 import { MerchantProfile } from '../users/merchant-profile.entity';
@@ -31,6 +32,8 @@ export class OrdersService {
     private readonly variantRepo: Repository<ProductVariant>,
     @InjectRepository(Rental)
     private readonly rentalRepo: Repository<Rental>,
+    @InjectRepository(Deposit)
+    private readonly depositRepo: Repository<Deposit>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     @InjectRepository(MerchantProfile)
@@ -45,6 +48,14 @@ export class OrdersService {
   private stripe: Stripe;
 
   async createPurchaseOrder(userId: string, dto: CreateOrderDto) {
+    // E-Mail-Verifizierung ist zum KAUFEN erforderlich.
+    const buyer = await this.userRepo.findOne({ where: { id: userId } });
+    if (!buyer?.isVerified) {
+      throw new ForbiddenException(
+        'Bitte bestätige zuerst deine E-Mail-Adresse, um kaufen zu können.',
+      );
+    }
+
     const variant = await this.variantRepo.findOne({
       where: { id: dto.productVariantId },
       relations: ['product'],
@@ -279,11 +290,41 @@ export class OrdersService {
       await this.variantRepo.increment({ id: order.productVariantId }, 'stockQuantity', 1);
     }
 
-    // Rental stornieren
+    // Rental stornieren + Kaution-Reservierung freigeben
     if (order.type === OrderType.RENTAL) {
       const rental = await this.rentalRepo.findOne({ where: { orderId: id } });
       if (rental && rental.status !== RentalStatus.RETURNED) {
         await this.rentalRepo.update(rental.id, { status: RentalStatus.CANCELLED });
+
+        // Die reservierte Kaution (Hold) freigeben, damit das blockierte Geld
+        // des Kunden sofort wieder frei wird (sonst bliebe es bis zu 30 Tage
+        // auf der Karte blockiert, bis die Reservierung von selbst verfällt).
+        try {
+          const deposit = await this.depositRepo.findOne({ where: { rentalId: rental.id } });
+          if (deposit?.stripeHoldId && deposit.status !== DepositStatus.RELEASED) {
+            try {
+              await this.stripe.paymentIntents.cancel(deposit.stripeHoldId);
+            } catch (e: any) {
+              // Falls es doch eine abgebuchte (alte) Kaution war → zurückerstatten
+              this.logger.warn(`Kautions-Hold-Cancel fehlgeschlagen (${e.message}) — versuche Refund`);
+              try {
+                await this.stripe.refunds.create({
+                  payment_intent: deposit.stripeHoldId,
+                  amount: Math.round(Number(deposit.amount) * 100),
+                });
+              } catch (e2: any) {
+                this.logger.warn(`Kautions-Refund-Fallback fehlgeschlagen: ${e2.message}`);
+              }
+            }
+            await this.depositRepo.update(deposit.id, {
+              status: DepositStatus.RELEASED,
+              releasedAt: new Date(),
+              releaseReason: 'Miete storniert — Kaution freigegeben',
+            });
+          }
+        } catch (e: any) {
+          this.logger.warn(`Kaution-Freigabe bei Storno fehlgeschlagen: ${e.message}`);
+        }
       }
     }
 

@@ -2,6 +2,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Icon } from '@/components/ui/Icon'
 
 export default function StripeSuccessPage() {
   const router = useRouter()
@@ -14,7 +15,7 @@ export default function StripeSuccessPage() {
     <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', maxWidth: 400 }}>
         <div style={{ width: 64, height: 64, background: '#EAF3DE', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: 32, color: '#27500A' }}>check_circle</span>
+          <Icon name="check_circle" style={{ fontSize: 32, color: '#27500A' }} />
         </div>
         <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, marginBottom: 10 }}>
           Stripe verbunden!

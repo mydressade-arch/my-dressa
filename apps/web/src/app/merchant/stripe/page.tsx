@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
+import { Icon } from '@/components/ui/Icon'
 
 interface StripeStatus {
   connected: boolean
@@ -79,9 +80,7 @@ export default function MerchantStripePage() {
               background: status.onboardingComplete ? '#EAF3DE' : '#FAEEDA',
               display:'flex', alignItems:'center', justifyContent:'center'
             }}>
-              <span className="material-symbols-outlined" style={{ fontSize:24, color: status.onboardingComplete ? '#27500A' : '#633806' }}>
-                {status.onboardingComplete ? 'verified' : 'warning'}
-              </span>
+              <Icon name={status.onboardingComplete ? 'verified' : 'warning'} style={{ fontSize:24, color: status.onboardingComplete ? '#27500A' : '#633806' }} />
             </div>
             <div>
               <p style={{ fontWeight:600, fontSize:15, color: status.onboardingComplete ? '#27500A' : '#633806', marginBottom:2 }}>
@@ -107,9 +106,7 @@ export default function MerchantStripePage() {
                   background: ok ? '#EAF3DE' : '#f1edec',
                   display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0
                 }}>
-                  <span className="material-symbols-outlined" style={{ fontSize:13, color: ok ? '#27500A' : '#c4c7c7' }}>
-                    {ok ? 'check' : 'close'}
-                  </span>
+                  <Icon name={ok ? 'check' : 'close'} style={{ fontSize:13, color: ok ? '#27500A' : '#c4c7c7' }} />
                 </div>
                 <span style={{ fontSize:13, color: ok ? '#1c1b1b' : '#9e9e9b', fontWeight: ok ? 500 : 400 }}>
                   {label}
@@ -142,7 +139,7 @@ export default function MerchantStripePage() {
             )}
             <button onClick={loadStatus}
               style={{ background:'none', border:'1px solid #c4c7c7', padding:'12px 16px', fontSize:12, cursor:'pointer', color:'#5e5e5b', display:'flex', alignItems:'center', gap:6 }}>
-              <span className="material-symbols-outlined" style={{ fontSize:16 }}>refresh</span>
+              <Icon name="refresh" style={{ fontSize:16 }} />
               Status aktualisieren
             </button>
           </div>
@@ -161,7 +158,7 @@ export default function MerchantStripePage() {
         // Noch nicht verbunden
         <div style={{ background:'#fff', border:'1px solid #c4c7c7', padding:28 }}>
           <div style={{ background:'#FAEEDA', border:'1px solid #f8dfbb', padding:16, marginBottom:24, display:'flex', gap:10 }}>
-            <span className="material-symbols-outlined" style={{ fontSize:20, color:'#633806', flexShrink:0, marginTop:1 }}>warning</span>
+            <Icon name="warning" style={{ fontSize:20, color:'#633806', flexShrink:0, marginTop:1 }} />
             <p style={{ fontSize:13, color:'#633806', lineHeight:1.5 }}>
               Stripe nicht verbunden — Kunden können deine Produkte noch nicht kaufen oder mieten.
             </p>
@@ -179,7 +176,7 @@ export default function MerchantStripePage() {
               ['timer', 'Onboarding dauert ca. 5 Minuten'],
             ].map(([icon, text]) => (
               <div key={icon} style={{ display:'flex', alignItems:'center', gap:10 }}>
-                <span className="material-symbols-outlined" style={{ fontSize:18, color:'#9E896A' }}>{icon}</span>
+                <Icon name={icon} style={{ fontSize:18, color:'#9E896A' }} />
                 <span style={{ fontSize:13, color:'#5e5e5b' }}>{text}</span>
               </div>
             ))}

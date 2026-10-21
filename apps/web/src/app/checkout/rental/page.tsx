@@ -11,6 +11,7 @@ import {
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js'
+import { Icon } from '@/components/ui/Icon'
 
 const PH = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='260'%3E%3Crect fill='%23f1edec' width='200' height='260'/%3E%3C/svg%3E"
 
@@ -70,12 +71,15 @@ function RentalCheckoutInner() {
     getStripe().then(s => { setStripeInstance(s); setStripeReady(true) })
   }, [])
 
-  const days       = 10 // feste Mietdauer
+  const days       = Number(product?.rentalDurationDays) || 1 // echte Mietdauer des Produkts
   const pricePerDay  = Number(product?.rentalPrice || 0)
   const rentalFee    = pricePerDay // fester Mietpreis (NICHT × Tage)
   const shippingCost = Number(product?.shippingCost || 0)
   const deposit      = product?.depositAmount != null ? Number(product.depositAmount) : 50
-  const total        = rentalFee + shippingCost
+  // Gesamtbetrag der SOFORTIGEN Abbuchung inkl. Kaution (Kaution wird bei
+  // Buchung mit abgebucht und nach Rückgabe erstattet). Muss mit der
+  // "Gesamt jetzt abgebucht"-Zeile unten übereinstimmen.
+  const total        = rentalFee + shippingCost + deposit
 
   // Step 1: Rental anlegen + Payment Intent holen
   const handleConfirm = async (e: React.FormEvent) => {
@@ -140,7 +144,7 @@ function RentalCheckoutInner() {
         {step === 'details' ? 'Complete Your Rental' : 'Payment'}
       </h1>
       <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:32 }}>
-        {startDate} → {endDate} · 10 {t('Tage Mietdauer','day rental')}
+        {startDate} → {endDate} · {days} {t('Tage Mietdauer','day rental')}
       </p>
 
       {/* Step indicator */}
@@ -188,7 +192,7 @@ function RentalCheckoutInner() {
                 <label key={k} style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14, cursor:'pointer' }}>
                   <div onClick={() => setConsent(c => ({...c, [k]: !c[k]}))}
                     style={{ width:18, height:18, border:`2px solid ${consent[k] ? '#1c1b1b' : '#c4c7c7'}`, background:consent[k] ? '#1c1b1b' : 'transparent', flexShrink:0, marginTop:1, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
-                    {consent[k] && <span className="material-symbols-outlined" style={{ fontSize:13, color:'#fff' }}>check</span>}
+                    {consent[k] && <Icon name="check" style={{ fontSize:13, color:'#fff' }} />}
                   </div>
                   <span style={{ fontSize:13, color:'#5e5e5b', lineHeight:1.5 }}>{label}</span>
                 </label>
@@ -207,7 +211,7 @@ function RentalCheckoutInner() {
               <label style={{ display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer' }}>
                 <div onClick={() => setConsent(c => ({...c, deposit: !c.deposit}))}
                   style={{ width:18, height:18, border:`2px solid ${consent.deposit ? '#0C447C' : '#c4c7c7'}`, background:consent.deposit ? '#0C447C' : 'transparent', flexShrink:0, marginTop:1, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
-                  {consent.deposit && <span className="material-symbols-outlined" style={{ fontSize:13, color:'#fff' }}>check</span>}
+                  {consent.deposit && <Icon name="check" style={{ fontSize:13, color:'#fff' }} />}
                 </div>
                 <span style={{ fontSize:13, color:'#1c1b1b', lineHeight:1.5, fontWeight:600 }}>
                   {t(`Ich stimme der Kaution von €${deposit} und den Kautionsbedingungen zu`,
@@ -221,7 +225,7 @@ function RentalCheckoutInner() {
             <div style={{ display:'flex', gap:12 }}>
               <a href={productId ? `/products/${productId}` : '/products'}
                 style={{ padding:'14px 20px', background:'none', border:'1px solid #c4c7c7', fontSize:13, cursor:'pointer', color:'#5e5e5b', fontWeight:600, textDecoration:'none', display:'flex', alignItems:'center', gap:6 }}>
-                <span className="material-symbols-outlined" style={{ fontSize:16 }}>arrow_back</span>
+                <Icon name="arrow_back" style={{ fontSize:16 }} />
                 {t('Zurück zum Produkt', 'Back to Product')}
               </a>
               <button type="submit" disabled={submitting}
@@ -251,6 +255,7 @@ function RentalCheckoutInner() {
               <StripePaymentForm
                 orderId={orderId}
                 amount={total}
+                clientSecret={clientSecret}
                 depositClientSecret={depositClientSecret}
                 onBack={() => setStep('details')}
               />
@@ -307,7 +312,7 @@ function RentalCheckoutInner() {
                 {/* Kostenaufstellung */}
                 <div style={{ display:'flex', flexDirection:'column', gap:10, fontSize:13, color:'#5e5e5b' }}>
                   <div style={{ display:'flex', justifyContent:'space-between' }}>
-                    <span>{t(`Mietpreis (${Number(product.rentalDurationDays || 10)} Tage)`, `Rental price (${Number(product.rentalDurationDays || 10)} days)`)}</span>
+                    <span>{t(`Mietpreis (${Number(product.rentalDurationDays || 1)} Tage)`, `Rental price (${Number(product.rentalDurationDays || 1)} days)`)}</span>
                     <span style={{ color:'#1c1b1b' }}>€{rentalTotal.toFixed(2)}</span>
                   </div>
                   <div style={{ display:'flex', justifyContent:'space-between' }}>
@@ -350,9 +355,10 @@ function RentalCheckoutInner() {
 }
 
 // ── Stripe Payment Form Component ─────────────────────────────────────────────
-function StripePaymentForm({ orderId, amount, depositClientSecret, onBack }: {
+function StripePaymentForm({ orderId, amount, clientSecret, depositClientSecret, onBack }: {
   orderId: string
   amount: number
+  clientSecret?: string
   depositClientSecret?: string
   onBack: () => void
 }) {
@@ -374,8 +380,9 @@ function StripePaymentForm({ orderId, amount, depositClientSecret, onBack }: {
       setPaying(false); return
     }
 
-    // 1. Hauptzahlung + Zahlungsmethode bestätigen
-    const { error: mainError, paymentIntent } = await stripe.confirmPayment({
+    // 1. MIETE bestätigen (wird sofort abgebucht). Dabei wird die Karte
+    //    des Kunden erfasst — dieselbe Karte nutzen wir dann für die Kaution.
+    const { error: mainError } = await stripe.confirmPayment({
       elements,
       confirmParams: {
         return_url: `${window.location.origin}/checkout/success?orderId=${orderId}`,
@@ -389,11 +396,16 @@ function StripePaymentForm({ orderId, amount, depositClientSecret, onBack }: {
       return
     }
 
-    // Kaution ist in dieser EINEN Zahlung bereits enthalten.
-    // (Früher gab es einen zweiten PaymentIntent — der konnte technisch
-    //  nie bestätigt werden und blieb dauerhaft "unvollständig".)
+    // 2. KAUTION — wird NICHT mehr hier im Browser bestätigt.
+    //    Eine gespeicherte Karte wiederzuverwenden ist eine Off-Session-
+    //    Zahlung und muss serverseitig mit off_session:true laufen (sonst
+    //    lehnt Stripe die Browser-Bestätigung mit 400 ab). Sobald der
+    //    Webhook die bezahlte Miete meldet, reserviert das Backend die
+    //    Kaution automatisch mit derselben (gespeicherten) Karte. Scheitert
+    //    das, storniert das Backend die Miete und erstattet sie zurück.
+    //    Das Frontend muss hier also nichts weiter tun.
 
-    // Weiterleitung zur Success-Seite
+    // Weiterleitung zur Success-Seite (Miete bezahlt; Kaution folgt serverseitig)
     window.location.href = `${window.location.origin}/checkout/success?orderId=${orderId}`
   }
 
@@ -408,7 +420,7 @@ function StripePaymentForm({ orderId, amount, depositClientSecret, onBack }: {
 
       {error && (
         <div style={{ padding:'12px 14px', background:'#ffdad6', color:'#ba1a1a', fontSize:13, display:'flex', gap:8, alignItems:'center' }}>
-          <span className="material-symbols-outlined" style={{ fontSize:16 }}>error</span>
+          <Icon name="error" style={{ fontSize:16 }} />
           {error}
         </div>
       )}
@@ -425,7 +437,7 @@ function StripePaymentForm({ orderId, amount, depositClientSecret, onBack }: {
       </div>
 
       <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, marginTop:4 }}>
-        <span className="material-symbols-outlined" style={{ fontSize:14, color:'#9e9e9b' }}>lock</span>
+        <Icon name="lock" style={{ fontSize:14, color:'#9e9e9b' }} />
         <p style={{ fontSize:11, color:'#9e9e9b', margin:0 }}>Secured by Stripe · SSL encrypted</p>
       </div>
     </form>

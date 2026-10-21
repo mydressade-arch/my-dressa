@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, createContext, useContext, useRef } from 'react'
+import { Icon } from '@/components/ui/Icon'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type ToastType = 'success' | 'error' | 'info' | 'warning'
@@ -77,11 +78,11 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
               animation:'slideIn 0.25s ease',
               pointerEvents:'auto',
             }}>
-              <span className="material-symbols-outlined" style={{ fontSize:18, flexShrink:0 }}>{s.icon}</span>
+              <Icon name={s.icon} style={{ fontSize:18, flexShrink:0 }} />
               <p style={{ fontSize:13, lineHeight:1.5, margin:0, flex:1 }}>{t.message}</p>
               <button onClick={() => setToasts(ts => ts.filter(x => x.id !== t.id))}
                 style={{ background:'none', border:'none', cursor:'pointer', padding:0, color:s.color, display:'flex', flexShrink:0 }}>
-                <span className="material-symbols-outlined" style={{ fontSize:16 }}>close</span>
+                <Icon name="close" style={{ fontSize:16 }} />
               </button>
             </div>
           )

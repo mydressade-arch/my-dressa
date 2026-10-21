@@ -35,6 +35,14 @@ export class CommissionsController {
     return this.commissionsService.getMerchantPayouts(merchantId);
   }
 
+  @Get('merchant-history')
+  @Roles(UserRole.MERCHANT, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Detaillierter Einnahmen-Verlauf (pro Verkauf/Miete)' })
+  merchantHistory(@CurrentUser() user: User) {
+    const merchantId = (user as any).merchantProfile?.id ?? user.id;
+    return this.commissionsService.getMerchantHistory(merchantId);
+  }
+
   @Post('request-payout')
   @Roles(UserRole.MERCHANT, UserRole.ADMIN)
   @ApiOperation({ summary: 'Auszahlung anfragen (Händler)' })

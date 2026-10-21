@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 import { clsx } from 'clsx'
+import { Icon } from '@/components/ui/Icon'
+import { adminApi } from '@/lib/api'
 
 export default function AdminLayout({children}:{children:React.ReactNode}) {
   const { user, isLoading } = useAuthStore()
@@ -15,19 +17,22 @@ export default function AdminLayout({children}:{children:React.ReactNode}) {
   const [notifications, setNotifications] = useState<any>({})
 
   useEffect(() => {
+    // Nur pollen, wenn ein Nutzer eingeloggt ist (sonst sinnlose 401-Aufrufe)
+    if (!user) return
     const load = () => {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/notifications`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
-      }).then(r => r.json()).then(d => setNotifications(d)).catch(() => {})
+      adminApi.notifications()
+        .then((r: any) => setNotifications(r.data))
+        .catch(() => {})
     }
     load()
     const interval = setInterval(load, 30000) // alle 30 Sekunden
     return () => clearInterval(interval)
-  }, [])
+  }, [user])
 
   const NAV = [
     { href:'/admin',                   icon:'dashboard',  label:t(t('Dashboard', 'Dashboard'),          'Dashboard'),      badge: 0 },
     { href:'/admin/users',             icon:'group',      label:t(t('Benutzer', 'Users'),           'Users'),          badge: 0 },
+    { href:'/admin/verify',            icon:'verified',   label:t(t('Verifizierung', 'Verification'), 'Verification'),  badge: 0 },
     { href:'/admin/merchant-requests', icon:'storefront', label:t(t('Händler-Anfragen', 'Merchant Requests'),   'Requests'),       badge: notifications.pendingMerchantRequests },
     { href:'/admin/merchants',         icon:'store',      label:t(t('Alle Händler', 'All Merchants'),       'All Merchants'),  badge: 0 },
     { href:'/admin/categories',        icon:'category',   label:t(t('Kategorien', 'Categories'),         'Categories'),     badge: 0 },
@@ -74,7 +79,7 @@ export default function AdminLayout({children}:{children:React.ReactNode}) {
                 pathname === item.href ? 'text-white' : 'hover:text-white'
               )}
               style={pathname===item.href ? {background:'rgba(255,255,255,0.1)',color:'#f4f0ef'} : {color:'#9c9a92'}}>
-              <span className="material-symbols-outlined" style={{fontSize:20}}>{item.icon}</span>
+              <Icon name={item.icon} style={{fontSize:20}} />
               <span style={{flex:1}}>{item.label}</span>
               {item.badge > 0 && (
                 <span style={{background:'#ba1a1a', color:'#fff', fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:10, minWidth:18, textAlign:'center'}}>

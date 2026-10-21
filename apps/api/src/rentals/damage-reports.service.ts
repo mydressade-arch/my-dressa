@@ -91,18 +91,34 @@ export class DamageReportsService {
 
     const deposit = await this.depositRepo.findOne({ where: { rentalId: report.rentalId } });
 
-    // Option A: Die Kaution wurde bereits abgebucht → zurückERSTATTEN.
-    // (Früher war es ein Hold, der gecancelt wurde. Holds verfallen aber
-    //  nach 7 Tagen, deshalb wird jetzt sofort abgebucht.)
+    // Schutz: Eine bereits EINBEHALTENE Kaution darf nicht nachträglich
+    // freigegeben werden (sonst würde das einbehaltene Geld zurückerstattet).
+    if (deposit && (deposit.status === DepositStatus.RETAINED ||
+                    deposit.status === DepositStatus.PARTIALLY_RETAINED)) {
+      throw new BadRequestException(
+        'Kaution wurde für diese Miete bereits einbehalten — Freigabe nicht mehr möglich.',
+      );
+    }
+
+    // Kaution freigeben: Die Kaution ist nur RESERVIERT (Hold), nicht
+    // abgebucht. Freigeben = die Reservierung aufheben (cancel).
+    // → Das Geld ist sofort wieder beim Kunden verfügbar, KEINE Gebühr.
     if (deposit?.stripeHoldId && deposit.status !== DepositStatus.RELEASED) {
       try {
-        // NUR den Kautionsbetrag erstatten — die Zahlung enthält auch die Miete!
-        await this.stripe.refunds.create({
-          payment_intent: deposit.stripeHoldId,
-          amount: Math.round(Number(deposit.amount) * 100),
-        });
+        await this.stripe.paymentIntents.cancel(deposit.stripeHoldId);
       } catch (e: any) {
-        console.warn(`Stripe refund skipped: ${e.message}`);
+        // Falls der Hold schon abgelaufen/eingezogen ist, oder es sich um
+        // eine alte, bereits abgebuchte Kaution handelt → als Fallback
+        // zurückerstatten (damit der Kunde sein Geld in jedem Fall bekommt).
+        console.warn(`Hold-Cancel fehlgeschlagen (${e.message}) — versuche Refund`);
+        try {
+          await this.stripe.refunds.create({
+            payment_intent: deposit.stripeHoldId,
+            amount: Math.round(Number(deposit.amount) * 100),
+          });
+        } catch (e2: any) {
+          console.warn(`Refund-Fallback ebenfalls fehlgeschlagen: ${e2.message}`);
+        }
       }
     }
 
@@ -144,6 +160,17 @@ export class DamageReportsService {
       where: { rentalId: report.rentalId },
     });
 
+    // Schutz: Eine bereits aufgelöste Kaution (freigegeben oder einbehalten)
+    // darf nicht erneut einbehalten werden. Verhindert Konflikte, wenn für
+    // dieselbe Miete mehrere Meldungen existieren.
+    if (deposit && (deposit.status === DepositStatus.RELEASED ||
+                    deposit.status === DepositStatus.RETAINED ||
+                    deposit.status === DepositStatus.PARTIALLY_RETAINED)) {
+      throw new BadRequestException(
+        'Kaution wurde für diese Miete bereits aufgelöst (freigegeben oder einbehalten) — keine weitere Aktion möglich.',
+      );
+    }
+
     // Option A: Die Kaution ist BEREITS abgebucht (kein Hold mehr).
     // Einbehalten = Geld bleibt bei uns; ein Capture ist nicht nötig.
     // Wenn der Admin nur einen TEIL einbehält, bekommt der Kunde den
@@ -156,22 +183,42 @@ export class DamageReportsService {
     const retained = Math.min(Math.max(retainRaw, 0), depositTotal);
     const refundToCustomer = Math.round((depositTotal - retained) * 100) / 100;
 
-    // Teilbetrag an den Kunden zurückerstatten (falls nicht alles einbehalten wird)
-    if (deposit?.stripeHoldId && refundToCustomer > 0) {
-      try {
-        await this.stripe.refunds.create({
-          payment_intent: deposit.stripeHoldId,
-          amount: Math.round(refundToCustomer * 100),
+    // Kaution EINZIEHEN. Zuerst den ECHTEN Status bei Stripe prüfen und nur
+    // dann einziehen, wenn der Hold noch gültig ist. moneyCollected merkt sich,
+    // ob tatsächlich Geld geflossen ist — der Transfer an den Händler darf NUR
+    // dann laufen, sonst zahlt die Plattform aus eigener Tasche (Geld-Leck).
+    let moneyCollected = false;
+    if (deposit?.stripeHoldId && retained > 0) {
+      const pi = await this.stripe.paymentIntents.retrieve(deposit.stripeHoldId);
+      if (pi.status === 'requires_capture') {
+        // Reservierter Hold → genau den einbehaltenen Betrag einziehen.
+        // Der Rest der Reservierung wird von Stripe automatisch freigegeben.
+        await this.stripe.paymentIntents.capture(deposit.stripeHoldId, {
+          amount_to_capture: Math.round(retained * 100),
         });
-        console.log(`Teil-Rückerstattung an Kunden: €${refundToCustomer}`);
-      } catch (e: any) {
-        console.warn(`Teil-Rückerstattung fehlgeschlagen: ${e.message}`);
+        moneyCollected = true;
+        console.log(`Kaution eingezogen: €${retained} (Rest automatisch freigegeben)`);
+      } else if (pi.status === 'succeeded') {
+        // Alt-Modell: Kaution war bereits abgebucht → nur den Rest zurück.
+        moneyCollected = true;
+        if (refundToCustomer > 0) {
+          await this.stripe.refunds.create({
+            payment_intent: deposit.stripeHoldId,
+            amount: Math.round(refundToCustomer * 100),
+          });
+        }
+      } else {
+        // canceled / o. Ä. → Hold bereits freigegeben, es gibt nichts einzuziehen.
+        throw new BadRequestException(
+          `Kaution kann nicht einbehalten werden — Status der Reservierung: ${pi.status}. ` +
+          `Sie wurde vermutlich bereits freigegeben.`,
+        );
       }
     }
 
-    // 2. Transfer an Händler wenn merchantAmount > 0
+    // 2. Transfer an Händler — NUR wenn wirklich Geld eingezogen wurde.
     let transferId: string | undefined;
-    if (retained > 0 && deposit) {
+    if (moneyCollected && retained > 0 && deposit) {
       try {
         // Händler Connected Account laden
         const rental = await this.rentalRepo.findOne({

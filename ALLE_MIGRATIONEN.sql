@@ -82,3 +82,14 @@ UPDATE orders o SET shipping_cost = COALESCE(p.shipping_cost, 0)
 UPDATE orders o SET shipping_cost = COALESCE(p.shipping_cost, 0)
   FROM product_variants v JOIN products p ON p.id = v.product_id
   WHERE o.product_variant_id = v.id AND o.type = 'rental' AND o.shipping_cost = 0;
+
+-- ── Newsletter-Anmeldungen (Startseite) ─────────────────────
+CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) UNIQUE NOT NULL,
+  source VARCHAR(50) DEFAULT 'homepage',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- v105: Stripe-Customer-ID für Karten-Wiederverwendung (Kautions-Modell)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR DEFAULT NULL;

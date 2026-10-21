@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { wishlistApi } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
 import { ProductCard } from '@/components/product/ProductCard'
+import { Icon } from '@/components/ui/Icon'
 
 export default function WishlistPage() {
   const { user }  = useAuthStore()
@@ -42,7 +43,7 @@ export default function WishlistPage() {
         </div>
         {items.length > 0 && (
           <Link href="/products" style={{ fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', color:'#5e5e5b', textDecoration:'none', display:'flex', alignItems:'center', gap:4 }}>
-            <span className="material-symbols-outlined" style={{ fontSize:16 }}>add</span>
+            <Icon name="add" style={{ fontSize:16 }} />
             Browse more
           </Link>
         )}
@@ -60,7 +61,7 @@ export default function WishlistPage() {
         </div>
       ) : items.length === 0 ? (
         <div style={{ textAlign:'center', padding:'80px 0', border:'1px solid #c4c7c7' }}>
-          <span className="material-symbols-outlined" style={{ fontSize:'clamp(28px,4vw,48px)', color:'#c4c7c7', display:'block', marginBottom:16 }}>favorite</span>
+          <Icon name="favorite" style={{ fontSize:'clamp(28px,4vw,48px)', color:'#c4c7c7', display:'block', marginBottom:16 }} />
           <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:20, marginBottom:8 }}>Your wishlist is empty</h3>
           <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:24, lineHeight:1.6 }}>
             Save pieces you love by clicking the ♡ heart icon on any product.
@@ -78,7 +79,7 @@ export default function WishlistPage() {
                 onClick={() => handleRemove(item.id)}
                 title="Remove from wishlist"
                 style={{ position:'absolute', top:-8, right:-8, zIndex:10, width:26, height:26, borderRadius:'50%', background:'#1c1b1b', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.15)' }}>
-                <span className="material-symbols-outlined" style={{ fontSize:14, color:'#fff' }}>close</span>
+                <Icon name="close" style={{ fontSize:14, color:'#fff' }} />
               </button>
               <ProductCard
                 id={item.id}

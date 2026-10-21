@@ -26,6 +26,12 @@ export class MerchantRequestsService {
     // Bereits Merchant oder Admin?
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User nicht gefunden');
+    // E-Mail-Verifizierung ist erforderlich, um Verkäufer zu werden.
+    if (!user.isVerified) {
+      throw new BadRequestException(
+        'Bitte bestätige zuerst deine E-Mail-Adresse, um verkaufen zu können.',
+      );
+    }
     if (user.role === UserRole.MERCHANT || user.role === UserRole.ADMIN) {
       throw new ConflictException('Du bist bereits Merchant');
     }

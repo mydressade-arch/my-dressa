@@ -37,6 +37,12 @@ export class StripeWebhookController {
       case 'payment_intent.succeeded':
         await this.paymentsService.handlePaymentSucceeded(event.data.object);
         break;
+      // Kaution: Bei manueller Erfassung (nur reserviert) feuert Stripe
+      // KEIN 'succeeded', sondern 'amount_capturable_updated', sobald die
+      // Reservierung steht. Hier speichern wir die Kautions-Hold-ID.
+      case 'payment_intent.amount_capturable_updated':
+        await this.paymentsService.handleDepositAuthorized(event.data.object);
+        break;
       case 'payment_intent.payment_failed':
         await this.paymentsService.handlePaymentFailed(event.data.object);
         break;

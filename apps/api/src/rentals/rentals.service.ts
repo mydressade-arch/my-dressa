@@ -3,7 +3,7 @@ import {
   NotFoundException, ForbiddenException, Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { parseISO, isAfter, isBefore, addDays } from 'date-fns';
 
 import { Rental, RentalStatus } from './rental.entity';
@@ -64,13 +64,22 @@ export class RentalsService {
     endDate: string,
   ): Promise<{ available: boolean; blockedRanges: { start: string; end: string }[] }> {
 
-    // Alle aktiven Buchungen für diese Variante laden
+    // Ein Datum wird NUR blockiert, wenn die Miete erfolgreich BEZAHLT wurde.
+    // Nicht bezahlte (PENDING) Mieten blockieren den Kalender NICHT — eine
+    // fehlgeschlagene oder abgebrochene Zahlung darf den Termin nicht sperren.
+    // Der Doppelbuchungs-Schutz greift bei der finalen Buchung (create), die
+    // in einer Transaktion nochmals auf Überschneidung mit BEZAHLTEN Mieten
+    // prüft, bevor die Miete aktiviert wird.
+    const BLOCKING_STATUSES = [
+      RentalStatus.ACTIVE,
+      RentalStatus.PENDING_RETURN,
+      RentalStatus.OVERDUE,
+    ];
+
     const activeRentals = await this.rentalRepo
       .createQueryBuilder('r')
       .where('r.productVariantId = :variantId', { variantId: productVariantId })
-      .andWhere('r.status NOT IN (:...excluded)', {
-        excluded: [RentalStatus.CANCELLED, RentalStatus.RETURNED],
-      })
+      .andWhere('r.status IN (:...blocking)', { blocking: BLOCKING_STATUSES })
       .select(['r.startDate', 'r.endDate', 'r.status'])
       .getMany();
 
@@ -95,6 +104,14 @@ export class RentalsService {
 
   // ─── CREATE RENTAL (atomare Transaktion) ─────────────────────
   async create(userId: string, dto: CreateRentalDto, ipAddress: string) {
+    // E-Mail-Verifizierung ist zum MIETEN erforderlich.
+    const renter = await this.userRepo.findOne({ where: { id: userId } });
+    if (!renter?.isVerified) {
+      throw new ForbiddenException(
+        'Bitte bestätige zuerst deine E-Mail-Adresse, um mieten zu können.',
+      );
+    }
+
     // DSGVO-Einwilligung ist Pflicht (verhindert auch 500-Crash).
     if (!dto.consent || dto.consent.liabilityAccepted !== true) {
       throw new BadRequestException(
@@ -146,19 +163,12 @@ export class RentalsService {
       throw new BadRequestException('Dieses Produkt ist nicht zur Miete verfügbar');
     }
 
-    // Feature 1: Mietdauer aus dem Produkt (Händler hat sie gewählt).
-    // Fallback auf den ersten vom Admin erlaubten Wert.
-    const allowedDurations = await this.settingsService.getRentalDurations();
+    // Mietdauer aus dem Produkt — der Händler bestimmt sie frei.
+    // Es gibt KEINE feste Liste erlaubter Werte mehr. Nur ein minimaler
+    // Schutz gegen ungültige Werte (0 oder negativ).
     let durationDays = Number(variant.product.rentalDurationDays);
     if (!Number.isFinite(durationDays) || durationDays <= 0) {
-      durationDays = allowedDurations[0] ?? 10;
-    }
-    // Sicherheit: nur erlaubte Dauern zulassen
-    if (!allowedDurations.includes(durationDays)) {
-      this.logger.warn(
-        `Produkt ${variant.product.id} hat unerlaubte Mietdauer ${durationDays} — nutze ${allowedDurations[0]}`,
-      );
-      durationDays = allowedDurations[0] ?? 10;
+      durationDays = 1; // Notfall-Minimum, sollte praktisch nie vorkommen
     }
     const endDate = addDays(startDate, durationDays);
     const endDateStr = endDate.toISOString().split('T')[0];
@@ -183,6 +193,14 @@ export class RentalsService {
       // CRITICAL: Pessimistic Lock — verhindert Race Conditions
       // FOR UPDATE + COUNT ist in PostgreSQL nicht erlaubt.
       // Stattdessen: SELECT id ... FOR UPDATE, dann length prüfen.
+      // Doppelbuchungs-Schutz: Blockieren den Zeitraum BEZAHLTE Mieten
+      // (ACTIVE/PENDING_RETURN/OVERDUE) — immer. PENDING-Mieten (gerade im
+      // Bezahlvorgang) blockieren nur kurz (20 Min), damit zwei Kunden nicht
+      // gleichzeitig denselben Termin kaufen. Eine abgebrochene Zahlung gibt
+      // den Termin so nach spätestens 20 Min automatisch frei.
+      const PENDING_WINDOW_MIN = 20;
+      const pendingCutoff = new Date(Date.now() - PENDING_WINDOW_MIN * 60 * 1000);
+
       const conflicts = await manager
         .getRepository(Rental)
         .createQueryBuilder('r')
@@ -191,6 +209,11 @@ export class RentalsService {
         .andWhere('r.status NOT IN (:...excluded)', {
           excluded: [RentalStatus.CANCELLED, RentalStatus.RETURNED],
         })
+        // PENDING zählt nur, wenn frisch (noch im Bezahlfenster)
+        .andWhere(
+          '(r.status != :pending OR r.created_at > :pendingCutoff)',
+          { pending: RentalStatus.PENDING, pendingCutoff },
+        )
         .andWhere('r.start_date < :endDate', { endDate: endDateStr })
         .andWhere('r.end_date > :startDate', { startDate: startDateStr })
         .setLock('pessimistic_write') // FOR UPDATE — sperrt die Zeilen
@@ -411,11 +434,24 @@ export class RentalsService {
       .orderBy('r.created_at', 'DESC')
       .getMany();
 
-    // depositAmount direkt am Rental-Objekt für Frontend
-    return rentals.map(r => ({
-      ...r,
-      depositAmount: (r as any).order?.productVariant?.product?.depositAmount ?? 50,
-    }));
+    // Echten Kautions-Status (reserviert / freigegeben / einbehalten) +
+    // einbehaltenen Betrag mitliefern, damit der Kunde im Account klar sieht,
+    // was mit seiner Kaution passiert ist.
+    const rentalIds = rentals.map(r => r.id);
+    const deposits = rentalIds.length
+      ? await this.depositRepo.find({ where: { rentalId: In(rentalIds) } })
+      : [];
+    const depByRental = new Map(deposits.map(d => [d.rentalId, d]));
+
+    return rentals.map(r => {
+      const dep = depByRental.get(r.id);
+      return {
+        ...r,
+        depositAmount: (r as any).order?.productVariant?.product?.depositAmount ?? 50,
+        depositStatus: dep?.status ?? null,              // held | released | retained | partially_retained
+        depositRetained: dep ? Number(dep.retainedAmount ?? 0) : 0,
+      };
+    });
   }
 
   // ─── OVERDUE CHECK (wird vom Scheduler aufgerufen) ───────────
@@ -610,7 +646,7 @@ export class RentalsService {
 
     // Gebühr pro Option: anteilig zum Mietpreis, OHNE Versandkosten
     const basePrice = Number(product.rentalPrice);
-    const baseDays = Number(product.rentalDurationDays) || durations[0] || 10;
+    const baseDays = Number(product.rentalDurationDays) || 1;
     const options = durations.map((days) => ({
       extraDays: days,
       // Tagespreis × zusätzliche Tage (kaufmännisch gerundet, kein Versand!)

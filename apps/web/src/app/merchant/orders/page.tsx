@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { ordersApi, api, rentalsApi } from '@/lib/api'
 import { useLangStore } from '@/store/lang.store'
 import { useUI } from '@/components/ui/UIProvider'
+import { Icon } from '@/components/ui/Icon'
 
 const STATUS_STYLE: Record<string, {bg:string,color:string}> = {
   pending:        { bg:'#FAEEDA', color:'#633806' },
@@ -80,7 +81,11 @@ export default function MerchantOrdersPage() {
         damageNotes || undefined,
       )
 
-      if (returnCondition !== 'good' && (damageNotes || damagePhotos.length > 0)) {
+      // Bei JEDEM Problem (beschädigt / verspätet / nicht zurückgekommen) eine
+      // Schadensmeldung für den Admin anlegen — AUCH ohne Notiz/Fotos. Sonst
+      // sieht der Admin "verspätet" oder "nicht zurückgekommen" nie, weil ohne
+      // Notiz/Foto gar keine Meldung erstellt wurde (der eigentliche Fehler).
+      if (returnCondition !== 'good') {
         try {
           const fd = new FormData()
           fd.append('rentalId', returnModal.rentalId)
@@ -88,7 +93,11 @@ export default function MerchantOrdersPage() {
           fd.append('severity', returnCondition === 'lost' ? 'lost' : returnCondition === 'late' ? 'late' : 'moderate')
           damagePhotos.forEach(f => fd.append('photos', f))
           await api.post('/damage-reports', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-        } catch {}
+        } catch (e:any) {
+          // Fehler NICHT verschlucken — sonst merkt niemand, dass die Meldung fehlt.
+          notify(t('Achtung: Meldung an den Admin konnte nicht erstellt werden — bitte erneut versuchen',
+                   'Warning: could not create the admin report — please try again'))
+        }
       }
 
       const needsReview = (res as any)?.data?.requiresAdminReview
@@ -162,7 +171,7 @@ export default function MerchantOrdersPage() {
         </div>
       ) : displayed.length === 0 ? (
         <div style={{ textAlign:'center', padding:'64px 0', border:'1px solid #c4c7c7', color:'#5e5e5b' }}>
-          <span className="material-symbols-outlined" style={{ fontSize:'clamp(24px,3vw,40px)', display:'block', marginBottom:12, color:'#c4c7c7' }}>package_2</span>
+          <Icon name="package_2" style={{ fontSize:'clamp(24px,3vw,40px)', display:'block', marginBottom:12, color:'#c4c7c7' }} />
           No {tab} orders yet
         </div>
       ) : (
@@ -179,7 +188,7 @@ export default function MerchantOrdersPage() {
               <div key={order.id} style={{ background:'#fff', border:'1px solid #c4c7c7' }}>
                 {isExtension && (
                   <div style={{ padding:'8px 20px', background:'#FAEEDA', color:'#8a5a00', fontSize:12, fontWeight:600, display:'flex', alignItems:'center', gap:6 }}>
-                    <span className="material-symbols-outlined" style={{ fontSize:16 }}>more_time</span>
+                    <Icon name="more_time" style={{ fontSize:16 }} />
                     Mietverlängerung — kein Versand nötig, der Artikel ist bereits beim Kunden
                   </div>
                 )}
@@ -199,9 +208,9 @@ export default function MerchantOrdersPage() {
                         Kunde: {order.user?.firstName} {order.user?.lastName}
                       </p>
                       {order.shippingAddress && (
-                        <div style={{ marginTop:6, padding:'5px 8px', background:'#f7f3f2', border:'1px solid #e8e3e1', fontSize:11 }}>
-                          <span className="material-symbols-outlined" style={{ fontSize:12, verticalAlign:'middle', marginRight:3, color:'#9E896A' }}>location_on</span>
-                          {order.shippingAddress.street}, {order.shippingAddress.zip} {order.shippingAddress.city}
+                        <div style={{ marginTop:6, padding:'5px 8px', background:'#f7f3f2', border:'1px solid #e8e3e1', fontSize:11, display:'flex', alignItems:'center', gap:4 }}>
+                          <Icon name="location_on" style={{ fontSize:12, color:'#9E896A', flexShrink:0 }} />
+                          <span>{order.shippingAddress.street}, {order.shippingAddress.zip} {order.shippingAddress.city}</span>
                         </div>
                       )}
                     </div>
@@ -262,7 +271,7 @@ export default function MerchantOrdersPage() {
                     {/* Rücksende-Tracking — Kunde hat zurückgeschickt */}
                     {tab === 'rental' && rental?.returnTrackingNumber && (
                       <div style={{ display:'flex', alignItems:'center', gap:6, background:'#E6F1FB', padding:'4px 10px', fontSize:11 }}>
-                        <span className="material-symbols-outlined" style={{ fontSize:13, color:'#0C447C' }}>undo</span>
+                        <Icon name="undo" style={{ fontSize:13, color:'#0C447C' }} />
                         <span style={{ color:'#0C447C', fontWeight:600 }}>Rücksendung:</span>
                         <a href={`https://www.dhl.de/de/privatkunden/pakete-empfangen/verfolgen.html?piececode=${rental.returnTrackingNumber}`}
                           target="_blank" rel="noopener noreferrer"
@@ -275,7 +284,7 @@ export default function MerchantOrdersPage() {
                       <a href={`https://www.dhl.de/de/privatkunden/pakete-empfangen/verfolgen.html?piececode=${order.trackingNumber}`}
                         target="_blank" rel="noopener noreferrer"
                         style={{ fontSize:11, color:'#0C447C', fontFamily:'monospace', display:'flex', alignItems:'center', gap:4, textDecoration:'none' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize:13 }}>local_shipping</span>
+                        <Icon name="local_shipping" style={{ fontSize:13 }} />
                         {order.trackingNumber}
                       </a>
                     )}
@@ -286,7 +295,7 @@ export default function MerchantOrdersPage() {
                     {canShip && (
                       <button onClick={() => { setShipModal(order.id); setTrackingNum('') }}
                         style={{ fontSize:12, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em', padding:'10px 20px', background:'#1c1b1b', color:'#fff', border:'none', cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
-                        <span className="material-symbols-outlined" style={{ fontSize:16 }}>local_shipping</span>
+                        <Icon name="local_shipping" style={{ fontSize:16 }} />
                         DHL versenden
                       </button>
                     )}
@@ -302,7 +311,7 @@ export default function MerchantOrdersPage() {
                         } catch (e:any) { notify(e.response?.data?.message||'Fehler', 'error') }
                       }}
                         style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', padding:'10px 16px', background:'#FCEBEB', color:'#791F1F', border:'1px solid #f5c6c6', cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
-                        <span className="material-symbols-outlined" style={{ fontSize:14 }}>undo</span>
+                        <Icon name="undo" style={{ fontSize:14 }} />
                         Rückgabe + Refund
                       </button>
                     )}
@@ -323,16 +332,29 @@ export default function MerchantOrdersPage() {
                       </button>
                     )}
 
-                    {/* Rental: Rückgabe bestätigen */}
-                    {tab === 'rental' && rental && (order.status==='shipped'||order.status==='paid'||order.status==='delivered'||rental?.status==='active'||rental?.status==='pending_return') && (
+                    {/* Rental: Rückgabe bestätigen — ERST wenn der Kunde die
+                        Rücksendung gemeldet hat (customerConfirmedReturn bzw.
+                        Status pending_return). Die Tracking-Nummer ist optional
+                        und darf KEINE Voraussetzung mehr sein. */}
+                    {tab === 'rental' && rental && (rental?.customerConfirmedReturn || rental?.status==='pending_return') && (order.status==='shipped'||order.status==='paid'||order.status==='delivered'||rental?.status==='active'||rental?.status==='pending_return') && (
                       <button onClick={() => setReturnModal({ orderId: order.id, rentalId: rental.id })}
                         style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', padding:'10px 16px', background:'#9E896A', color:'#fff', border:'none', cursor:'pointer' }}>
                         ✓ Confirm Return
                       </button>
                     )}
 
-                    {/* Schaden melden nach returned */}
-                    {tab === 'rental' && rental && (order.status==='returned'||rental?.status==='returned') && (
+                    {/* Hinweis: Kunde hat die Rücksendung noch nicht gemeldet */}
+                    {tab === 'rental' && rental && !rental?.customerConfirmedReturn && rental?.status!=='pending_return' && (order.status==='shipped'||order.status==='delivered'||rental?.status==='active') && (
+                      <span style={{ fontSize:11, color:'#9e9e9b', fontStyle:'italic', padding:'10px 0' }}>
+                        {t('Warte auf Rücksendung des Kunden', 'Waiting for customer to ship back')}
+                      </span>
+                    )}
+
+                    {/* Schaden melden nach returned — NUR wenn der Händler
+                        NICHT "guter Zustand" bestätigt hat. Hat er die Rückgabe
+                        als "good" quittiert, ist der Fall abgeschlossen und die
+                        Kaution wird freigegeben → kein Schaden-Button mehr. */}
+                    {tab === 'rental' && rental && (order.status==='returned'||rental?.status==='returned') && rental?.returnCondition !== 'good' && (
                       <button onClick={() => setDamageReport({ rentalId: rental.id, orderId: order.id })}
                         style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', padding:'10px 16px', background:'#FAEEDA', color:'#633806', border:'1px solid #f8dfbb', cursor:'pointer' }}>
                         ⚠ Schaden melden
@@ -344,7 +366,7 @@ export default function MerchantOrdersPage() {
                 {/* Canship hint */}
                 {canShip && (
                   <div style={{ padding:'8px 20px', background:'#FFFBF0', borderTop:'1px solid #f8dfbb', fontSize:12, color:'#633806', display:'flex', alignItems:'center', gap:6 }}>
-                    <span className="material-symbols-outlined" style={{ fontSize:14 }}>info</span>
+                    <Icon name="info" style={{ fontSize:14 }} />
                     Zahlung bestätigt — bitte Produkt versenden und DHL Nummer eingeben
                   </div>
                 )}

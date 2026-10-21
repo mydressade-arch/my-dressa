@@ -6,6 +6,7 @@ import { useLangStore } from '@/store/lang.store'
 import { RentalCalendar } from '@/components/rental/RentalCalendar'
 import { useAuthStore } from '@/store/auth.store'
 import { Suspense } from 'react'
+import { Icon } from '@/components/ui/Icon'
 
 const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='800' viewBox='0 0 600 800'%3E%3Crect fill='%23f1edec' width='600' height='800'/%3E%3Ctext fill='%23c4c7c7' font-family='sans-serif' font-size='18' text-anchor='middle' x='300' y='400'%3EMy Dressa%3C/text%3E%3C/svg%3E"
 
@@ -107,13 +108,13 @@ function ProductDetail() {
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:12 }}>
             <a href={`/products?merchant=${product.merchantId}`}
               style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#9E896A', textDecoration:'none', display:'flex', alignItems:'center', gap:4 }}>
-              <span className="material-symbols-outlined" style={{ fontSize:14 }}>storefront</span>
+              <Icon name="storefront" style={{ fontSize:14 }} />
               {product.merchant?.shopName || 'My Dressa'}
             </a>
             {isOwnProduct && (
               <a href={`/merchant/products/edit/${product.id}`}
                 style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', padding:'4px 12px', background:'#1c1b1b', color:'#fff', textDecoration:'none', display:'flex', alignItems:'center', gap:4 }}>
-                <span className="material-symbols-outlined" style={{ fontSize:14 }}>edit</span>
+                <Icon name="edit" style={{ fontSize:14 }} />
                 Edit
               </a>
             )}
@@ -155,13 +156,13 @@ function ProductDetail() {
               <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, marginBottom: 4 }}>
                 €{product.rentalPrice} <span style={{ fontSize: 16, fontWeight: 400, color: '#5e5e5b' }}>/ Miete</span>
               </p>
-              <p style={{ fontSize: 12, color: '#5e5e5b', marginBottom: 16 }}>{Number(product.rentalDurationDays || 10)} Tage Mietdauer. Kaution: €{Number(product.depositAmount) || 50}.</p>
+              <p style={{ fontSize: 12, color: '#5e5e5b', marginBottom: 16 }}>{Number(product.rentalDurationDays || 1)} Tage Mietdauer. Kaution: €{Number(product.depositAmount) || 50}.</p>
 
               {showCalendar && selectedVariant ? (
                 <RentalCalendar
                   productVariantId={selectedVariant.id}
                   rentalPricePerDay={product.rentalPrice}
-                  rentalDurationDays={Number(product.rentalDurationDays || 10)}
+                  rentalDurationDays={Number(product.rentalDurationDays || 1)}
                   shippingCost={Number(product.shippingCost || 0)}
                   depositAmount={product.depositAmount != null ? Number(product.depositAmount) : 50}
                   stockQuantity={selectedVariant?.stockQuantity}
@@ -191,7 +192,7 @@ function ProductDetail() {
               {/* Stock Warning — nur wenn unter 3 */}
               {selectedVariant && selectedVariant.stockQuantity > 0 && selectedVariant.stockQuantity < 3 && (
                 <div style={{ background:'#FAEEDA', border:'1px solid #f8dfbb', padding:'8px 12px', marginBottom:12, display:'flex', alignItems:'center', gap:8, fontSize:12, color:'#633806' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize:16 }}>warning</span>
+                  <Icon name="warning" style={{ fontSize:16 }} />
                   Nur noch <strong>{selectedVariant.stockQuantity}</strong> {selectedVariant.stockQuantity === 1 ? 'Stück' : 'Stücke'} verfügbar
                 </div>
               )}
@@ -206,7 +207,7 @@ function ProductDetail() {
           {/* Trust badges */}
           {[['local_shipping','Complimentary Concierge Shipping'],['assignment_return','Hassle-free Returns within 14 Days']].map(([icon,label])=>(
             <div key={icon} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: '1px solid #f1edec' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#5e5e5b' }}>{icon}</span>
+              <Icon name={icon} style={{ fontSize: 20, color: '#5e5e5b' }} />
               <span style={{ fontSize: 13, color: '#5e5e5b' }}>{label}</span>
             </div>
           ))}

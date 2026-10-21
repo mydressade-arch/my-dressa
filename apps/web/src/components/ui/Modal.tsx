@@ -1,6 +1,7 @@
 'use client'
 import { useEffect } from 'react'
 import { clsx } from 'clsx'
+import { Icon } from '@/components/ui/Icon'
 
 interface ModalProps {
   open: boolean
@@ -29,7 +30,7 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
           <div className="flex items-center justify-between px-8 py-6 border-b border-outline-variant">
             <h2 className="font-serif text-xl font-semibold">{title}</h2>
             <button onClick={onClose} className="text-secondary hover:text-primary transition-colors">
-              <span className="material-symbols-outlined">close</span>
+              <Icon name="close" />
             </button>
           </div>
         )}
