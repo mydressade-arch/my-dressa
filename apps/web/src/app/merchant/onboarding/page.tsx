@@ -38,7 +38,7 @@ export default function MerchantOnboardingPage() {
           <div className="w-16 h-16 flex items-center justify-center mx-auto mb-6" style={{ background: '#f1edec' }}>
             <Icon name="storefront" style={{ fontSize: 32, color: '#9E896A' }} />
           </div>
-          <h1 className="font-serif text-3xl font-bold mb-3">Become a Merchant</h1>
+          <h1 className="font-serif text-3xl font-bold mb-3">Händler werden</h1>
           <p className="text-secondary text-sm max-w-sm mx-auto leading-relaxed">
             Join My Dressa and start renting and selling your fashion pieces to thousands of customers.
           </p>
@@ -77,7 +77,7 @@ export default function MerchantOnboardingPage() {
 
         <p className="text-center text-xs text-secondary">
           By creating a shop you agree to our{' '}
-          <a href="/merchant-terms" className="text-primary underline">Merchant Terms</a>.
+          <a href="/merchant-terms" className="text-primary underline">Händler-AGB</a>.
           Platform fee: 10% on rentals, 15% on sales.
         </p>
       </div>

@@ -196,8 +196,8 @@ tfoot td { padding:12px 10px; border-top:2px solid #1c1b1b; font-weight:700; }
 
   return (
     <div>
-      <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:30, fontWeight:700, marginBottom:4 }}>Earnings</h1>
-      <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:32 }}>Your revenue and payout history</p>
+      <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:30, fontWeight:700, marginBottom:4 }}>{t('Einnahmen','Earnings')}</h1>
+      <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:32 }}>{t('Deine Einnahmen und Auszahlungen','Your revenue and payout history')}</p>
 
       {msg && (
         <div style={{ padding:'12px 16px', background:msgType==='ok'?'#EAF3DE':'#FCEBEB', color:msgType==='ok'?'#27500A':'#791F1F', fontSize:13, marginBottom:20 }}>
@@ -343,7 +343,7 @@ tfoot td { padding:12px 10px; border-top:2px solid #1c1b1b; font-weight:700; }
         <div style={{ background:'#FAEEDA', border:'1px solid #f8dfbb', padding:'14px 20px', marginBottom:20, display:'flex', gap:10, alignItems:'flex-start' }}>
           <Icon name="warning" style={{ fontSize:20, color:'#633806', flexShrink:0 }} />
           <div>
-            <p style={{ fontSize:13, fontWeight:600, color:'#633806', marginBottom:3 }}>Earnings werden noch nicht angezeigt</p>
+            <p style={{ fontSize:13, fontWeight:600, color:'#633806', marginBottom:3 }}>{t('Einnahmen werden noch nicht angezeigt','Earnings not showing yet')}</p>
             <p style={{ fontSize:12, color:'#633806', lineHeight:1.6 }}>
               Die Einnahmen werden erst nach dem Stripe Webhook-Event aktualisiert.<br />
               Stelle sicher dass <code style={{ background:'rgba(0,0,0,0.08)', padding:'1px 4px' }}>stripe listen</code> läuft oder der Webhook im Stripe Dashboard registriert ist.
@@ -357,7 +357,7 @@ tfoot td { padding:12px 10px; border-top:2px solid #1c1b1b; font-weight:700; }
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16, flexWrap:'wrap' }}>
           <div>
             <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600, marginBottom:6 }}>
-              Request Payout
+              {t('Auszahlung anfragen','Request payout')}
             </h2>
             <p style={{ fontSize:13, color:'#5e5e5b', lineHeight:1.6 }}>
               {hasOpenRequest
@@ -378,7 +378,7 @@ tfoot td { padding:12px 10px; border-top:2px solid #1c1b1b; font-weight:700; }
           {!hasOpenRequest && pendingAmount > 0 && !showForm && (
             <button onClick={() => setShowForm(true)}
               style={{ background:'#1c1b1b', color:'#fff', border:'none', padding:'12px 24px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', cursor:'pointer', flexShrink:0 }}>
-              Request €{pendingAmount.toFixed(2)}
+              {t('Anfragen','Request')} €{pendingAmount.toFixed(2)}
             </button>
           )}
 
@@ -404,7 +404,7 @@ tfoot td { padding:12px 10px; border-top:2px solid #1c1b1b; font-weight:700; }
             <div style={{ display:'flex', gap:10 }}>
               <button type="submit" disabled={requesting}
                 style={{ background:'#1c1b1b', color:'#fff', border:'none', padding:'12px 24px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', cursor:'pointer', opacity:requesting?0.6:1 }}>
-                {requesting ? 'Sending...' : `Request €${pendingAmount.toFixed(2)}`}
+                {requesting ? t('Senden…','Sending…') : `${t('Anfragen','Request')} €${pendingAmount.toFixed(2)}`}
               </button>
               <button type="button" onClick={() => { setShowForm(false); setNote('') }}
                 style={{ background:'none', border:'1px solid #c4c7c7', padding:'12px 20px', fontSize:12, cursor:'pointer', color:'#5e5e5b' }}>
@@ -426,12 +426,12 @@ tfoot td { padding:12px 10px; border-top:2px solid #1c1b1b; font-weight:700; }
       {/* Payout History */}
       <div style={{ background:'#fff', border:'1px solid #c4c7c7' }}>
         <div style={{ padding:'20px 24px', borderBottom:'1px solid #c4c7c7' }}>
-          <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600 }}>Payout History</h2>
+          <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600 }}>{t('Auszahlungs-Verlauf','Payout history')}</h2>
         </div>
         {loading ? (
           <div style={{ padding:24 }}>{[1,2,3].map(i => <div key={i} style={{ height:44, background:'#f1edec', marginBottom:8 }} />)}</div>
         ) : payouts.length === 0 ? (
-          <div style={{ padding:48, textAlign:'center', color:'#5e5e5b', fontSize:14 }}>No payouts yet</div>
+          <div style={{ padding:48, textAlign:'center', color:'#5e5e5b', fontSize:14 }}>{t('Noch keine Auszahlungen','No payouts yet')}</div>
         ) : (
           <table style={{ width:'100%', fontSize:13, borderCollapse:'collapse' }}>
             <thead>

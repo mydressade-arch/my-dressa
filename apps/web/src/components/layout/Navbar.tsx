@@ -91,27 +91,28 @@ export function Navbar() {
             {/* Center Nav */}
             <div className="navbar-center" style={{ display:'flex', alignItems:'center', gap:2 }}>
               {[
-                { label: mounted ? t('Neu', 'New In') : 'New In',       href:'/products',                    },
-                { label: mounted ? t('Mieten', 'Rent') : 'Rent',         href:'/products?forRent=true',       accent:'#9E896A' },
-                { label: mounted ? t('Kaufen', 'Buy') : 'Buy',           href:'/products?forSale=true',       },
-                { label: mounted ? t('Vintage', 'Vintage') : 'Vintage',  href:'/products?category=Vintage',   },
+                { key:'new',     label: mounted ? t('Neu', 'New In') : 'New In',      href:'/products' },
+                { key:'rent',    label: mounted ? t('Mieten', 'Rent') : 'Rent',       href:'/products?forRent=true' },
+                { key:'buy',     label: mounted ? t('Kaufen', 'Buy') : 'Buy',         href:'/products?forSale=true' },
+                { key:'vintage', label: mounted ? t('Vintage', 'Vintage') : 'Vintage', href:'/products?category=Vintage' },
               ].map(item => {
-                const active = pathname + (typeof window !== 'undefined' ? window.location.search : '') === item.href
-                  || (item.href !== '/products' && pathname === '/products' && typeof window !== 'undefined' && window.location.href.includes(item.href.split('?')[1] || '___'))
+                // Sonder-Stylung an einem STABILEN Key festmachen (nicht am Label —
+                // sonst greift sie auf Deutsch nicht, weil "Mieten" ≠ "Rent").
+                const isRent = item.key === 'rent'
                 return (
-                  <Link key={item.label} href={item.href}
+                  <Link key={item.key} href={item.href}
                     style={{
                       fontSize:13, fontWeight:500, textDecoration:'none', padding:'6px 14px',
-                      color: item.accent || '#1c1b1b',
+                      color: isRent ? '#9E896A' : '#1c1b1b',
                       borderRadius:2,
-                      background: item.label === 'Rent' ? 'rgba(158,137,106,0.08)' : 'transparent',
+                      background: isRent ? 'rgba(158,137,106,0.08)' : 'transparent',
                       transition:'all 0.15s',
                       letterSpacing:'0.01em',
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.background = item.label === 'Rent' ? 'rgba(158,137,106,0.15)' : 'rgba(28,27,27,0.06)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = item.label === 'Rent' ? 'rgba(158,137,106,0.08)' : 'transparent')}
+                    onMouseEnter={e => (e.currentTarget.style.background = isRent ? 'rgba(158,137,106,0.15)' : 'rgba(28,27,27,0.06)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = isRent ? 'rgba(158,137,106,0.08)' : 'transparent')}
                   >
-                    {item.label === 'Rent' && <span style={{ marginRight:5 }}>◈</span>}
+                    {isRent && <span style={{ marginRight:5 }}>◈</span>}
                     {item.label}
                   </Link>
                 )
@@ -125,7 +126,7 @@ export function Navbar() {
               {searchOpen ? (
                 <form onSubmit={handleSearch} className="navbar-search" style={{ display:'flex', alignItems:'center', border:'1px solid #c4c7c7', background:'#fff', borderRadius:2, overflow:'hidden' }}>
                   <input ref={searchRef} value={q} onChange={e => setQ(e.target.value)}
-                    placeholder="Search pieces..."
+                    placeholder={t('Produkte suchen…', 'Search pieces…')}
                     style={{ padding:'7px 14px', fontSize:13, background:'transparent', border:'none', outline:'none', width:220 }} />
                   <button type="submit" style={{ padding:'7px 12px', background:'#1c1b1b', color:'#fff', border:'none', cursor:'pointer', display:'flex', alignItems:'center' }}>
                     <Icon name="search" style={{ fontSize:16 }} />

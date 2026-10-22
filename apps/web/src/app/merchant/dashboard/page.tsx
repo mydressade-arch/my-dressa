@@ -73,20 +73,20 @@ export default function MerchantDashboardPage() {
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-        <StatCard icon="checkroom"  label="Products"    value={products.length} sub="Active listings" />
-        <StatCard icon="package_2"  label="Orders"      value={orders.length}   sub="All time" />
+        <StatCard icon="checkroom"  label={t('Produkte','Products')}    value={products.length} sub={t('Aktive Angebote','Active listings')} />
+        <StatCard icon="package_2"  label={t('Bestellungen','Orders')}      value={orders.length}   sub={t('Gesamt','All time')} />
         <StatCard icon="payments"   label="Revenue"     value={`€${totalRevenue.toFixed(2)}`} sub="After 10% commission" />
-        <StatCard icon="hourglass_empty" label="Pending" value={orders.filter(o=>o.status==='paid').length} sub="To ship" />
+        <StatCard icon="hourglass_empty" label={t('Ausstehend','Pending')} value={orders.filter(o=>o.status==='paid').length} sub={t('Zu versenden','To ship')} />
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2 bg-white border border-outline-variant">
           <div className="flex justify-between items-center px-6 py-5 border-b border-outline-variant">
-            <h2 className="font-serif text-lg font-semibold">Recent Orders</h2>
-            <Link href="/merchant/orders" className="text-xs uppercase tracking-widest text-secondary hover:text-primary">View All</Link>
+            <h2 className="font-serif text-lg font-semibold">{t('Letzte Bestellungen','Recent Orders')}</h2>
+            <Link href="/merchant/orders" className="text-xs uppercase tracking-widest text-secondary hover:text-primary">{t('Alle ansehen','View All')}</Link>
           </div>
           {loading ? <div className="p-6 space-y-3">{[1,2,3].map(i=><div key={i} className="h-12 bg-surface-container-high animate-pulse"/>)}</div>
-          : orders.length===0 ? <div className="p-12 text-center text-secondary text-sm">No orders yet</div>
+          : orders.length===0 ? <div className="p-12 text-center text-secondary text-sm">{t('Noch keine Bestellungen','No orders yet')}</div>
           : <div className="divide-y divide-outline-variant">
               {orders.slice(0,5).map((o:any)=>(
                 <div key={o.id} className="px-6 py-4 flex items-center justify-between gap-4">
@@ -105,13 +105,13 @@ export default function MerchantDashboardPage() {
 
         <div className="bg-white border border-outline-variant">
           <div className="flex justify-between items-center px-6 py-5 border-b border-outline-variant">
-            <h2 className="font-serif text-lg font-semibold">My Products</h2>
-            <Link href="/merchant/products" className="text-xs uppercase tracking-widest text-secondary hover:text-primary">Manage</Link>
+            <h2 className="font-serif text-lg font-semibold">{t('Meine Produkte','My Products')}</h2>
+            <Link href="/merchant/products" className="text-xs uppercase tracking-widest text-secondary hover:text-primary">{t('Verwalten','Manage')}</Link>
           </div>
           {loading ? <div className="p-6 space-y-3">{[1,2].map(i=><div key={i} className="h-12 bg-surface-container-high animate-pulse"/>)}</div>
           : products.length===0
-            ? <div className="p-8 text-center"><p className="text-sm text-secondary mb-4">No products yet</p>
-                <Link href="/merchant/products/new"><Button variant="rent" size="sm">Add First</Button></Link></div>
+            ? <div className="p-8 text-center"><p className="text-sm text-secondary mb-4">{t('Noch keine Produkte','No products yet')}</p>
+                <Link href="/merchant/products/new"><Button variant="rent" size="sm">{t('Erstes anlegen','Add first')}</Button></Link></div>
             : <div className="divide-y divide-outline-variant">
                 {products.slice(0,5).map((p:any)=>(
                   <div key={p.id} className="px-6 py-4 flex items-center justify-between">

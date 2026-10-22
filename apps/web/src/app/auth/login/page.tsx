@@ -91,7 +91,7 @@ export default function LoginPage() {
           <Link href="/" style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: '#1c1b1b', textDecoration: 'none' }}>
             My Dressa
           </Link>
-          <p style={{ color: '#5e5e5b', fontSize: 14, marginTop: 8 }}>Sign in to your account</p>
+          <p style={{ color: '#5e5e5b', fontSize: 14, marginTop: 8 }}>{t('Melde dich bei deinem Konto an', 'Sign in to your account')}</p>
         </div>
 
         <div style={{ background: '#fff', border: '1px solid #c4c7c7', padding: 32 }}>
@@ -159,7 +159,7 @@ export default function LoginPage() {
           <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid #c4c7c7', textAlign: 'center' }}>
             <p style={{ fontSize: 14, color: '#5e5e5b' }}>
               New to My Dressa?{' '}
-              <Link href="/auth/register" style={{ color: '#1c1b1b', fontWeight: 600, textDecoration: 'none' }}>Create account</Link>
+              <Link href="/auth/register" style={{ color: '#1c1b1b', fontWeight: 600, textDecoration: 'none' }}>{t('Konto erstellen', 'Create account')}</Link>
             </p>
           </div>
         </div>

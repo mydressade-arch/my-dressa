@@ -145,8 +145,8 @@ export default function MerchantOrdersPage() {
 
   return (
     <div>
-      <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, marginBottom:4 }}>Orders</h1>
-      <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:24 }}>Manage incoming orders from customers</p>
+      <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, marginBottom:4 }}>{t('Bestellungen','Orders')}</h1>
+      <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:24 }}>{t('Eingehende Bestellungen verwalten','Manage incoming orders from customers')}</p>
 
       {msg && (
         <div style={{ padding:'12px 16px', background:'#EAF3DE', color:'#27500A', fontSize:13, marginBottom:16, display:'flex', justifyContent:'space-between' }}>
@@ -171,7 +171,7 @@ export default function MerchantOrdersPage() {
         </div>
       ) : displayed.length === 0 ? (
         <div style={{ textAlign:'center', padding:'64px 0', border:'1px solid #c4c7c7', color:'#5e5e5b' }}>
-          <Icon name="package_2" style={{ fontSize:'clamp(24px,3vw,40px)', display:'block', marginBottom:12, color:'#c4c7c7' }} />
+          <Icon name="package_2" style={{ fontSize:'clamp(24px,3vw,40px)', display:'inline-block', marginBottom:12, color:'#c4c7c7' }} />
           No {tab} orders yet
         </div>
       ) : (
@@ -452,7 +452,7 @@ export default function MerchantOrdersPage() {
       {returnModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
           <div style={{ background:'#fff', padding:32, maxWidth:440, width:'90%', maxHeight:'80vh', overflow:'auto' }}>
-            <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:22, fontWeight:700, marginBottom:6 }}>Confirm Return</h2>
+            <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:22, fontWeight:700, marginBottom:6 }}>{t('Rückgabe bestätigen','Confirm return')}</h2>
             <p style={{ fontSize:13, color:'#5e5e5b', marginBottom:24 }}>
               In welchem Zustand ist das Kleid zurückgekommen?
             </p>

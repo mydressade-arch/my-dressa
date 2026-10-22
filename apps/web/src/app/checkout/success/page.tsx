@@ -81,7 +81,7 @@ function SuccessInner() {
 
 export default function SuccessPage() {
   return (
-    <Suspense fallback={<div style={{ padding:80, textAlign:'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding:80, textAlign:'center' }}>Lädt…</div>}>
       <SuccessInner />
     </Suspense>
   )

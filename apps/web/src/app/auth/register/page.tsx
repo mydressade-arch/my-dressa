@@ -38,7 +38,7 @@ export default function RegisterPage() {
         <div style={{ width: 64, height: 64, background: '#064E3B', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
           <Icon name="check" style={{ color: '#fff', fontSize: 32 }} />
         </div>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, marginBottom: 8 }}>Account erstellt!</h2>
+        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, marginBottom: 8 }}>{t('Konto erstellt!', 'Account created!')}</h2>
         <p style={{ color: '#5e5e5b', fontSize: 14 }}>Du wirst zum Login weitergeleitet...</p>
       </div>
     </div>
@@ -51,7 +51,7 @@ export default function RegisterPage() {
           <Link href="/" style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: '#1c1b1b', textDecoration: 'none' }}>
             My Dressa
           </Link>
-          <p style={{ color: '#5e5e5b', fontSize: 14, marginTop: 8 }}>Create your account</p>
+          <p style={{ color: '#5e5e5b', fontSize: 14, marginTop: 8 }}>{t('Erstelle dein Konto', 'Create your account')}</p>
         </div>
 
         <div style={{ background: '#fff', border: '1px solid #c4c7c7', padding: 32 }}>
@@ -114,7 +114,7 @@ export default function RegisterPage() {
           <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid #c4c7c7', textAlign: 'center' }}>
             <p style={{ fontSize: 14, color: '#5e5e5b' }}>
               Already have an account?{' '}
-              <Link href="/auth/login" style={{ color: '#1c1b1b', fontWeight: 600, textDecoration: 'none' }}>Sign in</Link>
+              <Link href="/auth/login" style={{ color: '#1c1b1b', fontWeight: 600, textDecoration: 'none' }}>{t('Anmelden', 'Sign in')}</Link>
             </p>
           </div>
         </div>

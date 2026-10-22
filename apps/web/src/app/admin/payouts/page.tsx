@@ -97,7 +97,7 @@ export default function AdminPayoutsPage() {
 
   return (
     <div>
-      <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, marginBottom:4 }}>Payout Requests</h1>
+      <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, marginBottom:4 }}>{t('Auszahlungsanfragen','Payout requests')}</h1>
       <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:24 }}>Händler Auszahlungsanfragen verwalten</p>
 
       {msg && (
@@ -120,7 +120,7 @@ export default function AdminPayoutsPage() {
         </div>
       ) : payouts.length === 0 ? (
         <div style={{ textAlign:'center', padding:'64px 0', border:'1px solid #c4c7c7', color:'#5e5e5b' }}>
-          <Icon name="payments" style={{ fontSize:'clamp(24px,3vw,40px)', display:'block', marginBottom:12, color:'#c4c7c7' }} />
+          <Icon name="payments" style={{ fontSize:'clamp(24px,3vw,40px)', display:'inline-block', marginBottom:12, color:'#c4c7c7' }} />
           {tab === 'pending' ? 'Keine offenen Auszahlungsanfragen' : 'Keine Auszahlungen vorhanden'}
         </div>
       ) : (

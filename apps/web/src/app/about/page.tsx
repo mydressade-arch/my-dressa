@@ -52,7 +52,7 @@ export default function AboutPage() {
               { icon:'security', title:'Trust & Safety', desc:'DSGVO-compliant, secure payments via Stripe, and transparent policies. Your data and money are always protected.' },
             ].map(({icon,title,desc})=>(
               <div key={title} style={{ background:'#fff', padding:28 }}>
-                <Icon name={icon} style={{ fontSize:32, color:'#9E896A', display:'block', marginBottom:16 }} />
+                <Icon name={icon} style={{ fontSize:32, color:'#9E896A', display:'inline-block', marginBottom:16 }} />
                 <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:20, fontWeight:600, marginBottom:12 }}>{title}</h3>
                 <p style={{ fontSize:14, color:'#5e5e5b', lineHeight:1.7 }}>{desc}</p>
               </div>
@@ -67,7 +67,7 @@ export default function AboutPage() {
         <p style={{ color:'#5e5e5b', fontSize:15, marginBottom:32 }}>Discover luxury fashion or become a merchant partner.</p>
         <div style={{ display:'flex', gap:16, justifyContent:'center' }}>
           <Link href="/products" style={{ background:'#1c1b1b', color:'#fff', padding:'14px 28px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textDecoration:'none' }}>Shop Collection</Link>
-          <Link href="/merchant/onboarding" style={{ background:'transparent', color:'#1c1b1b', border:'1px solid #1c1b1b', padding:'14px 28px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textDecoration:'none' }}>Become a Merchant</Link>
+          <Link href="/merchant/onboarding" style={{ background:'transparent', color:'#1c1b1b', border:'1px solid #1c1b1b', padding:'14px 28px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textDecoration:'none' }}>Händler werden</Link>
         </div>
       </div>
     </div>

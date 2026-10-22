@@ -131,7 +131,7 @@ function ProductsInner() {
             <input
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
-              placeholder="Search by name, style..."
+              placeholder={t('Nach Name, Stil suchen…', 'Search by name, style…')}
               style={{ padding:'10px 16px', fontSize:13, background:'transparent', border:'none', outline:'none', flex:1, color:'#1c1b1b', minWidth:0 }}
             />
             {searchInput && (
@@ -150,7 +150,7 @@ function ProductsInner() {
         {/* Active filter chips */}
         {hasFilters && (
           <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginTop:14, alignItems:'center' }}>
-            <span style={{ fontSize:11, color:'#9e9e9b', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em' }}>Active:</span>
+            <span style={{ fontSize:11, color:'#9e9e9b', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em' }}>{t('Aktiv:', 'Active:')}</span>
             {search && <Chip label={`"${search}"`} onRemove={() => { setSearch(''); setSearchInput(''); updateUrl({ category, forRent, forSale, size: selectedSize }) }} />}
             {category !== 'All' && <Chip label={category} onRemove={() => handleCategory('All')} />}
             {forRent && <Chip label={mounted ? t("Mieten", 'For Rent') : 'Mieten'} onRemove={() => handleForRent(false)} gold />}
@@ -257,7 +257,7 @@ function ProductsInner() {
             </div>
           ) : products.length === 0 ? (
             <div style={{ textAlign:'center', padding:'80px 0', borderTop:'1px solid #e8e3e1' }}>
-              <Icon name="search_off" style={{ fontSize:'clamp(28px,4vw,48px)', color:'#d4cfcd', display:'block', marginBottom:16 }} />
+              <Icon name="search_off" style={{ fontSize:'clamp(28px,4vw,48px)', color:'#d4cfcd', display:'inline-block', marginBottom:16 }} />
               <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:22, fontWeight:700, marginBottom:8, color:'#1c1b1b' }}>
                 No pieces found
               </h3>
@@ -343,7 +343,7 @@ export default function ProductsPage() {
   return (
     <Suspense fallback={
       <div style={{ padding:80, textAlign:'center', color:'#9e9e9b' }}>
-        <Icon name="sync" style={{ fontSize:32, display:'block', marginBottom:8 }} />
+        <Icon name="sync" style={{ fontSize:32, display:'inline-block', marginBottom:8 }} />
         Loading...
       </div>
     }>

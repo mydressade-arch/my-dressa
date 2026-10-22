@@ -71,6 +71,8 @@ export class QueryProductsDto {
   @Type(() => Number)
   @IsNumber()
   @Min(1)
-  @Max(50)
+  // Bis 1000 erlaubt, damit z. B. die Sitemap (SEO) alle Produkte auf einmal
+  // laden kann. Normale Seiten nutzen weiterhin kleine Limits + Pagination.
+  @Max(1000)
   limit?: number = 20;
 }

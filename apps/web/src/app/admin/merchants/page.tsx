@@ -155,7 +155,7 @@ export default function AdminMerchantsPage() {
               </div>
             ) : (
               <div style={{ textAlign:'center', padding:'32px 0', color:'#5e5e5b' }}>
-                <Icon name="account_balance" style={{ fontSize:36, display:'block', marginBottom:8, color:'#c4c7c7' }} />
+                <Icon name="account_balance" style={{ fontSize:36, display:'inline-block', marginBottom:8, color:'#c4c7c7' }} />
                 <p style={{ fontSize:13 }}>Keine Bankverbindung hinterlegt</p>
                 <p style={{ fontSize:12, color:'#9e9e9b', marginTop:4 }}>Händler muss IBAN unter Merchant → Bankverbindung eingeben</p>
               </div>

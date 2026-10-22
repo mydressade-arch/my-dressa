@@ -172,7 +172,7 @@ function RentalCheckoutInner() {
         {step === 'details' ? (
           <form onSubmit={handleConfirm} style={{ display:'flex', flexDirection:'column', gap:20 }}>
             <div style={{ background:'#fff', border:'1px solid #c4c7c7', padding:24 }}>
-              <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600, marginBottom:20, paddingBottom:14, borderBottom:'1px solid #f1edec' }}>Delivery Address</h2>
+              <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600, marginBottom:20, paddingBottom:14, borderBottom:'1px solid #f1edec' }}>{t('Lieferadresse', 'Delivery address')}</h2>
               <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
                 {inp(t('Straße & Hausnummer', 'Street & Number'), 'street', 'Musterstraße 1')}
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:12 }}>

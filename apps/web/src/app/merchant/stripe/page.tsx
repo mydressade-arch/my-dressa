@@ -148,7 +148,7 @@ export default function MerchantStripePage() {
             <div style={{ background:'#EAF3DE', padding:16, marginTop:20 }}>
               <p style={{ fontSize:13, color:'#27500A', lineHeight:1.6 }}>
                 <strong>Auszahlungs-Zeitplan:</strong> Zahlungen werden nach Admin-Genehmigung deiner Auszahlungsanfrage auf dein Stripe-Konto überwiesen.
-                Gehe zu <strong>Earnings → Request Payout</strong> wenn du eine Auszahlung möchtest.
+                Gehe zu <strong>Einnahmen → Auszahlung anfragen</strong>, wenn du eine Auszahlung möchtest.
               </p>
             </div>
           )}

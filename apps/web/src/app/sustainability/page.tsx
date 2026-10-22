@@ -4,7 +4,7 @@ export default function SustainabilityPage() {
   return (
     <div>
       <div style={{ background:'#064E3B', padding:'clamp(40px,5vw,80px) clamp(16px,4vw,64px)', textAlign:'center' }}>
-        <Icon name="eco" style={{ fontSize:'clamp(28px,4vw,48px)', color:'#9E896A', display:'block', marginBottom:16 }} />
+        <Icon name="eco" style={{ fontSize:'clamp(28px,4vw,48px)', color:'#9E896A', display:'inline-block', marginBottom:16 }} />
         <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:'clamp(28px,4vw,48px)', fontWeight:700, color:'#f4f0ef', marginBottom:16 }}>Sustainable Fashion</h1>
         <p style={{ fontSize:16, color:'rgba(244,240,239,0.75)', maxWidth:540, margin:'0 auto', width:'100%' }}>Every rental is a step toward a more sustainable fashion industry.</p>
       </div>

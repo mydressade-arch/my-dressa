@@ -130,7 +130,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div>
-      <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, marginBottom:4 }}>Orders</h1>
+      <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, marginBottom:4 }}>{t('Bestellungen','Orders')}</h1>
       <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:24 }}>All platform orders</p>
 
       {msg && <div style={{ padding:'10px 16px', background:'#EAF3DE', color:'#27500A', fontSize:13, marginBottom:16 }}>{msg}</div>}
@@ -328,7 +328,7 @@ export default function AdminOrdersPage() {
                 {updating ? 'Speichern...' : 'Speichern → Shipped'}
               </button>
               <button onClick={() => { setTrackingOrderId(null); setTrackingNum('') }}
-                style={{ background:'none', border:'1px solid #c4c7c7', padding:'12px 16px', fontSize:12, cursor:'pointer', color:'#5e5e5b' }}>Cancel</button>
+                style={{ background:'none', border:'1px solid #c4c7c7', padding:'12px 16px', fontSize:12, cursor:'pointer', color:'#5e5e5b' }}>{t('Abbrechen','Cancel')}</button>
             </div>
           </div>
         </div>
@@ -350,7 +350,7 @@ export default function AdminOrdersPage() {
 
             {damageReports.length === 0 ? (
               <div style={{ textAlign:'center', padding:'32px 0', color:'#5e5e5b' }}>
-                <Icon name="check_circle" style={{ fontSize:32, display:'block', marginBottom:8, color:'#c4c7c7' }} />
+                <Icon name="check_circle" style={{ fontSize:32, display:'inline-block', marginBottom:8, color:'#c4c7c7' }} />
                 Keine Schadensmeldungen für diese Bestellung
               </div>
             ) : (

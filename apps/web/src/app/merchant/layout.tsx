@@ -42,7 +42,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
       <aside className="w-full md:w-64 flex-shrink-0 border-b md:border-b-0 md:border-r border-outline-variant flex flex-col bg-white">
         <div className="px-6 py-4 md:py-6 border-b border-outline-variant">
           <Link href="/" className="font-serif text-xl font-bold tracking-tighter text-primary block mb-1">My Dressa</Link>
-          <p className="text-xs text-secondary uppercase tracking-widest">Merchant Portal</p>
+          <p className="text-xs text-secondary uppercase tracking-widest">{t('Händler-Portal','Merchant Portal')}</p>
         </div>
         <nav className="flex-1 px-3 py-3 md:py-6 flex flex-row md:flex-col gap-1 overflow-x-auto">
           {NAV.map(item => (

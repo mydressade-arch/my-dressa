@@ -17,8 +17,9 @@ export default function AdminLayout({children}:{children:React.ReactNode}) {
   const [notifications, setNotifications] = useState<any>({})
 
   useEffect(() => {
-    // Nur pollen, wenn ein Nutzer eingeloggt ist (sonst sinnlose 401-Aufrufe)
-    if (!user) return
+    // Nur für ADMINS pollen — sonst 403 "Keine Berechtigung" für andere Rollen
+    // (z. B. ein eingeloggter Kunde oder ein offener Admin-Tab mit Kunden-Login).
+    if (!user || user.role !== 'admin') return
     const load = () => {
       adminApi.notifications()
         .then((r: any) => setNotifications(r.data))

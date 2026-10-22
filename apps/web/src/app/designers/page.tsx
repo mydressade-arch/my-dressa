@@ -28,7 +28,7 @@ export default function DesignersPage() {
         ))}
       </div>
       <div style={{ textAlign:'center', padding:'32px 0', borderTop:'1px solid #f1edec' }}>
-        <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:16 }}>Browse the full collection.</p>
+        <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:16 }}>Entdecke die ganze Kollektion.</p>
         <Link href="/products" style={{ background:'#1c1b1b', color:'#fff', padding:'12px 24px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textDecoration:'none' }}>
           Browse All Pieces
         </Link>

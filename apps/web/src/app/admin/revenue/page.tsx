@@ -50,7 +50,7 @@ export default function AdminRevenuePage() {
         {loading ? (
           <div className="p-6 space-y-3">{[1,2].map(i=><div key={i} className="h-12 bg-surface-container-high animate-pulse"/>)}</div>
         ) : report.length === 0 ? (
-          <div className="px-6 py-12 text-center text-secondary text-sm">No revenue data yet</div>
+          <div className="px-6 py-12 text-center text-secondary text-sm">{t('Noch keine Umsatzdaten','No revenue data yet')}</div>
         ) : (
           <table className="w-full text-sm">
             <thead>

@@ -258,3 +258,9 @@ textarea:focus-visible {
   }
   .pc-img { transform: none !important; }
 }
+
+/* Checkout: Bestellübersicht auf dem Handy ZUERST zeigen (über dem Formular)
+   und dort nicht sticky, damit sie nicht mitscrollt/überdeckt. */
+@media (max-width: 768px) {
+  .checkout-summary { order: -1 !important; position: static !important; margin-bottom: 8px; }
+}

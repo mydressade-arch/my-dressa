@@ -77,7 +77,7 @@ export default function AdminMerchantRequestsPage() {
         </div>
       ) : requests.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 0', border: '1px solid #c4c7c7', color: '#5e5e5b' }}>
-          <Icon name="check_circle" style={{ fontSize:'clamp(24px,3vw,40px)', display: 'block', marginBottom: 12 }} />
+          <Icon name="check_circle" style={{ fontSize:'clamp(24px,3vw,40px)', display: 'inline-block', marginBottom: 12 }} />
           No pending merchant applications
         </div>
       ) : (

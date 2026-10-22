@@ -100,7 +100,20 @@ function PurchaseInner() {
     } finally { setSubmitting(false) }
   }
 
-  if (loading) return <div style={{ padding:80, textAlign:'center', color:'#9e9e9b' }}>Laden...</div>
+  if (loading) return <div style={{ padding:80, textAlign:'center', color:'#9e9e9b' }}>{t('Lädt…', 'Loading…')}</div>
+
+  // Fehler-/Leerzustand: Produkt konnte nicht geladen werden
+  if (!product) return (
+    <div style={{ maxWidth:1100, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+      <Icon name="error_outline" style={{ fontSize:44, color:'#c4c7c7', display:'inline-block', marginBottom:12 }} />
+      <p style={{ fontSize:17, fontWeight:600, marginBottom:6 }}>{t('Produkt nicht gefunden', 'Product not found')}</p>
+      <p style={{ fontSize:13, color:'#5e5e5b', marginBottom:22 }}>{t('Dieses Produkt ist nicht mehr verfügbar oder der Link ist ungültig.', 'This product is no longer available or the link is invalid.')}</p>
+      <button onClick={() => router.push('/products')}
+        style={{ background:'#1c1b1b', color:'#fff', border:'none', borderRadius:6, padding:'12px 24px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', cursor:'pointer' }}>
+        {t('Weiter shoppen', 'Continue shopping')}
+      </button>
+    </div>
+  )
 
   const inp = (label: string, key: keyof typeof addr, placeholder: string) => (
     <div>
@@ -118,12 +131,12 @@ function PurchaseInner() {
         {step === 'details' ? t('Kauf abschließen', 'Complete Purchase') : t('Zahlung', 'Payment')}
       </h1>
       <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:32 }}>
-        Secure this piece permanently for your collection.
+        {t('Sichere dir dieses Teil dauerhaft für deine Garderobe.', 'Secure this piece permanently for your collection.')}
       </p>
 
       {/* Step indicator */}
       <div style={{ display:'flex', gap:0, marginBottom:32 }}>
-        {['Delivery Details', t('Zahlung', 'Payment')].map((s, i) => (
+        {[t('Lieferdetails', 'Delivery details'), t('Zahlung', 'Payment')].map((s, i) => (
           <div key={s} style={{ display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ display:'flex', alignItems:'center', gap:6 }}>
               <div style={{
@@ -146,7 +159,7 @@ function PurchaseInner() {
         {step === 'details' ? (
           <form onSubmit={handleConfirm} style={{ display:'flex', flexDirection:'column', gap:20 }}>
             <div style={{ background:'#fff', border:'1px solid #c4c7c7', padding:24 }}>
-              <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600, marginBottom:20, paddingBottom:14, borderBottom:'1px solid #f1edec' }}>Delivery Address</h2>
+              <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600, marginBottom:20, paddingBottom:14, borderBottom:'1px solid #f1edec' }}>{t('Lieferadresse', 'Delivery address')}</h2>
               <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
                 {inp(t('Straße & Hausnummer', 'Street & Number'), 'street', 'Musterstraße 1')}
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:12 }}>
@@ -160,7 +173,7 @@ function PurchaseInner() {
 
             <button type="submit" disabled={submitting}
               style={{ background:'#1c1b1b', color:'#fff', border:'none', padding:16, fontSize:13, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.05em', cursor:submitting ? 'not-allowed' : 'pointer', opacity:submitting ? 0.7 : 1 }}>
-              {submitting ? 'Processing...' : `Continue to Payment — €${(Number(product.salePrice||0) + Number(product.shippingCost||0)).toFixed(2)}`}
+              {submitting ? t('Wird verarbeitet…', 'Processing…') : `${t('Weiter zur Zahlung', 'Continue to payment')} — €${(Number(product.salePrice||0) + Number(product.shippingCost||0)).toFixed(2)}`}
             </button>
           </form>
         ) : (
@@ -188,19 +201,32 @@ function PurchaseInner() {
           ) : (
             <div style={{ padding:40, textAlign:'center', color:'#5e5e5b' }}>
               <div style={{ width:32, height:32, border:'3px solid #c4c7c7', borderTopColor:'#1c1b1b', borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 16px' }} />
-              Loading payment form...
+              {t('Zahlungsformular wird geladen…', 'Loading payment form…')}
             </div>
           )
         )}
         {/* Order Summary */}
-        <div style={{ background:'#fdf8f8', border:'1px solid #e8e3e1', padding:20 }}>
+        <div className="checkout-summary" style={{ background:'#fdf8f8', border:'1px solid #e8e3e1', padding:20, borderRadius:8, position:'sticky', top:20, alignSelf:'start' }}>
           <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:16, fontWeight:600, marginBottom:16 }}>
             {t('Bestellübersicht', 'Order Summary')}
           </h3>
           {product && (
             <div>
-              <p style={{ fontSize:14, fontWeight:600, marginBottom:4 }}>{product.title}</p>
-              <p style={{ fontSize:12, color:'#5e5e5b', marginBottom:12 }}>{product.merchant?.shopName || ''}</p>
+              {/* Produktbild + Variante — zeigt dem Käufer, was er kauft */}
+              <div style={{ display:'flex', gap:12, marginBottom:14 }}>
+                <div style={{ width:64, height:82, flexShrink:0, background:'#f1edec', overflow:'hidden', borderRadius:4 }}>
+                  <img src={product.images?.[0]?.url || PH} alt={product.title} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                </div>
+                <div style={{ minWidth:0 }}>
+                  <p style={{ fontSize:14, fontWeight:600, marginBottom:3 }}>{product.title}</p>
+                  <p style={{ fontSize:12, color:'#5e5e5b', marginBottom:3 }}>{product.merchant?.shopName || ''}</p>
+                  {variant && (
+                    <p style={{ fontSize:12, color:'#9e9e9b' }}>
+                      {t('Größe', 'Size')}: {variant.size}{variant.color ? ` · ${variant.color}` : ''}
+                    </p>
+                  )}
+                </div>
+              </div>
               <div style={{ display:'flex', flexDirection:'column', gap:6, fontSize:13, color:'#5e5e5b', borderTop:'1px solid #f1edec', paddingTop:12 }}>
                 <div style={{ display:'flex', justifyContent:'space-between' }}>
                   <span>{t('Preis', 'Price')}</span>
@@ -213,6 +239,22 @@ function PurchaseInner() {
                 <div style={{ display:'flex', justifyContent:'space-between', fontWeight:600, fontSize:14, borderTop:'1px solid #f1edec', paddingTop:8, marginTop:4 }}>
                   <span>{t('Gesamt', 'Total')}</span>
                   <span>€{(Number(product.salePrice||0) + Number(product.shippingCost||0)).toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Vertrauens-Hinweise: Lieferzeit + Rückgabe */}
+              <div style={{ display:'flex', flexDirection:'column', gap:8, borderTop:'1px solid #f1edec', marginTop:14, paddingTop:14 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, color:'#5e5e5b' }}>
+                  <Icon name="local_shipping" style={{ fontSize:16, color:'#9E896A' }} />
+                  <span>{t('Versand in 1–2 Werktagen', 'Ships in 1–2 business days')}</span>
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, color:'#5e5e5b' }}>
+                  <Icon name="undo" style={{ fontSize:16, color:'#9E896A' }} />
+                  <span>{t('14 Tage Rückgaberecht', '14-day return policy')}</span>
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, color:'#5e5e5b' }}>
+                  <Icon name="lock" style={{ fontSize:16, color:'#9E896A' }} />
+                  <span>{t('Sichere Zahlung über Stripe', 'Secure payment via Stripe')}</span>
                 </div>
               </div>
             </div>
@@ -230,6 +272,7 @@ function StripePaymentForm({ orderId, amount, onBack }: {
 }) {
   const stripe   = useStripe()
   const elements = useElements()
+  const { t }    = useLangStore()
   const [paying, setPaying] = useState(false)
   const [error, setError]   = useState('')
 
@@ -259,7 +302,7 @@ function StripePaymentForm({ orderId, amount, onBack }: {
   return (
     <form onSubmit={handlePay} style={{ display:'flex', flexDirection:'column', gap:20 }}>
       <div style={{ background:'#fff', border:'1px solid #c4c7c7', padding:24 }}>
-        <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600, marginBottom:20, paddingBottom:14, borderBottom:'1px solid #f1edec' }}>Card Details</h2>
+        <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600, marginBottom:20, paddingBottom:14, borderBottom:'1px solid #f1edec' }}>{t('Kartendaten', 'Card details')}</h2>
         <PaymentElement options={{ layout: 'tabs' }} />
       </div>
 
@@ -273,11 +316,11 @@ function StripePaymentForm({ orderId, amount, onBack }: {
       <div style={{ display:'flex', gap:12 }}>
         <button type="button" onClick={onBack}
           style={{ padding:'14px 20px', background:'none', border:'1px solid #c4c7c7', fontSize:13, cursor:'pointer', color:'#5e5e5b', fontWeight:600 }}>
-          ← Back
+          ← {t('Zurück', 'Back')}
         </button>
         <button type="submit" disabled={!stripe || paying}
           style={{ flex:1, background:'#1c1b1b', color:'#fff', border:'none', padding:14, fontSize:13, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.05em', cursor:(!stripe || paying) ? 'not-allowed' : 'pointer', opacity:(!stripe || paying) ? 0.7 : 1 }}>
-          {paying ? 'Processing...' : `Pay €${amount.toFixed(2)}`}
+          {paying ? t('Wird verarbeitet…', 'Processing…') : `${t('Bezahlen', 'Pay')} €${amount.toFixed(2)}`}
         </button>
       </div>
 
@@ -291,7 +334,7 @@ function StripePaymentForm({ orderId, amount, onBack }: {
 
 export default function PurchasePage() {
   return (
-    <Suspense fallback={<div style={{ padding:80, textAlign:'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding:80, textAlign:'center' }}>Lädt…</div>}>
       <PurchaseInner />
     </Suspense>
   )

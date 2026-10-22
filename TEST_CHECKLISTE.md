@@ -143,4 +143,3 @@ Gerät. Dann gezielt beheben — nicht raten.
   lassen — besonders das Kautions-/Mietmodell nach deutschem Recht.
 - Von Stripe TEST- auf LIVE-Keys wechseln, wenn echtes Geld fließen soll.
 - Stripe-Webhook fest im Dashboard (nicht nur stripe listen).
-# Done

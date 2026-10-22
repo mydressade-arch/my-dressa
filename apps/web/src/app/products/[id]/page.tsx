@@ -151,7 +151,7 @@ function ProductDetail() {
             <div style={{ border: '1px solid #c4c7c7', padding: 20, marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5e5e5b' }}>Rental Experience</p>
-                <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', background: '#064E3B', color: '#fff', padding: '3px 8px' }}>Available Now</span>
+                <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', background: '#064E3B', color: '#fff', padding: '3px 8px' }}>{t('Sofort verfügbar', 'Available now')}</span>
               </div>
               <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, marginBottom: 4 }}>
                 €{product.rentalPrice} <span style={{ fontSize: 16, fontWeight: 400, color: '#5e5e5b' }}>/ Miete</span>
@@ -188,7 +188,7 @@ function ProductDetail() {
                 <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', background: '#E5E1D8', color: '#1c1b1b', padding: '3px 8px' }}>Investment Piece</span>
               </div>
               <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, marginBottom: 4 }}>€{product.salePrice}</p>
-              <p style={{ fontSize: 12, color: '#5e5e5b', marginBottom: 16 }}>Secure this for your permanent collection.</p>
+              <p style={{ fontSize: 12, color: '#5e5e5b', marginBottom: 16 }}>{t('Sichere dir dieses Teil dauerhaft für deine Garderobe.', 'Secure this for your permanent collection.')}</p>
               {/* Stock Warning — nur wenn unter 3 */}
               {selectedVariant && selectedVariant.stockQuantity > 0 && selectedVariant.stockQuantity < 3 && (
                 <div style={{ background:'#FAEEDA', border:'1px solid #f8dfbb', padding:'8px 12px', marginBottom:12, display:'flex', alignItems:'center', gap:8, fontSize:12, color:'#633806' }}>
@@ -218,5 +218,5 @@ function ProductDetail() {
 }
 
 export default function ProductDetailPage() {
-  return <Suspense fallback={<div style={{ padding: 80, textAlign: 'center' }}>Loading...</div>}><ProductDetail /></Suspense>
+  return <Suspense fallback={<div style={{ padding: 80, textAlign: 'center' }}>Lädt…</div>}><ProductDetail /></Suspense>
 }

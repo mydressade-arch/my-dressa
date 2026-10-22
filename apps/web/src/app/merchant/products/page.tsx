@@ -52,7 +52,7 @@ export default function MerchantProductsPage() {
     <div>
       <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:32 }}>
         <div>
-          <h1 style={{ fontFamily:"'Playfair Display', serif",fontSize:28,fontWeight:700,marginBottom:4 }}>My Products</h1>
+          <h1 style={{ fontFamily:"'Playfair Display', serif",fontSize:28,fontWeight:700,marginBottom:4 }}>{t('Meine Produkte','My Products')}</h1>
           <p style={{ color:'#5e5e5b',fontSize:14 }}>{products.length} listings</p>
         </div>
         <Link href="/merchant/products/new"
@@ -67,8 +67,8 @@ export default function MerchantProductsPage() {
         </div>
       ) : products.length === 0 ? (
         <div style={{ textAlign:'center',padding:'80px 0',border:'1px solid #c4c7c7' }}>
-          <Icon name="checkroom" style={{ fontSize:'clamp(28px,4vw,48px)',color:'#c4c7c7',display:'block',marginBottom:16 }} />
-          <p style={{ color:'#5e5e5b',marginBottom:24 }}>No products yet</p>
+          <Icon name="checkroom" style={{ fontSize:'clamp(28px,4vw,48px)',color:'#c4c7c7',display:'inline-block',marginBottom:16 }} />
+          <p style={{ color:'#5e5e5b',marginBottom:24 }}>{t('Noch keine Produkte','No products yet')}</p>
           <Link href="/merchant/products/new" style={{ background:'#1c1b1b',color:'#fff',padding:'12px 24px',fontSize:12,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em',textDecoration:'none' }}>
             Add First Product
           </Link>

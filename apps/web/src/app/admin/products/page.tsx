@@ -30,7 +30,7 @@ export default function AdminProductsPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="font-serif text-3xl font-bold mb-1">Products</h1>
+          <h1 className="font-serif text-3xl font-bold mb-1">{t('Produkte','Products')}</h1>
           <p className="text-secondary text-sm">{data.total} total listings</p>
         </div>
       </div>
@@ -92,7 +92,7 @@ export default function AdminProductsPage() {
             <p className="text-xs text-secondary">Page {page} of {data.totalPages}</p>
             <div className="flex gap-2">
               <Button variant="ghost" size="sm" disabled={page===1} onClick={()=>setPage(p=>p-1)}>Prev</Button>
-              <Button variant="ghost" size="sm" disabled={page===data.totalPages} onClick={()=>setPage(p=>p+1)}>Next</Button>
+              <Button variant="ghost" size="sm" disabled={page===data.totalPages} onClick={()=>setPage(p=>p+1)}>{t('Weiter','Next')}</Button>
             </div>
           </div>
         )}
