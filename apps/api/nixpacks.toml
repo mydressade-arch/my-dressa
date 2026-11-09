@@ -4,8 +4,8 @@ cmds = ["npm install"]
 [phases.build]
 cmds = ["npm run build"]
 
-# Vor dem Start erst ausstehende DB-Migrationen anwenden (idempotent:
-# bereits ausgeführte werden übersprungen). Schlägt eine Migration fehl,
-# startet die App bewusst NICHT mit kaputtem Schema.
+# Die App wendet ausstehende DB-Migrationen jetzt selbst beim Start an
+# (siehe src/main.ts). Darum hier nur noch der normale Start — kein fragiles
+# "&&"-Verketten mehr, das nicht zuverlässig an den Start übergeben hat.
 [start]
-cmd = "npm run migration:run:prod && npm run start"
+cmd = "npm run start"

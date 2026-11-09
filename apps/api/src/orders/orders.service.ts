@@ -496,7 +496,13 @@ export class OrdersService {
     if (order.type === OrderType.PURCHASE && order.productVariantId) {
       await this.variantRepo.increment({ id: order.productVariantId }, 'stockQuantity', 1);
     }
-    // FK: zuerst evtl. Miet-Zeile(n), dann die Bestellung.
+    // FK-Reihenfolge: an einer Miete können Kautions-Zeilen (deposits) hängen,
+    // die das Löschen der Miete blockieren. Darum ZUERST die deposits der
+    // zugehörigen Miet-Zeilen entfernen, dann die Miete(n), dann die Bestellung.
+    await this.rentalRepo.manager.query(
+      'DELETE FROM deposits WHERE rental_id IN (SELECT id FROM rentals WHERE order_id = $1)',
+      [order.id],
+    );
     await this.rentalRepo.delete({ orderId: order.id });
     await this.orderRepo.delete({ id: order.id });
   }

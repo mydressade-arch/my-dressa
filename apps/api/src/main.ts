@@ -4,9 +4,31 @@ import { AllExceptionsFilter } from './common/http-exception.filter';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { AppDataSource } from './database/data-source';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+
+  // Ausstehende DB-Migrationen beim Start anwenden — zuverlässig im selben
+  // Prozess, BEVOR der Server Anfragen annimmt. Ersetzt das fragile
+  // "migration:run:prod && npm run start"-Verketten im Start-Befehl (das
+  // nicht zuverlässig an den Start übergab). Der Start-Befehl ist jetzt nur
+  // noch "npm run start".
+  try {
+    await AppDataSource.initialize();
+    const applied = await AppDataSource.runMigrations();
+    logger.log(
+      applied.length
+        ? `${applied.length} Migration(en) angewendet: ${applied.map(m => m.name).join(', ')}`
+        : 'Keine ausstehenden Migrationen.',
+    );
+    await AppDataSource.destroy();
+  } catch (e) {
+    // Nicht mit kaputtem/veraltetem Schema weiterlaufen.
+    logger.error('Migration beim Start fehlgeschlagen — Abbruch.', (e as Error).stack);
+    process.exit(1);
+  }
+
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
   app.use(helmet());
