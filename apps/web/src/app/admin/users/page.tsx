@@ -61,8 +61,8 @@ export default function AdminUsersPage() {
     <div>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:32 }}>
         <div>
-          <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, marginBottom:4 }}>Users</h1>
-          <p style={{ color:'#5e5e5b', fontSize:14 }}>{data.total} registered accounts</p>
+          <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, marginBottom:4 }}>{t('Nutzer','Users')}</h1>
+          <p style={{ color:'#5e5e5b', fontSize:14 }}>{data.total} {t('registrierte Konten','registered accounts')}</p>
         </div>
       </div>
 
@@ -74,7 +74,8 @@ export default function AdminUsersPage() {
       )}
 
       <div style={{ background:'#fff', border:'1px solid #c4c7c7', overflow:'hidden' }}>
-        <table style={{ width:'100%', fontSize:13, borderCollapse:'collapse' }}>
+        <div style={{ overflowX:'auto' }}>
+<table style={{ width:'100%', fontSize:13, borderCollapse:'collapse' }}>
           <thead>
             <tr style={{ borderBottom:'1px solid #c4c7c7', background:'#fdf8f8' }}>
               {[t('Name', 'Name'),t('E-Mail', 'Email'),t('Rolle', 'Role'),'Verified','Active',t('Beigetreten', 'Joined'),'Actions'].map(h=>(
@@ -136,6 +137,7 @@ export default function AdminUsersPage() {
             ))}
           </tbody>
         </table>
+</div>
 
         {data.totalPages > 1 && (
           <div style={{ padding:'12px 16px', borderTop:'1px solid #c4c7c7', display:'flex', justifyContent:'space-between', alignItems:'center' }}>

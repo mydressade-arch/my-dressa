@@ -2,7 +2,7 @@
 import { useLangStore } from '@/store/lang.store'
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { api } from '@/lib/api'
+import { api, commissionsApi } from '@/lib/api'
 import { Icon } from '@/components/ui/Icon'
 
 const STATUS_STYLE: Record<string, {bg:string,color:string}> = {
@@ -23,15 +23,42 @@ export default function AdminMerchantDetailPage() {
   const [data, setData]     = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab]         = useState<'products'|'orders'>('products')
+  const [paying, setPaying]   = useState(false)
+  const [msg, setMsg]         = useState('')
+  const [payAmount, setPayAmount] = useState('')
 
-  useEffect(() => {
+  const load = () => {
     api.get(`/admin/merchants/${id}/details`)
-      .then(({ data }: any) => setData(data))
+      .then(({ data }: any) => {
+        setData(data)
+        setPayAmount(Number(data.availablePayout || 0).toFixed(2))
+      })
       .catch(() => router.push('/admin/merchants'))
       .finally(() => setLoading(false))
-  }, [id])
+  }
 
-  if (loading) return <div style={{ padding:64, textAlign:'center', color:'#5e5e5b' }}>Laden...</div>
+  useEffect(() => { load() }, [id])
+
+  const handleManualPayout = async () => {
+    const available = Number(data?.availablePayout || 0)
+    const amt = Number(String(payAmount).replace(',', '.'))
+    if (!(amt > 0)) { setMsg(t('Bitte einen gültigen Betrag eingeben', 'Please enter a valid amount')); return }
+    if (amt > available + 0.001) { setMsg(t('Betrag übersteigt das auszahlbare Guthaben', 'Amount exceeds available balance')); return }
+    if (!window.confirm(t(
+      `Bestätige, dass du €${amt.toFixed(2)} bereits an den Händler überwiesen hast.`,
+      `Confirm that you already transferred €${amt.toFixed(2)} to the merchant.`,
+    ))) return
+    setPaying(true); setMsg('')
+    try {
+      const { data: res } = await commissionsApi.manualPayout(id, amt) as any
+      setMsg(res?.message || t('Manuelle Auszahlung erfasst ✓', 'Manual payout recorded ✓'))
+      load()
+    } catch (e: any) {
+      setMsg(e?.response?.data?.message || t('Konnte nicht erfasst werden', 'Could not record payout'))
+    } finally { setPaying(false) }
+  }
+
+  if (loading) return <div style={{ padding:64, textAlign:'center', color:'#5e5e5b' }}>{t('Laden...','Loading...')}</div>
   if (!data) return null
 
   const { merchant, products, recentOrders } = data
@@ -64,8 +91,9 @@ export default function AdminMerchantDetailPage() {
           <div style={{ display:'flex', gap:12 }}>
             {[
               { label:t('Produkte', 'Products'), value: products.length },
-              { label:'Ausstehend', value: `€${Number(merchant.balancePending||0).toFixed(2)}`, color:'#633806' },
-              { label:'Verdient', value: `€${Number(merchant.balancePaid||0).toFixed(2)}`, color:'#27500A' },
+              { label:t('Auszahlbar','Available'), value: `€${Number(data.availablePayout||0).toFixed(2)}`, color:'#0C447C' },
+              { label:t('Ausstehend','Pending'), value: `€${Number(merchant.balancePending||0).toFixed(2)}`, color:'#633806' },
+              { label:t('Verdient','Earned'), value: `€${Number(merchant.balancePaid||0).toFixed(2)}`, color:'#27500A' },
             ].map(s => (
               <div key={s.label} style={{ background:'#fdf8f8', border:'1px solid #e8e3e1', padding:'12px 20px', textAlign:'center', minWidth:90 }}>
                 <p style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#9e9e9b', marginBottom:4 }}>{s.label}</p>
@@ -74,6 +102,38 @@ export default function AdminMerchantDetailPage() {
             ))}
           </div>
         </div>
+
+        {/* Manuelle Auszahlung erfassen — wenn auszahlbares Guthaben vorhanden */}
+        {Number(data.availablePayout||0) > 0 && (
+          <div style={{ marginTop:20, paddingTop:20, borderTop:'1px solid #f1edec', display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' }}>
+            <div style={{ flex:1, minWidth:220 }}>
+              <p style={{ fontSize:13, fontWeight:600, color:'#1c1b1b', marginBottom:2 }}>
+                {t('Manuelle Auszahlung erfassen', 'Record manual payout')}
+              </p>
+              <p style={{ fontSize:12, color:'#5e5e5b', lineHeight:1.5 }}>
+                {t(`Du kannst den vollen Betrag (€${Number(data.availablePayout).toFixed(2)}) oder einen Teilbetrag erfassen — es werden komplette Bestell-Positionen bis zum Betrag ausgezahlt, der Rest bleibt offen.`,
+                   `Record the full amount (€${Number(data.availablePayout).toFixed(2)}) or a partial amount — complete order items up to that amount are paid out, the rest stays open.`)}
+              </p>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+              <div style={{ position:'relative', display:'flex', alignItems:'center' }}>
+                <span style={{ position:'absolute', left:10, fontSize:13, color:'#5e5e5b' }}>€</span>
+                <input value={payAmount} onChange={e => setPayAmount(e.target.value)} inputMode="decimal"
+                  style={{ width:110, padding:'11px 10px 11px 22px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' }} />
+              </div>
+              <button onClick={handleManualPayout} disabled={paying}
+                style={{ background:'#0C447C', color:'#fff', border:'none', padding:'12px 22px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', cursor:paying?'not-allowed':'pointer', opacity:paying?0.6:1, display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap' }}>
+                <Icon name="account_balance" style={{ fontSize:16 }} />
+                {paying ? t('Wird erfasst…','Recording…') : t('Als ausgezahlt markieren','Mark as paid')}
+              </button>
+            </div>
+          </div>
+        )}
+        {msg && (
+          <div style={{ marginTop:14, padding:'10px 14px', background:'#EAF3DE', color:'#27500A', fontSize:13, border:'1px solid #c5dda8' }}>
+            {msg}
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -146,7 +206,8 @@ export default function AdminMerchantDetailPage() {
           </div>
         ) : (
           <div style={{ background:'#fff', border:'1px solid #c4c7c7', overflow:'hidden' }}>
-            <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+            <div style={{ overflowX:'auto' }}>
+<table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
               <thead>
                 <tr style={{ borderBottom:'1px solid #c4c7c7', background:'#fdf8f8' }}>
                   {['Produkt','Typ','Status','Betrag','Datum'].map(h => (
@@ -175,6 +236,7 @@ export default function AdminMerchantDetailPage() {
                 })}
               </tbody>
             </table>
+</div>
           </div>
         )
       )}

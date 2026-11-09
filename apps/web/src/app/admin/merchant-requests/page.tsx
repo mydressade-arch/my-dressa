@@ -100,7 +100,7 @@ export default function AdminMerchantRequestsPage() {
                 {rejectingId === req.id ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 260 }}>
                     <input
-                      placeholder="Reason for rejection (optional)"
+                      placeholder={t('Ablehnungsgrund (optional)','Reason for rejection (optional)')}
                       value={rejectReason}
                       onChange={e => setRejectReason(e.target.value)}
                       style={{ padding: '8px 12px', fontSize: 13, border: '1px solid #c4c7c7', outline: 'none', width: '100%', boxSizing: 'border-box' }}

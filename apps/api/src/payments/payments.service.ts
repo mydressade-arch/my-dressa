@@ -97,14 +97,21 @@ export class PaymentsService {
         metadata: { orderId: order.id, orderType: OrderType.PURCHASE, userId },
       };
 
-      if (!isTestMode && merchant.stripeAccountId) {
-        intentParams.application_fee_amount = commissionCents;
-        intentParams.transfer_data = { destination: merchant.stripeAccountId };
-      } else if (!isTestMode && !merchant.stripeAccountId) {
-        throw new BadRequestException('Händler hat noch kein Stripe-Konto verknüpft');
-      }
+      // WICHTIG: Der Kauf läuft — wie die Miete — komplett über das
+      // PLATTFORM-Konto. KEINE Destination-Charge / keine sofortige Aufteilung
+      // an den Händler. Der Händler-Anteil wird in handlePaymentSucceeded als
+      // Provision/Guthaben erfasst und SPÄTER vom Admin ausgezahlt: per Stripe-
+      // Transfer, wenn der Händler ein Connect-Konto hat, sonst manuell per
+      // Banküberweisung (IBAN). Dadurch kann der Kunde IMMER kaufen — auch wenn
+      // der Händler (noch) kein bzw. gar nie ein Stripe-Konto hat.
+      // (Nebeneffekt: behebt die frühere Doppelzahlung im Live-Betrieb, bei der
+      //  die Destination-Charge UND das spätere Payout dasselbe Geld schickten.)
+      void commissionCents; void merchant;
 
       const paymentIntent = await this.stripe.paymentIntents.create(intentParams);
+
+      // PI-ID am Auftrag vermerken (für den Aufräum-Job unbezahlter Bestellungen).
+      await this.orderRepo.update(order.id, { checkoutPaymentIntentId: paymentIntent.id });
 
       return {
         clientSecret: paymentIntent.client_secret,
@@ -130,6 +137,8 @@ export class PaymentsService {
             type: 'rental_extension',
           },
         });
+        await this.orderRepo.update(order.id, { checkoutPaymentIntentId: extIntent.id });
+
         return {
           clientSecret: extIntent.client_secret,
           paymentIntentId: extIntent.id,
@@ -194,6 +203,9 @@ export class PaymentsService {
           rentalAmount: String(order.totalPrice),
         },
       });
+
+      // PI-ID am Auftrag vermerken (für den Aufräum-Job unbezahlter Bestellungen).
+      await this.orderRepo.update(order.id, { checkoutPaymentIntentId: rentalPaymentIntent.id });
 
       // 2) Kaution — wird NICHT mehr hier erstellt.
       //    Sie wird serverseitig in handlePaymentSucceeded() in EINEM

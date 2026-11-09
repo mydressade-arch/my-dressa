@@ -62,12 +62,12 @@ export default function WishlistPage() {
       ) : items.length === 0 ? (
         <div style={{ textAlign:'center', padding:'80px 0', border:'1px solid #c4c7c7' }}>
           <Icon name="favorite" style={{ fontSize:'clamp(28px,4vw,48px)', color:'#c4c7c7', display:'inline-block', marginBottom:16 }} />
-          <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:20, marginBottom:8 }}>Your wishlist is empty</h3>
+          <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:20, marginBottom:8 }}>{t('Deine Wunschliste ist leer', 'Your wishlist is empty')}</h3>
           <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:24, lineHeight:1.6 }}>
-            Save pieces you love by clicking the ♡ heart icon on any product.
+            {t('Speichere Stücke, die dir gefallen, mit einem Klick auf das ♡-Herz an jedem Produkt.', 'Save pieces you love by clicking the ♡ heart icon on any product.')}
           </p>
           <Link href="/products" style={{ background:'#1c1b1b', color:'#fff', padding:'12px 24px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textDecoration:'none' }}>
-            Browse Collection
+            {t('Kollektion ansehen', 'Browse Collection')}
           </Link>
         </div>
       ) : (

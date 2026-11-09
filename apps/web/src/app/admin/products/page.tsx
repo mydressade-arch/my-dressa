@@ -36,7 +36,8 @@ export default function AdminProductsPage() {
       </div>
 
       <div className="bg-white border border-outline-variant">
-        <table className="w-full text-sm">
+        <div style={{ overflowX:'auto' }}>
+<table className="w-full text-sm">
           <thead>
             <tr className="border-b border-outline-variant">
               {['Product', 'Merchant', 'Type', 'Rent', 'Buy', 'Status', 'Actions'].map(h => (
@@ -87,11 +88,12 @@ export default function AdminProductsPage() {
                 ))}
           </tbody>
         </table>
+</div>
         {data.totalPages > 1 && (
           <div className="px-5 py-4 border-t border-outline-variant flex items-center justify-between">
-            <p className="text-xs text-secondary">Page {page} of {data.totalPages}</p>
+            <p className="text-xs text-secondary">{t('Seite','Page')} {page} {t('von','of')} {data.totalPages}</p>
             <div className="flex gap-2">
-              <Button variant="ghost" size="sm" disabled={page===1} onClick={()=>setPage(p=>p-1)}>Prev</Button>
+              <Button variant="ghost" size="sm" disabled={page===1} onClick={()=>setPage(p=>p-1)}>{t('Zurück','Prev')}</Button>
               <Button variant="ghost" size="sm" disabled={page===data.totalPages} onClick={()=>setPage(p=>p+1)}>{t('Weiter','Next')}</Button>
             </div>
           </div>

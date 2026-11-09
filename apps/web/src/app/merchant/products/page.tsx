@@ -18,7 +18,7 @@ export default function MerchantProductsPage() {
     productsApi.myProducts().then(({data})=>setProducts(data||[])).catch(()=>{}).finally(()=>setLoading(false))
   }
   const deleteProduct = async (p: any) => {
-    const ok = await confirm({ title: 'Produkt löschen', message: `"${p.title}" wirklich löschen? Dies kann nicht rückgängig gemacht werden.`, confirmLabel: t('Löschen', 'Delete'), danger: true })
+    const ok = await confirm({ title: t('Produkt löschen','Delete product'), message: t(`"${p.title}" wirklich löschen? Dies kann nicht rückgängig gemacht werden.`, `Really delete "${p.title}"? This cannot be undone.`), confirmLabel: t('Löschen', 'Delete'), danger: true })
     if (!ok) return
     try {
       const { data: res } = await api.delete(`/products/${p.id}`) as any
@@ -75,7 +75,8 @@ export default function MerchantProductsPage() {
         </div>
       ) : (
         <div style={{ background:'#fff',border:'1px solid #c4c7c7' }}>
-          <table style={{ width:'100%',fontSize:14,borderCollapse:'collapse' }}>
+          <div style={{ overflowX:'auto' }}>
+<table style={{ width:'100%',fontSize:14,borderCollapse:'collapse' }}>
             <thead>
               <tr style={{ borderBottom:'1px solid #c4c7c7' }}>
                 {[t('Produkt', 'Product'),t('Typ', 'Type'),'Rent','Buy',t('Status', 'Status'),'Kaution',''].map(h=>(
@@ -138,6 +139,7 @@ export default function MerchantProductsPage() {
               ))}
             </tbody>
           </table>
+</div>
         </div>
       )}
     </div>

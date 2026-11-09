@@ -19,6 +19,15 @@ const STATUS_STYLE: Record<string, {bg:string,color:string}> = {
 
 type ReturnCondition = 'good' | 'damaged' | 'lost' | 'late'
 
+// Feste Storno-Gründe (Code muss mit dem Backend übereinstimmen).
+const CANCEL_REASONS: { code: string; de: string; en: string }[] = [
+  { code: 'out_of_stock',   de: 'Nicht mehr auf Lager',                  en: 'Out of stock' },
+  { code: 'damaged',        de: 'Artikel beschädigt / Qualitätsmangel',  en: 'Item damaged / quality issue' },
+  { code: 'shipping_issue', de: 'Versand nicht möglich (Adresse/Region)', en: 'Cannot ship (address/region)' },
+  { code: 'pricing_error',  de: 'Preis- oder Angebotsfehler',            en: 'Pricing or listing error' },
+  { code: 'other',          de: 'Sonstiger Grund',                       en: 'Other reason' },
+]
+
 export default function MerchantOrdersPage() {
   const { toast, confirm } = useUI()
   const { t } = useLangStore()
@@ -44,6 +53,12 @@ export default function MerchantOrdersPage() {
   const [damageSev, setDamageSev]       = useState('minor')
   const [sendingReport, setSendingReport] = useState(false)
 
+  // Storno Modal (Händler)
+  const [cancelModal, setCancelModal] = useState<{orderId:string, isRental:boolean}|null>(null)
+  const [cancelReason, setCancelReason] = useState('out_of_stock')
+  const [cancelNote, setCancelNote]     = useState('')
+  const [cancelling, setCancelling]     = useState(false)
+
   const load = () => {
     setLoading(true)
     ordersApi.myMerchantOrders()
@@ -66,6 +81,19 @@ export default function MerchantOrdersPage() {
       setShipModal(null); setTrackingNum('')
     } catch (e: any) { notify(e.response?.data?.message || 'Fehler') }
     finally { setUpdating(null) }
+  }
+
+  const handleCancel = async () => {
+    if (!cancelModal) return
+    setCancelling(true)
+    try {
+      const { data } = await ordersApi.merchantCancel(cancelModal.orderId, cancelReason, cancelNote.trim() || undefined) as any
+      notify(data.message || t('Bestellung storniert — Kunde wurde benachrichtigt', 'Order cancelled — customer notified'))
+      setOrders(o => o.map(x => x.id === cancelModal.orderId ? { ...x, status:'cancelled' } : x))
+      setCancelModal(null); setCancelReason('out_of_stock'); setCancelNote('')
+    } catch (e: any) {
+      notify(e.response?.data?.message || t('Storno fehlgeschlagen', 'Cancellation failed'), 'error')
+    } finally { setCancelling(false) }
   }
 
   const confirmReturn = async () => {
@@ -183,6 +211,9 @@ export default function MerchantOrdersPage() {
             const canShip = !isExtension
               && (order.status === 'paid' || order.status === 'pending')
               && !order.trackingNumber
+            // Storno nur solange NICHT versandt (danach ist es ein Rückgabe-Fall).
+            const canCancel = !isExtension
+              && (order.status === 'paid' || order.status === 'pending')
 
             return (
               <div key={order.id} style={{ background:'#fff', border:'1px solid #c4c7c7' }}>
@@ -238,21 +269,21 @@ export default function MerchantOrdersPage() {
                       return (
                         <>
                           <p style={{ fontSize: 11, color: '#9e9e9b', display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-                            <span>Kunde zahlte</span>
+                            <span>{t('Kunde zahlte','Customer paid')}</span>
                             <span style={{ color: '#5e5e5b' }}>€{total.toFixed(2)}</span>
                           </p>
                           {ship > 0 && (
                             <p style={{ fontSize: 11, color: '#9e9e9b', display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-                              <span>davon Versand</span>
+                              <span>{t('davon Versand','incl. shipping')}</span>
                               <span style={{ color: '#5e5e5b' }}>€{ship.toFixed(2)}</span>
                             </p>
                           )}
                           <p style={{ fontSize: 11, color: '#9e9e9b', display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-                            <span>Provision ({Math.round(rate * 100)}%)</span>
+                            <span>{t('Provision','Commission')} ({Math.round(rate * 100)}%)</span>
                             <span style={{ color: '#b23b3b' }}>−€{commission.toFixed(2)}</span>
                           </p>
                           <div style={{ borderTop: '1px solid #ece7e5', marginTop: 4, paddingTop: 4, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline' }}>
-                            <span style={{ fontSize: 11, fontWeight: 600, color: '#1c1b1b' }}>Dein Anteil</span>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: '#1c1b1b' }}>{t('Dein Anteil','Your share')}</span>
                             <span style={{ fontWeight: 700, fontSize: 19, color: '#064E3B' }}>€{merchant.toFixed(2)}</span>
                           </div>
                         </>
@@ -297,6 +328,15 @@ export default function MerchantOrdersPage() {
                         style={{ fontSize:12, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em', padding:'10px 20px', background:'#1c1b1b', color:'#fff', border:'none', cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
                         <Icon name="local_shipping" style={{ fontSize:16 }} />
                         DHL versenden
+                      </button>
+                    )}
+
+                    {/* ── Stornieren (Händler, mit Grund) ── */}
+                    {canCancel && (
+                      <button onClick={() => { setCancelModal({ orderId: order.id, isRental: tab === 'rental' }); setCancelReason('out_of_stock'); setCancelNote('') }}
+                        style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', padding:'10px 16px', background:'#fff', color:'#791F1F', border:'1px solid #f5c6c6', cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+                        <Icon name="cancel" style={{ fontSize:14 }} />
+                        {t('Stornieren', 'Cancel')}
                       </button>
                     )}
 
@@ -380,21 +420,21 @@ export default function MerchantOrdersPage() {
       {shipModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1002 }}>
           <div style={{ background:'#fff', padding:32, maxWidth:420, width:'90%' }}>
-            <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:22, fontWeight:700, marginBottom:6 }}>Versand bestätigen</h2>
+            <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:22, fontWeight:700, marginBottom:6 }}>{t('Versand bestätigen','Confirm shipment')}</h2>
             <p style={{ fontSize:13, color:'#5e5e5b', marginBottom:24, lineHeight:1.5 }}>
-              Gib die DHL Sendungsnummer ein. Der Kunde wird automatisch informiert.
+              {t('Gib die DHL Sendungsnummer ein. Der Kunde wird automatisch informiert.','Enter the DHL tracking number. The customer is notified automatically.')}
             </p>
             <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>
-              DHL Sendungsnummer *
+              {t('DHL Sendungsnummer','DHL tracking number')} *
             </label>
             <input value={trackingNum} onChange={e => setTrackingNum(e.target.value)}
-              placeholder="z.B. 1234567890123"
+              placeholder={t('z.B. 1234567890123','e.g. 1234567890123')}
               style={{ width:'100%', padding:'12px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', fontFamily:'monospace', boxSizing:'border-box' as const, marginBottom:10 }} />
             <p style={{ fontSize:11, color:'#9e9e9b', marginBottom:20 }}>
-              Tracking Link: dhl.de → Sendung verfolgen → Nummer eingeben
+              {t('Tracking-Link: dhl.de → Sendung verfolgen → Nummer eingeben','Tracking link: dhl.de → Track shipment → enter number')}
             </p>
             <div style={{ background:'#E6F1FB', padding:'10px 14px', fontSize:12, color:'#0C447C', marginBottom:20 }}>
-              ℹ️ Status wird automatisch auf <strong>Shipped</strong> gesetzt.
+              ℹ️ {t('Status wird automatisch auf','Status is automatically set to')} <strong>Shipped</strong> {t('gesetzt.','.')}
             </div>
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={handleShip} disabled={!trackingNum.trim() || updating === shipModal}
@@ -410,26 +450,75 @@ export default function MerchantOrdersPage() {
         </div>
       )}
 
+      {/* ── Storno Modal (Händler) ── */}
+      {cancelModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1002 }}>
+          <div style={{ background:'#fff', padding:32, maxWidth:460, width:'90%', maxHeight:'85vh', overflow:'auto' }}>
+            <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:22, fontWeight:700, marginBottom:6 }}>
+              {t('Bestellung stornieren', 'Cancel order')}
+            </h2>
+            <p style={{ fontSize:13, color:'#5e5e5b', marginBottom:22, lineHeight:1.5 }}>
+              {cancelModal.isRental
+                ? t('Die Miete wird storniert, der Kunde erhält sein Geld zurück und eine evtl. reservierte Kaution wird sofort freigegeben. Der Kunde wird per E-Mail benachrichtigt.',
+                    'The rental will be cancelled, the customer is fully refunded and any reserved deposit is released immediately. The customer is notified by email.')
+                : t('Die Bestellung wird storniert, der Kunde erhält sein Geld zurück und wird per E-Mail benachrichtigt.',
+                    'The order will be cancelled, the customer is fully refunded and notified by email.')}
+            </p>
+
+            <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>
+              {t('Grund der Stornierung', 'Cancellation reason')} *
+            </label>
+            <select value={cancelReason} onChange={e => setCancelReason(e.target.value)}
+              style={{ width:'100%', padding:'12px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', background:'#fff', boxSizing:'border-box' as const, marginBottom:14 }}>
+              {CANCEL_REASONS.map(r => (
+                <option key={r.code} value={r.code}>{t(r.de, r.en)}</option>
+              ))}
+            </select>
+
+            {cancelReason === 'other' && (
+              <textarea value={cancelNote} onChange={e => setCancelNote(e.target.value)}
+                placeholder={t('Grund kurz beschreiben…', 'Briefly describe the reason…')} rows={3}
+                style={{ width:'100%', padding:'12px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const, marginBottom:14, fontFamily:'inherit', resize:'vertical' as const }} />
+            )}
+
+            <div style={{ background:'#FCEBEB', padding:'10px 14px', fontSize:12, color:'#791F1F', marginBottom:20, lineHeight:1.5 }}>
+              ⚠️ {t('Diese Aktion kann nicht rückgängig gemacht werden.', 'This action cannot be undone.')}
+            </div>
+
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={handleCancel} disabled={cancelling || (cancelReason==='other' && !cancelNote.trim())}
+                style={{ flex:1, background:'#791F1F', color:'#fff', border:'none', padding:14, fontSize:12, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.05em', cursor:'pointer', opacity:(cancelling || (cancelReason==='other' && !cancelNote.trim()))?0.5:1 }}>
+                {cancelling ? t('Storniere…', 'Cancelling…') : t('Jetzt stornieren', 'Cancel now')}
+              </button>
+              <button onClick={() => { setCancelModal(null); setCancelNote('') }}
+                style={{ background:'none', border:'1px solid #c4c7c7', padding:'14px 18px', fontSize:12, cursor:'pointer', color:'#5e5e5b' }}>
+                {t('Abbrechen', 'Back')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Damage Report Modal ── */}
       {damageReport && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1001 }}>
           <div style={{ background:'#fff', padding:28, maxWidth:480, width:'90%', maxHeight:'80vh', overflow:'auto' }}>
-            <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:20, fontWeight:700, marginBottom:6 }}>Schaden melden</h2>
+            <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:20, fontWeight:700, marginBottom:6 }}>{t('Schaden melden','Report damage')}</h2>
             <p style={{ fontSize:13, color:'#5e5e5b', marginBottom:20, lineHeight:1.5 }}>
-              Beschreibe den Schaden und lade Fotos als Beweis hoch.
+              {t('Beschreibe den Schaden und lade Fotos als Beweis hoch.','Describe the damage and upload photos as proof.')}
             </p>
-            <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Schwere</label>
+            <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>{t('Schwere','Severity')}</label>
             <select value={damageSev} onChange={e => setDamageSev(e.target.value)}
               style={{ width:'100%', padding:'10px 14px', fontSize:13, border:'1px solid #c4c7c7', outline:'none', marginBottom:14, boxSizing:'border-box' as const }}>
-              <option value="minor">Leichter Schaden</option>
-              <option value="moderate">Mittlerer Schaden</option>
-              <option value="severe">Schwerer Schaden</option>
-              <option value="late">Verspätete Rückgabe</option>
-              <option value="lost">Nicht zurückgegeben</option>
-              <option value="lost">Verloren</option>
+              <option value="minor">{t('Leichter Schaden','Minor damage')}</option>
+              <option value="moderate">{t('Mittlerer Schaden','Moderate damage')}</option>
+              <option value="severe">{t('Schwerer Schaden','Severe damage')}</option>
+              <option value="late">{t('Verspätete Rückgabe','Late return')}</option>
+              <option value="lost">{t('Nicht zurückgegeben','Not returned')}</option>
+              <option value="lost">{t('Verloren','Lost')}</option>
             </select>
             <textarea value={damageDesc} onChange={e => setDamageDesc(e.target.value)}
-              placeholder="Beschreibe den Schaden..." rows={4}
+              placeholder={t('Beschreibe den Schaden...','Describe the damage...')} rows={4}
               style={{ width:'100%', padding:'12px 14px', fontSize:13, border:'1px solid #c4c7c7', outline:'none', resize:'vertical', boxSizing:'border-box' as const, marginBottom:14 }} />
             <input type="file" multiple accept="image/*"
               onChange={e => setDamagePhotos(Array.from(e.target.files||[]).slice(0,5))}
@@ -437,11 +526,11 @@ export default function MerchantOrdersPage() {
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={submitDamageReport} disabled={!damageDesc.trim() || sendingReport}
                 style={{ flex:1, background:'#ba1a1a', color:'#fff', border:'none', padding:12, fontSize:12, fontWeight:600, textTransform:'uppercase' as const, cursor:'pointer', opacity:(!damageDesc.trim()||sendingReport)?0.5:1 }}>
-                {sendingReport ? 'Senden...' : 'Schaden melden'}
+                {sendingReport ? t('Senden...','Sending...') : t('Schaden melden','Report damage')}
               </button>
               <button onClick={() => { setDamageReport(null); setDamageDesc(''); setDamageSev('minor'); setDamagePhotos([]) }}
                 style={{ background:'none', border:'1px solid #c4c7c7', padding:'12px 16px', fontSize:12, cursor:'pointer', color:'#5e5e5b' }}>
-                Abbrechen
+                {t('Abbrechen','Cancel')}
               </button>
             </div>
           </div>
@@ -454,14 +543,14 @@ export default function MerchantOrdersPage() {
           <div style={{ background:'#fff', padding:32, maxWidth:440, width:'90%', maxHeight:'80vh', overflow:'auto' }}>
             <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:22, fontWeight:700, marginBottom:6 }}>{t('Rückgabe bestätigen','Confirm return')}</h2>
             <p style={{ fontSize:13, color:'#5e5e5b', marginBottom:24 }}>
-              In welchem Zustand ist das Kleid zurückgekommen?
+              {t('In welchem Zustand ist das Kleid zurückgekommen?','What condition did the dress come back in?')}
             </p>
             <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:20 }}>
               {([
-                ['good',    '✓ Guter Zustand — Kaution wird zurückgezahlt', '#EAF3DE', '#27500A'],
-                ['damaged', '⚠ Beschädigt — Admin prüft die Kaution',       '#FAEEDA', '#633806'],
-                ['late',    '⏱ Verspätet zurück — Admin prüft die Kaution', '#FAEEDA', '#8a5a00'],
-                ['lost',    '✗ Nicht zurückgekommen — Admin prüft',         '#FCEBEB', '#791F1F'],
+                ['good',    t('✓ Guter Zustand — Kaution wird zurückgezahlt','✓ Good condition — deposit will be refunded'), '#EAF3DE', '#27500A'],
+                ['damaged', t('⚠ Beschädigt — Admin prüft die Kaution','⚠ Damaged — admin reviews the deposit'),       '#FAEEDA', '#633806'],
+                ['late',    t('⏱ Verspätet zurück — Admin prüft die Kaution','⏱ Returned late — admin reviews the deposit'), '#FAEEDA', '#8a5a00'],
+                ['lost',    t('✗ Nicht zurückgekommen — Admin prüft','✗ Not returned — admin reviews'),         '#FCEBEB', '#791F1F'],
               ] as const).map(([val, label, bg, color]) => (
                 <label key={val} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', background:returnCondition===val?bg:'#fdf8f8', border:`1.5px solid ${returnCondition===val?color:'#c4c7c7'}`, cursor:'pointer' }}>
                   <input type="radio" name="condition" value={val} checked={returnCondition===val} onChange={() => setReturnCondition(val)} style={{ accentColor: color }} />
@@ -471,11 +560,11 @@ export default function MerchantOrdersPage() {
             </div>
             {returnCondition !== 'good' && (
               <>
-                <textarea placeholder="Schadensbeschreibung (empfohlen)..." value={damageNotes}
+                <textarea placeholder={t('Schadensbeschreibung (empfohlen)...','Damage description (recommended)...')} value={damageNotes}
                   onChange={e => setDamageNotes(e.target.value)} rows={3}
                   style={{ width:'100%', padding:'12px 14px', fontSize:13, border:'1px solid #c4c7c7', outline:'none', resize:'vertical', boxSizing:'border-box' as const, marginBottom:12 }} />
                 <div style={{ marginBottom:16 }}>
-                  <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase' as const, color:'#791F1F', display:'block', marginBottom:6 }}>Fotos als Beweis</label>
+                  <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase' as const, color:'#791F1F', display:'block', marginBottom:6 }}>{t('Fotos als Beweis','Photos as proof')}</label>
                   <input type="file" multiple accept="image/*"
                     onChange={e => setDamagePhotos(Array.from(e.target.files||[]).slice(0,5))}
                     style={{ fontSize:12, width:'100%' }} />

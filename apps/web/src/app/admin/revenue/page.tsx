@@ -24,14 +24,14 @@ export default function AdminRevenuePage() {
 
   return (
     <div>
-      <h1 className="font-serif text-3xl font-bold mb-2">Revenue</h1>
-      <p className="text-secondary text-sm mb-8">Platform commission overview</p>
+      <h1 className="font-serif text-3xl font-bold mb-2">{t('Umsatz','Revenue')}</h1>
+      <p className="text-secondary text-sm mb-8">{t('Übersicht der Plattform-Provisionen','Platform commission overview')}</p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
         {[
-          { label: t('Total Revenue', 'Total Revenue'), value: `€${total.toFixed(2)}`, icon: 'payments', color: '#064E3B' },
-          { label: 'Total Orders', value: stats?.totalOrders || 0, icon: 'package_2', color: '#9E896A' },
-          { label: 'Active Users', value: stats?.totalUsers || 0, icon: 'group', color: '#185FA5' },
+          { label: t('Gesamtumsatz', 'Total Revenue'), value: `€${total.toFixed(2)}`, icon: 'payments', color: '#064E3B' },
+          { label: t('Bestellungen gesamt','Total Orders'), value: stats?.totalOrders || 0, icon: 'package_2', color: '#9E896A' },
+          { label: t('Aktive Nutzer','Active Users'), value: stats?.totalUsers || 0, icon: 'group', color: '#185FA5' },
         ].map(({ label, value, icon, color }) => (
           <div key={label} className="bg-white border border-outline-variant p-6">
             <div className="w-10 h-10 flex items-center justify-center mb-4" style={{ background: '#f1edec' }}>
@@ -45,17 +45,18 @@ export default function AdminRevenuePage() {
 
       <div className="bg-white border border-outline-variant">
         <div className="px-6 py-5 border-b border-outline-variant">
-          <h2 className="font-serif text-lg font-semibold">Revenue by Type</h2>
+          <h2 className="font-serif text-lg font-semibold">{t('Umsatz nach Typ','Revenue by Type')}</h2>
         </div>
         {loading ? (
           <div className="p-6 space-y-3">{[1,2].map(i=><div key={i} className="h-12 bg-surface-container-high animate-pulse"/>)}</div>
         ) : report.length === 0 ? (
           <div className="px-6 py-12 text-center text-secondary text-sm">{t('Noch keine Umsatzdaten','No revenue data yet')}</div>
         ) : (
-          <table className="w-full text-sm">
+          <div style={{ overflowX:'auto' }}>
+<table className="w-full text-sm">
             <thead>
               <tr className="border-b border-outline-variant">
-                {[t('Type', 'Type'), t('Orders', 'Orders'), t('Merchant Payouts', 'Merchant Payouts'), t('Platform Revenue', 'Platform Revenue'), t('Avg Commission', 'Avg Commission')].map(h => (
+                {[t('Typ', 'Type'), t('Bestellungen', 'Orders'), t('Händler-Auszahlungen', 'Merchant Payouts'), t('Plattform-Umsatz', 'Platform Revenue'), t('Ø Provision', 'Avg Commission')].map(h => (
                   <th key={h} className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest text-on-surface-variant">{h}</th>
                 ))}
               </tr>
@@ -66,7 +67,7 @@ export default function AdminRevenuePage() {
                   <td className="px-6 py-4">
                     <span className={`text-xs font-semibold px-2.5 py-1 uppercase tracking-widest ${
                       row.type === 'rental' ? 'bg-tertiary-fixed text-on-tertiary-container' : 'bg-surface-container-highest text-secondary'
-                    }`}>{row.type}</span>
+                    }`}>{row.type === 'rental' ? t('Miete','Rental') : t('Kauf','Purchase')}</span>
                   </td>
                   <td className="px-6 py-4 font-medium">{row.totalOrders}</td>
                   <td className="px-6 py-4 text-secondary">€{Number(row.totalMerchantPayouts||0).toFixed(2)}</td>
@@ -78,6 +79,7 @@ export default function AdminRevenuePage() {
               ))}
             </tbody>
           </table>
+</div>
         )}
       </div>
     </div>

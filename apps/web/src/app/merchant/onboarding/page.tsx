@@ -6,8 +6,10 @@ import { useAuthStore } from '@/store/auth.store'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
+import { useLangStore } from '@/store/lang.store'
 
 export default function MerchantOnboardingPage() {
+  const { t } = useLangStore()
   const { user, loadUser } = useAuthStore()
   const router = useRouter()
   const [shopName, setShopName] = useState('')
@@ -27,7 +29,7 @@ export default function MerchantOnboardingPage() {
       await loadUser()
       router.push('/merchant/dashboard')
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to create merchant profile')
+      setError(e.response?.data?.message || t('Händlerprofil konnte nicht erstellt werden','Failed to create merchant profile'))
     } finally { setLoading(false) }
   }
 
@@ -38,18 +40,18 @@ export default function MerchantOnboardingPage() {
           <div className="w-16 h-16 flex items-center justify-center mx-auto mb-6" style={{ background: '#f1edec' }}>
             <Icon name="storefront" style={{ fontSize: 32, color: '#9E896A' }} />
           </div>
-          <h1 className="font-serif text-3xl font-bold mb-3">Händler werden</h1>
+          <h1 className="font-serif text-3xl font-bold mb-3">{t('Händler werden','Become a merchant')}</h1>
           <p className="text-secondary text-sm max-w-sm mx-auto leading-relaxed">
-            Join My Dressa and start renting and selling your fashion pieces to thousands of customers.
+            {t('Werde Teil von My Dressa und vermiete und verkaufe deine Modestücke an tausende Kundinnen und Kunden.','Join My Dressa and start renting and selling your fashion pieces to thousands of customers.')}
           </p>
         </div>
 
         <div className="bg-white border border-outline-variant p-8 mb-8">
           <div className="grid grid-cols-3 gap-4 mb-8 pb-8 border-b border-outline-variant text-center">
             {[
-              { icon: 'checkroom', label: 'List pieces' },
-              { icon: 'payments', label: 'Earn revenue' },
-              { icon: 'star', label: '10% commission' },
+              { icon: 'checkroom', label: t('Stücke einstellen','List pieces') },
+              { icon: 'payments', label: t('Einnahmen erzielen','Earn revenue') },
+              { icon: 'star', label: t('10% Provision','10% commission') },
             ].map(({ icon, label }) => (
               <div key={icon}>
                 <div className="w-10 h-10 flex items-center justify-center mx-auto mb-2" style={{ background: '#f1edec' }}>
@@ -62,23 +64,23 @@ export default function MerchantOnboardingPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
-              label="Shop Name"
+              label={t('Shop-Name','Shop Name')}
               value={shopName}
               onChange={e => setShopName(e.target.value)}
-              placeholder="Marias Vintage Mode"
+              placeholder={t('Marias Vintage Mode','Maria\'s Vintage Fashion')}
               required
             />
             {error && <div className="px-4 py-3 text-sm text-error bg-error-container">{error}</div>}
             <Button type="submit" variant="primary" size="lg" loading={loading} className="w-full">
-              Create My Shop
+              {t('Meinen Shop erstellen','Create My Shop')}
             </Button>
           </form>
         </div>
 
         <p className="text-center text-xs text-secondary">
-          By creating a shop you agree to our{' '}
-          <a href="/merchant-terms" className="text-primary underline">Händler-AGB</a>.
-          Platform fee: 10% on rentals, 15% on sales.
+          {t('Mit der Erstellung eines Shops stimmst du unseren ','By creating a shop you agree to our ')}
+          <a href="/merchant-terms" className="text-primary underline">{t('Händler-AGB','Merchant Terms')}</a>
+          {t(' zu. Plattformgebühr: 10% bei Miete, 15% bei Verkauf.','. Platform fee: 10% on rentals, 15% on sales.')}
         </p>
       </div>
     </div>

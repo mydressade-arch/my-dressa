@@ -59,7 +59,8 @@ export default function SupportOrdersPage() {
       <p style={{ fontSize:12, color:'#9e9e9b', marginBottom:12 }}>{total} {t('Ergebnisse', 'results')}</p>
 
       <div style={{ background:'#fff', border:'1px solid #c4c7c7' }}>
-        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+        <div style={{ overflowX:'auto' }}>
+<table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
           <thead>
             <tr style={{ borderBottom:'1px solid #c4c7c7', background:'#fdf8f8' }}>
               {['ID','Kunde','Produkt','Typ','Status','Betrag','Datum',''].map(h => (
@@ -97,6 +98,7 @@ export default function SupportOrdersPage() {
             })}
           </tbody>
         </table>
+</div>
       </div>
 
       {/* Pagination */}

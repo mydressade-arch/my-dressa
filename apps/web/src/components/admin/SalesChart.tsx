@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef } from 'react'
+import { useLangStore } from '@/store/lang.store'
 
 interface Props {
   data: { date: string; purchases: number; rentals: number; purchaseRevenue: number; rentalRevenue: number }[]
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export function SalesChart({ data, chartType }: Props) {
+  const { t, lang } = useLangStore()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const chartRef  = useRef<any>(null)
 
@@ -38,14 +40,14 @@ export function SalesChart({ data, chartType }: Props) {
           labels,
           datasets: [
             {
-              label: 'Käufe',
+              label: t('Käufe','Purchases'),
               data: purchases,
               backgroundColor: '#9E896A',
               borderRadius: 2,
               barPercentage: 0.5,
             },
             {
-              label: 'Mieten',
+              label: t('Mieten','Rentals'),
               data: rentals,
               backgroundColor: '#0C447C',
               borderRadius: 2,
@@ -94,13 +96,13 @@ export function SalesChart({ data, chartType }: Props) {
 
     load()
     return () => { chartRef.current?.destroy() }
-  }, [data, chartType])
+  }, [data, chartType, lang])
 
   return (
     <div style={{ position: 'relative', width: '100%', height: 240 }}>
       <canvas ref={canvasRef}
         role="img"
-        aria-label="Balkendiagramm: Käufe und Mieten der letzten 30 Tage" />
+        aria-label={t('Balkendiagramm: Käufe und Mieten der letzten 30 Tage','Bar chart: purchases and rentals over the last 30 days')} />
     </div>
   )
 }

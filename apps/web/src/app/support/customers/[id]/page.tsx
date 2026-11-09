@@ -20,7 +20,7 @@ export default function SupportCustomerDetailPage() {
       .finally(() => setLoading(false))
   }, [id])
 
-  if (loading) return <div style={{ padding:64, textAlign:'center', color:'#9e9e9b' }}>Laden...</div>
+  if (loading) return <div style={{ padding:64, textAlign:'center', color:'#9e9e9b' }}>{t('Laden...','Loading...')}</div>
   if (!data) return null
 
   const { user, orders, orderCount, totalSpent } = data
@@ -70,7 +70,8 @@ export default function SupportCustomerDetailPage() {
         {t('Bestellhistorie', 'Order History')}
       </h2>
       <div style={{ background:'#fff', border:'1px solid #c4c7c7' }}>
-        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+        <div style={{ overflowX:'auto' }}>
+<table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
           <thead>
             <tr style={{ borderBottom:'1px solid #c4c7c7', background:'#fdf8f8' }}>
               {['ID','Produkt','Typ','Status','Betrag','Datum',''].map(h => (
@@ -101,6 +102,7 @@ export default function SupportCustomerDetailPage() {
             })}
           </tbody>
         </table>
+</div>
       </div>
     </div>
   )

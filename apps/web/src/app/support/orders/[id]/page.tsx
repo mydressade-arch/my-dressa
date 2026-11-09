@@ -66,7 +66,7 @@ export default function SupportOrderDetailPage() {
     finally { setWorking(false) }
   }
 
-  if (loading) return <div style={{ padding:64, textAlign:'center', color:'#9e9e9b' }}>Laden...</div>
+  if (loading) return <div style={{ padding:64, textAlign:'center', color:'#9e9e9b' }}>{t('Laden...','Loading...')}</div>
   if (!order) return null
 
   const STATUS_STYLE: Record<string, any> = {
@@ -104,7 +104,7 @@ export default function SupportOrderDetailPage() {
 
         {/* Customer Info */}
         <div style={{ background:'#fdf8f8', padding:16, borderRadius:4 }}>
-          <p style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', color:'#9e9e9b', marginBottom:8 }}>Kunde</p>
+          <p style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', color:'#9e9e9b', marginBottom:8 }}>{t('Kunde','Customer')}</p>
           <p style={{ fontSize:14, fontWeight:600 }}>{order.user?.firstName} {order.user?.lastName}</p>
           <p style={{ fontSize:13, color:'#5e5e5b' }}>{order.user?.email}</p>
         </div>

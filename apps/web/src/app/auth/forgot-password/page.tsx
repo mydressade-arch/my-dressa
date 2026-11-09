@@ -26,39 +26,39 @@ export default function ForgotPasswordPage() {
           <Link href="/" style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: '#1c1b1b', textDecoration: 'none' }}>
             My Dressa
           </Link>
-          <p style={{ color: '#5e5e5b', fontSize: 14, marginTop: 8 }}>Reset your password</p>
+          <p style={{ color: '#5e5e5b', fontSize: 14, marginTop: 8 }}>{t('Passwort zurücksetzen', 'Reset your password')}</p>
         </div>
 
         <div style={{ background: '#fff', border: '1px solid #c4c7c7', padding: 32 }}>
           {sent ? (
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
               <Icon name="mail" style={{ fontSize:'clamp(24px,3vw,40px)', color: '#9E896A', display: 'inline-block', marginBottom: 16 }} />
-              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, marginBottom: 8 }}>Check your inbox</h3>
+              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, marginBottom: 8 }}>{t('Prüfe dein Postfach', 'Check your inbox')}</h3>
               <p style={{ fontSize: 14, color: '#5e5e5b', lineHeight: 1.6 }}>
-                If the email exists, a reset link was sent. Check your spam folder too.
+                {t('Falls die E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet. Schau auch im Spam-Ordner nach.', 'If the email exists, a reset link was sent. Check your spam folder too.')}
               </p>
               <Link href="/auth/login" style={{ display: 'inline-block', marginTop: 24, fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#1c1b1b', textDecoration: 'none', borderBottom: '1px solid #1c1b1b', paddingBottom: 2 }}>
-                Back to Sign In
+                {t('Zurück zum Login', 'Back to Sign In')}
               </Link>
             </div>
           ) : (
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <p style={{ fontSize: 14, color: '#5e5e5b', lineHeight: 1.6, marginBottom: 8 }}>
-                Enter your email address and we&apos;ll send you a link to reset your password.
+                {t('Gib deine E-Mail-Adresse ein und wir senden dir einen Link zum Zurücksetzen deines Passworts.', "Enter your email address and we'll send you a link to reset your password.")}
               </p>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5e5e5b', display: 'block', marginBottom: 6 }}>
-                  Email Address
+                  {t('E-Mail-Adresse', 'Email Address')}
                 </label>
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required
                   style={{ width: '100%', padding: '12px 14px', fontSize: 14, border: '1px solid #c4c7c7', outline: 'none', background: '#fdf8f8', boxSizing: 'border-box' as const }} />
               </div>
               <button type="submit" disabled={loading}
                 style={{ background: '#1c1b1b', color: '#fff', border: 'none', padding: 16, fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>
-                {loading ? 'Sending...' : 'Send Reset Link'}
+                {loading ? t('Senden...', 'Sending...') : t('Link zum Zurücksetzen senden', 'Send Reset Link')}
               </button>
               <Link href="/auth/login" style={{ textAlign: 'center', fontSize: 13, color: '#5e5e5b', textDecoration: 'none' }}>
-                ← Back to Sign In
+                ← {t('Zurück zum Login', 'Back to Sign In')}
               </Link>
             </form>
           )}

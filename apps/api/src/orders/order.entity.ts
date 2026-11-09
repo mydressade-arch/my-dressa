@@ -54,6 +54,11 @@ export class Order {
   @Column({ name: 'stripe_payment_intent_id', type: 'varchar', nullable: true })
   stripePaymentIntentId: string | null;
 
+  // PaymentIntent beim Checkout (noch NICHT bezahlt). Nur für den Aufräum-Job,
+  // um den echten Zahlungsstatus einer offenen Bestellung bei Stripe zu prüfen.
+  @Column({ name: 'checkout_payment_intent_id', type: 'varchar', nullable: true })
+  checkoutPaymentIntentId: string | null;
+
   @Column({ name: 'shipping_address', type: 'jsonb', nullable: true })
   shippingAddress: Record<string, any> | null;
 
@@ -82,6 +87,14 @@ export class Order {
 
   @Column({ name: 'return_approved', default: false })
   returnApproved: boolean;
+
+  // Storno-Grund (vom Händler aus fester Liste gewählt, optional + Freitext).
+  @Column({ name: 'cancel_reason', type: 'varchar', nullable: true })
+  cancelReason: string | null;
+
+  // Wer hat storniert: 'customer' | 'merchant' | 'admin'.
+  @Column({ name: 'cancelled_by', type: 'varchar', nullable: true })
+  cancelledBy: string | null;
 
   @ManyToOne(() => User, (user) => user.orders)
   @JoinColumn({ name: 'user_id' })

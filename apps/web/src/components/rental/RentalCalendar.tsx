@@ -192,11 +192,11 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, rentalDura
       {/* Info */}
       <div style={{ marginTop:12, padding:'10px 14px', background:'#f7f3f2', border:'1px solid #e8e3e1', fontSize:12, color:'#5e5e5b', display:'flex', gap:8, alignItems:'flex-start' }}>
         <Icon name="info" style={{ fontSize:15, color:'#9E896A', flexShrink:0, marginTop:1 }} />
-        <span>Rote Tage sind bereits vergeben. Mietdauer: {RENTAL_DAYS} Tage. Kaution €{depositValue} wird beim Buchen abgebucht und bei pünktlicher Rückgabe erstattet.</span>
+        <span>{t(`Rote Tage sind bereits vergeben. Mietdauer: ${RENTAL_DAYS} Tage. Kaution €${depositValue} wird beim Buchen reserviert und bei pünktlicher Rückgabe freigegeben.`, `Red days are already booked. Rental period: ${RENTAL_DAYS} days. A deposit of €${depositValue} is reserved at booking and released on timely return.`)}</span>
       </div>
       <div style={{ marginTop:8, padding:'10px 14px', background:'#E6F1FB', border:'1px solid #cce0ff', fontSize:12, color:'#0C447C', display:'flex', gap:8, alignItems:'flex-start' }}>
         <Icon name="local_shipping" style={{ fontSize:15, color:'#0C447C', flexShrink:0, marginTop:1 }} />
-        <span><strong>Lieferzeit:</strong> DHL liefert in 1–2 Werktagen. Startdatum mind. 2 Tage vor der Feier wählen. Rückgabe spätestens 2–3 Tage danach.</span>
+        <span><strong>{t('Lieferzeit:','Delivery time:')}</strong> {t('DHL liefert in 1–2 Werktagen. Startdatum mind. 2 Tage vor der Feier wählen. Rückgabe spätestens 2–3 Tage danach.','DHL delivers in 1–2 business days. Pick a start date at least 2 days before your event. Return at the latest 2–3 days afterwards.')}</span>
       </div>
 
       {/* Summary */}
@@ -218,7 +218,7 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, rentalDura
               </div>
             )}
             <div style={{ display:'flex', justifyContent:'space-between', fontSize:15, fontWeight:700, paddingTop:10, borderTop:'1px solid #e8e3e1' }}>
-              <span>Gesamt</span>
+              <span>{t('Gesamt','Total')}</span>
               <span>€{total.toFixed(2)}</span>
             </div>
             <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'#9e9e9b' }}>

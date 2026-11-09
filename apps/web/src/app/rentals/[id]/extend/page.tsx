@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { rentalsApi, paymentsApi } from '@/lib/api'
 import { getStripe } from '@/lib/stripe'
+import { useLangStore } from '@/store/lang.store'
 import {
   Elements,
   PaymentElement,
@@ -16,6 +17,7 @@ type Option = { extraDays: number; fee: number }
 export default function ExtendRentalPage() {
   const params = useParams()
   const router = useRouter()
+  const { t } = useLangStore()
   const rentalId = String(params?.id ?? '')
 
   const [loading, setLoading]   = useState(true)
@@ -50,7 +52,7 @@ export default function ExtendRentalPage() {
         setUsed(d.extensionsUsed ?? 0)
         setMaxExt(d.maxExtensions ?? 2)
       })
-      .catch((e: any) => setError(e?.response?.data?.message || 'Fehler beim Laden'))
+      .catch((e: any) => setError(e?.response?.data?.message || t('Fehler beim Laden', 'Error while loading')))
       .finally(() => setLoading(false))
   }, [rentalId])
 
@@ -65,10 +67,10 @@ export default function ExtendRentalPage() {
 
       const pay = await paymentsApi.createIntent(orderId)
       const cs = (pay as any).data?.clientSecret
-      if (!cs) throw new Error('Zahlung konnte nicht gestartet werden')
+      if (!cs) throw new Error(t('Zahlung konnte nicht gestartet werden', 'Payment could not be started'))
       setClientSecret(cs)
     } catch (e: any) {
-      setError(e?.response?.data?.message || 'Verlängerung fehlgeschlagen')
+      setError(e?.response?.data?.message || t('Verlängerung fehlgeschlagen', 'Extension failed'))
       setChosen(null)
     } finally {
       setCreating(false)
@@ -82,7 +84,7 @@ export default function ExtendRentalPage() {
   return (
     <div style={{ maxWidth: 640, margin: '0 auto', padding: '40px 20px' }}>
       <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, marginBottom: 8 }}>
-        Miete verlängern
+        {t('Miete verlängern', 'Extend rental')}
       </h1>
 
       {error && (
@@ -94,28 +96,28 @@ export default function ExtendRentalPage() {
       {!canExtend ? (
         <div style={{ background: '#fff', border: '1px solid #c4c7c7', padding: 24 }}>
           <p style={{ fontSize: 14, color: '#5e5e5b', lineHeight: 1.6 }}>
-            {reason || 'Verlängerung ist für diese Miete nicht möglich.'}
+            {reason || t('Verlängerung ist für diese Miete nicht möglich.', 'Extension is not possible for this rental.')}
           </p>
           <button
             onClick={() => router.push('/account')}
             style={{ marginTop: 16, padding: '10px 24px', fontSize: 13, fontWeight: 600, background: '#1A1A1A', color: '#fff', border: 'none', cursor: 'pointer' }}>
-            Zurück zum Konto
+            {t('Zurück zum Konto', 'Back to account')}
           </button>
         </div>
       ) : clientSecret && stripeInstance ? (
         <div style={{ background: '#fff', border: '1px solid #c4c7c7', padding: 24 }}>
           <div style={{ background: '#fdf8f8', padding: 16, marginBottom: 20 }}>
             <p style={{ fontSize: 13, color: '#5e5e5b', marginBottom: 4 }}>
-              Verlängerung um <strong>{chosen?.extraDays} Tage</strong>
+              {t('Verlängerung um', 'Extension by')} <strong>{chosen?.extraDays} {t('Tage', 'days')}</strong>
             </p>
             <p style={{ fontSize: 13, color: '#5e5e5b', marginBottom: 4 }}>
-              Neues Rückgabedatum: <strong>{newEndDate}</strong>
+              {t('Neues Rückgabedatum:', 'New return date:')} <strong>{newEndDate}</strong>
             </p>
             <p style={{ fontSize: 18, fontWeight: 700, marginTop: 8 }}>
               €{Number(chosen?.fee ?? 0).toFixed(2)}
             </p>
             <p style={{ fontSize: 11, color: '#8a8a87', marginTop: 4 }}>
-              Ohne Versandkosten — das Kleid ist bereits bei dir.
+              {t('Ohne Versandkosten — das Kleid ist bereits bei dir.', 'No shipping costs — the dress is already with you.')}
             </p>
           </div>
 
@@ -128,14 +130,14 @@ export default function ExtendRentalPage() {
       ) : (
         <div style={{ background: '#fff', border: '1px solid #c4c7c7', padding: 24 }}>
           <p style={{ fontSize: 14, color: '#5e5e5b', marginBottom: 6 }}>
-            Aktuelles Rückgabedatum: <strong>{currentEnd}</strong>
+            {t('Aktuelles Rückgabedatum:', 'Current return date:')} <strong>{currentEnd}</strong>
           </p>
           <p style={{ fontSize: 12, color: '#8a8a87', marginBottom: 20 }}>
-            Verlängerungen genutzt: {used} von {maxExt}
+            {t('Verlängerungen genutzt:', 'Extensions used:')} {used} {t('von', 'of')} {maxExt}
           </p>
 
           <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
-            Um wie viele Tage möchtest du verlängern?
+            {t('Um wie viele Tage möchtest du verlängern?', 'By how many days would you like to extend?')}
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -151,15 +153,15 @@ export default function ExtendRentalPage() {
                   textAlign: 'left',
                 }}
               >
-                <span style={{ fontSize: 14 }}>+ {opt.extraDays} Tage</span>
+                <span style={{ fontSize: 14 }}>+ {opt.extraDays} {t('Tage', 'days')}</span>
                 <span style={{ fontSize: 15, fontWeight: 700 }}>€{Number(opt.fee).toFixed(2)}</span>
               </button>
             ))}
           </div>
 
           <p style={{ fontSize: 11, color: '#8a8a87', marginTop: 16, lineHeight: 1.6 }}>
-            Die Verlängerungsgebühr enthält keine Versandkosten. Das Rückgabedatum
-            wird nach der Zahlung automatisch aktualisiert.
+            {t('Die Verlängerungsgebühr enthält keine Versandkosten. Das Rückgabedatum wird nach der Zahlung automatisch aktualisiert.',
+               'The extension fee does not include shipping. The return date is updated automatically after payment.')}
           </p>
         </div>
       )}
@@ -170,6 +172,7 @@ export default function ExtendRentalPage() {
 function ExtensionPaymentForm({ onSuccess }: { onSuccess: () => void }) {
   const stripe = useStripe()
   const elements = useElements()
+  const { t } = useLangStore()
   const [paying, setPaying] = useState(false)
   const [err, setErr] = useState('')
 
@@ -184,7 +187,7 @@ function ExtensionPaymentForm({ onSuccess }: { onSuccess: () => void }) {
     })
 
     if (error) {
-      setErr(error.message || 'Zahlung fehlgeschlagen')
+      setErr(error.message || t('Zahlung fehlgeschlagen', 'Payment failed'))
       setPaying(false)
       return
     }
@@ -210,7 +213,7 @@ function ExtensionPaymentForm({ onSuccess }: { onSuccess: () => void }) {
           cursor: paying ? 'default' : 'pointer', opacity: paying ? 0.6 : 1,
         }}
       >
-        {paying ? 'Wird verarbeitet …' : 'Verlängerung bezahlen'}
+        {paying ? t('Wird verarbeitet …', 'Processing …') : t('Verlängerung bezahlen', 'Pay for extension')}
       </button>
     </div>
   )

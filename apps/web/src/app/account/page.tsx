@@ -322,7 +322,7 @@ function AccountPageInner() {
                               const msg = isPaid
                                 ? 'Bist du sicher? Die Zahlung wird vollständig erstattet (5-10 Werktage).'
                                 : 'Bestellung wirklich stornieren?'
-                              const cancelOk = await confirm({ title:'Bestellung stornieren', message: isPaid ? 'Die Zahlung wird vollständig erstattet (5–10 Werktage).' : 'Bestellung wirklich stornieren?', confirmLabel:'Stornieren', danger:true })
+                              const cancelOk = await confirm({ title:t('Bestellung stornieren','Cancel order'), message: isPaid ? t('Die Zahlung wird vollständig erstattet (5–10 Werktage).','The payment will be fully refunded (5–10 business days).') : t('Bestellung wirklich stornieren?','Really cancel this order?'), confirmLabel:t('Stornieren','Cancel order'), danger:true })
                               if (!cancelOk) return
                               try {
                                 const { data } = await ordersApi.cancel(o.id) as any
@@ -391,7 +391,7 @@ function AccountPageInner() {
                         {/* Order Status Badge */}
                         {r.order?.status === 'delivered' && r.status !== 'returned' && (
                           <div style={{ fontSize:11, color:'#27500A', background:'#EAF3DE', padding:'4px 8px', marginBottom:8, display:'inline-block' }}>
-                            ✓ Geliefert — bitte zurücksenden
+                            ✓ {t('Geliefert — bitte zurücksenden','Delivered — please return')}
                           </div>
                         )}
 
@@ -500,32 +500,32 @@ function AccountPageInner() {
 
                 {twoFaStep==='scan' && qrCode && (
                   <div>
-                    <p style={{ fontSize:13, color:'#5e5e5b', marginBottom:12, lineHeight:1.6 }}>1. <strong>Google Authenticator</strong> App auf dem Handy \u00f6ffnen<br/>2. Tippe auf + \u2192 QR-Code scannen<br/>3. Scanne diesen Code:</p>
+                    <p style={{ fontSize:13, color:'#5e5e5b', marginBottom:12, lineHeight:1.6 }}>{t('1. Google Authenticator App auf dem Handy \u00f6ffnen','1. Open the Google Authenticator app on your phone')}<br/>{t('2. Tippe auf + \u2192 QR-Code scannen','2. Tap + \u2192 Scan QR code')}<br/>{t('3. Scanne diesen Code:','3. Scan this code:')}</p>
                     <img src={qrCode} alt='QR Code' style={{ width:160, height:160, display:'block', marginBottom:16, border:'1px solid #c4c7c7' }} />
-                    <p style={{ fontSize:13, color:'#5e5e5b', marginBottom:8 }}>4. 6-stelligen Code eingeben:</p>
+                    <p style={{ fontSize:13, color:'#5e5e5b', marginBottom:8 }}>{t('4. 6-stelligen Code eingeben:','4. Enter the 6-digit code:')}</p>
                     <div style={{ display:'flex', gap:8 }}>
                       <input value={otp2FA} onChange={e => setOtp2FA(e.target.value.replace(/[^0-9]/g,'').slice(0,6))} placeholder='000000' maxLength={6}
                         style={{ padding:'10px', fontSize:20, border:'1px solid #c4c7c7', outline:'none', width:110, fontFamily:'monospace', letterSpacing:'0.2em', textAlign:'center' }} />
                       <button onClick={async () => {
-                        try { await api.post('/auth/2fa/enable', { code: otp2FA }); setTwoFaEnabled(true); setTwoFaStep('idle'); setOtp2FA(''); setQrCode(''); toast('2FA aktiviert ✓', 'success') }
-                        catch(e:any) { toast(e.response?.data?.message||'Ungültiger Code — bitte neuen Code eingeben', 'error'); setOtp2FA('') }
-                      }} disabled={otp2FA.length!==6} style={{ padding:'10px 16px', background:'#27500A', color:'#fff', border:'none', fontSize:12, fontWeight:600, cursor:'pointer', opacity:otp2FA.length!==6?0.5:1 }}>Aktivieren</button>
-                      <button onClick={()=>{setTwoFaStep('idle');setOtp2FA('');setQrCode('')}} style={{ padding:'10px', background:'none', border:'1px solid #c4c7c7', fontSize:12, cursor:'pointer' }}>Abbrechen</button>
+                        try { await api.post('/auth/2fa/enable', { code: otp2FA }); setTwoFaEnabled(true); setTwoFaStep('idle'); setOtp2FA(''); setQrCode(''); toast(t('2FA aktiviert ✓','2FA activated ✓'), 'success') }
+                        catch(e:any) { toast(e.response?.data?.message||t('Ungültiger Code — bitte neuen Code eingeben','Invalid code — please enter a new code'), 'error'); setOtp2FA('') }
+                      }} disabled={otp2FA.length!==6} style={{ padding:'10px 16px', background:'#27500A', color:'#fff', border:'none', fontSize:12, fontWeight:600, cursor:'pointer', opacity:otp2FA.length!==6?0.5:1 }}>{t('Aktivieren','Activate')}</button>
+                      <button onClick={()=>{setTwoFaStep('idle');setOtp2FA('');setQrCode('')}} style={{ padding:'10px', background:'none', border:'1px solid #c4c7c7', fontSize:12, cursor:'pointer' }}>{t('Abbrechen','Cancel')}</button>
                     </div>
                   </div>
                 )}
 
                 {twoFaStep==='verify' && (
                   <div style={{ marginTop:16 }}>
-                    <p style={{ fontSize:13, color:'#5e5e5b', marginBottom:8 }}>Code aus Authenticator App eingeben:</p>
+                    <p style={{ fontSize:13, color:'#5e5e5b', marginBottom:8 }}>{t('Code aus Authenticator App eingeben:','Enter the code from your authenticator app:')}</p>
                     <div style={{ display:'flex', gap:8 }}>
                       <input value={otp2FA} onChange={e => setOtp2FA(e.target.value.replace(/[^0-9]/g,'').slice(0,6))} placeholder='000000' maxLength={6}
                         style={{ padding:'10px', fontSize:20, border:'1px solid #c4c7c7', outline:'none', width:110, fontFamily:'monospace', letterSpacing:'0.2em', textAlign:'center' }} />
                       <button onClick={async () => {
-                        try { await api.post('/auth/2fa/disable', { code: otp2FA }); setTwoFaEnabled(false); setTwoFaStep('idle'); setOtp2FA(''); toast('2FA deaktiviert', 'info') }
-                        catch(e:any) { toast(e.response?.data?.message||'Ungültiger Code — bitte neuen Code eingeben', 'error'); setOtp2FA('') }
-                      }} disabled={otp2FA.length!==6} style={{ padding:'10px 16px', background:'#ba1a1a', color:'#fff', border:'none', fontSize:12, fontWeight:600, cursor:'pointer', opacity:otp2FA.length!==6?0.5:1 }}>Deaktivieren</button>
-                      <button onClick={()=>{setTwoFaStep('idle');setOtp2FA('')}} style={{ padding:'10px', background:'none', border:'1px solid #c4c7c7', fontSize:12, cursor:'pointer' }}>Abbrechen</button>
+                        try { await api.post('/auth/2fa/disable', { code: otp2FA }); setTwoFaEnabled(false); setTwoFaStep('idle'); setOtp2FA(''); toast(t('2FA deaktiviert','2FA deactivated'), 'info') }
+                        catch(e:any) { toast(e.response?.data?.message||t('Ungültiger Code — bitte neuen Code eingeben','Invalid code — please enter a new code'), 'error'); setOtp2FA('') }
+                      }} disabled={otp2FA.length!==6} style={{ padding:'10px 16px', background:'#ba1a1a', color:'#fff', border:'none', fontSize:12, fontWeight:600, cursor:'pointer', opacity:otp2FA.length!==6?0.5:1 }}>{t('Deaktivieren','Deactivate')}</button>
+                      <button onClick={()=>{setTwoFaStep('idle');setOtp2FA('')}} style={{ padding:'10px', background:'none', border:'1px solid #c4c7c7', fontSize:12, cursor:'pointer' }}>{t('Abbrechen','Cancel')}</button>
                     </div>
                   </div>
                 )}

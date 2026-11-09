@@ -75,3 +75,21 @@ export const useAuthStore = create<AuthStore>()(
     }
   )
 )
+
+// Tab-übergreifende Synchronisation:
+// localStorage ist bei allen Tabs derselben Domain geteilt, aber der Zustand-
+// Store (In-Memory) nicht. Ohne das hier zeigt ein zweiter Tab noch "eingeloggt"
+// an, obwohl in einem anderen Tab abgemeldet wurde → alle API-Calls → 401.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key !== 'accessToken') return
+    if (!e.newValue) {
+      // In einem anderen Tab abgemeldet → hier auch den sichtbaren Status leeren
+      useAuthStore.setState({ user: null, accessToken: null })
+    } else if (e.newValue !== useAuthStore.getState().accessToken) {
+      // In einem anderen Tab (neu/anders) eingeloggt → Status frisch laden
+      useAuthStore.setState({ accessToken: e.newValue })
+      useAuthStore.getState().loadUser()
+    }
+  })
+}

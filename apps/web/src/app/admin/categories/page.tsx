@@ -101,8 +101,8 @@ export default function AdminCategoriesPage() {
     <div>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:32 }}>
         <div>
-          <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, marginBottom:4 }}>Kategorien</h1>
-          <p style={{ color:'#5e5e5b', fontSize:14 }}>{categories.length} Kategorien verwalten</p>
+          <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, marginBottom:4 }}>{t('Kategorien','Categories')}</h1>
+          <p style={{ color:'#5e5e5b', fontSize:14 }}>{categories.length} {t('Kategorien verwalten','categories to manage')}</p>
         </div>
         <button onClick={openCreate}
           style={{ display:'flex', alignItems:'center', gap:8, background:'#1c1b1b', color:'#fff', border:'none', padding:'12px 20px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', cursor:'pointer' }}>
@@ -131,13 +131,13 @@ export default function AdminCategoriesPage() {
                 <input
                   value={form.name}
                   onChange={e => setForm(f => ({...f, name: e.target.value}))}
-                  placeholder="z.B. Abendmode"
+                  placeholder={t('z.B. Abendmode','e.g. Evening wear')}
                   required
                   style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }}
                 />
               </div>
               <div>
-                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Reihenfolge</label>
+                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>{t('Reihenfolge','Order')}</label>
                 <input
                   type="number" min="1"
                   value={form.sortOrder}
@@ -149,11 +149,11 @@ export default function AdminCategoriesPage() {
             </div>
 
             <div style={{ marginBottom:16 }}>
-              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Beschreibung</label>
+              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>{t('Beschreibung','Description')}</label>
               <input
                 value={form.description}
                 onChange={e => setForm(f => ({...f, description: e.target.value}))}
-                placeholder="Kurze Beschreibung (optional)"
+                placeholder={t('Kurze Beschreibung (optional)','Short description (optional)')}
                 style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }}
               />
             </div>
@@ -185,7 +185,8 @@ export default function AdminCategoriesPage() {
 
       {/* Categories Table */}
       <div style={{ background:'#fff', border:'1px solid #c4c7c7', overflow:'hidden' }}>
-        <table style={{ width:'100%', fontSize:13, borderCollapse:'collapse' }}>
+        <div style={{ overflowX:'auto' }}>
+<table style={{ width:'100%', fontSize:13, borderCollapse:'collapse' }}>
           <thead>
             <tr style={{ borderBottom:'1px solid #c4c7c7', background:'#fdf8f8' }}>
               {['#','Name','Beschreibung','Status','Aktionen'].map(h => (
@@ -220,7 +221,7 @@ export default function AdminCategoriesPage() {
                 <td style={{ padding:'14px 16px' }}>
                   {deleteId === cat.id ? (
                     <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-                      <span style={{ fontSize:12, color:'#ba1a1a', marginRight:4 }}>Sicher?</span>
+                      <span style={{ fontSize:12, color:'#ba1a1a', marginRight:4 }}>{t('Sicher?','Sure?')}</span>
                       <button onClick={() => handleDelete(cat.id)}
                         style={{ fontSize:11, fontWeight:600, background:'#ba1a1a', color:'#fff', border:'none', padding:'4px 10px', cursor:'pointer' }}>
                         Ja
@@ -247,12 +248,13 @@ export default function AdminCategoriesPage() {
             ))}
           </tbody>
         </table>
+</div>
       </div>
 
       {/* Info */}
       <div style={{ marginTop:16, padding:'12px 16px', background:'#f7f3f2', border:'1px solid #e8e3e1', fontSize:12, color:'#5e5e5b', display:'flex', gap:8 }}>
         <Icon name="info" style={{ fontSize:15, color:'#9E896A', flexShrink:0 }} />
-        Kategorien werden sofort im Shop und im Händler-Formular angezeigt. Inaktive Kategorien sind nur hier sichtbar.
+        {t('Kategorien werden sofort im Shop und im Händler-Formular angezeigt. Inaktive Kategorien sind nur hier sichtbar.','Categories appear immediately in the shop and the merchant form. Inactive categories are only visible here.')}
       </div>
     </div>
   )

@@ -5,9 +5,13 @@ import { MerchantPayout } from './merchant-payout.entity';
 import { MerchantProfile } from '../users/merchant-profile.entity';
 import { CommissionsService } from './commissions.service';
 import { CommissionsController } from './commissions.controller';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Commission, MerchantPayout, MerchantProfile])],
+  imports: [
+    TypeOrmModule.forFeature([Commission, MerchantPayout, MerchantProfile]),
+    NotificationsModule,
+  ],
   controllers: [CommissionsController],
   providers: [CommissionsService],
   exports: [CommissionsService],

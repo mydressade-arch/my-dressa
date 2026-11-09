@@ -328,10 +328,24 @@ export class AdminService {
       LIMIT 20
     `, [merchantId]);
 
+    // Auszahlbares (REIFES) offenes Guthaben: Provisionen ohne Auszahlung, deren
+    // Bestellung abgeschlossen ist (Kauf geliefert / Miete zurückgegeben).
+    const matureRows = await this.orderRepo.query(`
+      SELECT COALESCE(SUM(c.merchant_amount), 0) AS amount
+      FROM commissions c
+      JOIN orders o ON o.id = c.order_id
+      LEFT JOIN rentals r ON r.order_id = o.id
+      WHERE c.merchant_id = $1
+        AND c.payout_id IS NULL
+        AND ((o.type = 'purchase' AND o.status = 'delivered') OR (o.type = 'rental' AND r.status = 'returned'))
+    `, [merchantId]);
+    const availablePayout = Math.round(Number(matureRows?.[0]?.amount || 0) * 100) / 100;
+
     return {
       merchant,
       products: merchant.products || [],
       recentOrders: orders,
+      availablePayout,
     };
   }
 }

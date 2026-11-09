@@ -124,7 +124,7 @@ export default function EditProductPage() {
     } catch { toast('Fehler', 'error') }
   }
 
-  if (loading) return <div style={{ padding:64, textAlign:'center', color:'#5e5e5b' }}>Laden...</div>
+  if (loading) return <div style={{ padding:64, textAlign:'center', color:'#5e5e5b' }}>{t('Laden...','Loading...')}</div>
   if (!product) return null
 
   return (
@@ -148,20 +148,20 @@ export default function EditProductPage() {
           </h2>
           <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
             <div>
-              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Titel *</label>
-              <input value={form.title} onChange={up('title')} required placeholder="Produktname"
+              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>{t('Titel','Title')} *</label>
+              <input value={form.title} onChange={up('title')} required placeholder={t('Produktname','Product name')}
                 style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }} />
             </div>
             <div>
-              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Beschreibung</label>
-              <textarea value={form.description} onChange={up('description')} rows={4} placeholder="Produktbeschreibung"
+              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>{t('Beschreibung','Description')}</label>
+              <textarea value={form.description} onChange={up('description')} rows={4} placeholder={t('Produktbeschreibung','Product description')}
                 style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', resize:'vertical', boxSizing:'border-box' as const }} />
             </div>
             <div>
-              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Kategorie</label>
+              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>{t('Kategorie','Category')}</label>
               <select value={form.category} onChange={up('category')}
                 style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }}>
-                <option value="">Kategorie wählen</option>
+                <option value="">{t('Kategorie wählen','Choose category')}</option>
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
@@ -187,36 +187,36 @@ export default function EditProductPage() {
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:12 }}>
             {form.isForSale && (
               <div>
-                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Verkaufspreis (€)</label>
+                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>{t('Verkaufspreis','Sale price')} (€)</label>
                 <input type="number" step="0.01" min="0" value={form.salePrice} onChange={up('salePrice')} placeholder="0.00"
                   style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }} />
               </div>
             )}
             {form.isForRent && (
               <div>
-                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Mietpreis (fester Preis pro Miete) (€)</label>
+                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>{t('Mietpreis (fester Preis pro Miete)','Rental price (fixed per rental)')} (€)</label>
                 <input type="number" step="0.01" min="0" value={form.rentalPrice} onChange={up('rentalPrice')} placeholder="0.00"
                   style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }} />
               </div>
             )}
             <div>
-              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Versandkosten (€)</label>
+              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>{t('Versandkosten','Shipping cost')} (€)</label>
               <input type="number" step="0.01" min="0" value={form.shippingCost} onChange={up('shippingCost')} placeholder="0.00"
                 style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }} />
             </div>
             {form.isForRent && (
               <div>
-                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#0C447C', display:'block', marginBottom:6 }}>Kaution (€) *</label>
-                <input type="number" step="0.01" min="0" value={form.depositAmount} onChange={up('depositAmount')} placeholder="z.B. 50.00"
+                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#0C447C', display:'block', marginBottom:6 }}>{t('Kaution','Deposit')} (€) *</label>
+                <input type="number" step="0.01" min="0" value={form.depositAmount} onChange={up('depositAmount')} placeholder={t('z.B. 50.00','e.g. 50.00')}
                   style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'2px solid #0C447C', outline:'none', boxSizing:'border-box' as const }} />
               </div>
             )}
             {form.isForRent && (
               <div>
-                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#0C447C', display:'block', marginBottom:6 }}>Mietdauer (Tage)</label>
+                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#0C447C', display:'block', marginBottom:6 }}>{t('Mietdauer (Tage)','Rental duration (days)')}</label>
                 <input type="number" min="1" step="1" value={form.rentalDurationDays}
                   onChange={e => setForm(f => ({...f, rentalDurationDays: Number(e.target.value)}))}
-                  placeholder="z.B. 6"
+                  placeholder={t('z.B. 6','e.g. 6')}
                   style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const, background:'#fff' }} />
               </div>
             )}
@@ -243,7 +243,7 @@ export default function EditProductPage() {
                   {colorOptions.map(c2 => <option key={c2} value={c2}>{c2}</option>)}
                 </select>
                 <input type="number" min="0" value={v.stockQuantity||1} onChange={e => setVariants(vs => vs.map((x,j) => j===i ? {...x, stockQuantity:parseInt(e.target.value)||0} : x))}
-                  placeholder="Stk"
+                  placeholder={t('Stk','Qty')}
                   style={{ padding:'8px 12px', fontSize:13, border:'1px solid #c4c7c7', outline:'none', textAlign:'center' as const }} />
                 {variants.length > 1 && (
                   <button type="button" onClick={() => setVariants(vs => vs.filter((_,j) => j!==i))}

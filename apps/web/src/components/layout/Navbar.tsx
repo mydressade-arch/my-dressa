@@ -63,8 +63,8 @@ export function Navbar() {
       {/* Top announcement bar — only after hydration */}
       {mounted && (
         <div className="announcement-bar" style={{ background:'#1c1b1b', color:'#f4f0ef', textAlign:'center', padding:'7px 12px', fontSize:11, fontWeight:500, letterSpacing:'0.1em', textTransform:'uppercase' }}>
-          <span className="rsp-hide-mobile">Free shipping on orders over €80 · Secure rentals with €50 deposit</span>
-          <span className="rsp-only-mobile">Free shipping over €80</span>
+          <span className="rsp-hide-mobile">{t('Kostenloser Versand ab €80 · Sichere Mieten mit Kaution','Free shipping on orders over €80 · Secure rentals with a deposit')}</span>
+          <span className="rsp-only-mobile">{t('Gratis Versand ab €80','Free shipping over €80')}</span>
         </div>
       )}
 
@@ -186,7 +186,7 @@ export function Navbar() {
                         { icon:'package_2', label: t('Meine Bestellungen', 'My Orders'), href:'/account?tab=0' },
                         { icon:'calendar_month', label: t('Meine Mieten', 'My Rentals'), href:'/account?tab=1' },
                         ...(user.role === 'merchant' || user.role === 'admin' ? [
-                          { icon:'storefront', label:'Merchant Dashboard', href:'/merchant/dashboard', divider:true },
+                          { icon:'storefront', label:t('Händler-Dashboard','Merchant Dashboard'), href:'/merchant/dashboard', divider:true },
                         ] : []),
                         ...(user.role === 'support' ? [
                           { icon:'support_agent', label:t('Support Portal', 'Support Portal'), href:'/support' },

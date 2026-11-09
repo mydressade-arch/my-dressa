@@ -3,7 +3,8 @@ import {
   BadRequestException, Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { Repository, LessThan } from 'typeorm';
 import { Order, OrderStatus, OrderType } from './order.entity';
 import { Rental, RentalStatus } from '../rentals/rental.entity';
 import { Deposit, DepositStatus } from '../rentals/deposit.entity';
@@ -20,6 +21,17 @@ export class CreateOrderDto {
   // shippingAddress wird separat akzeptiert aber nicht als required
   shippingAddress?: Record<string, any>;
 }
+
+// Feste Storno-Gründe für den Händler (Code → lesbares Label). Eine feste
+// Liste macht es dem Händler einfach (Auswahl statt Freitext) und erlaubt dem
+// Admin, die Storno-Gründe sauber auszuwerten.
+export const MERCHANT_CANCEL_REASONS: Record<string, string> = {
+  out_of_stock:   'Nicht mehr auf Lager',
+  damaged:        'Artikel beschädigt / Qualitätsmangel',
+  shipping_issue: 'Versand nicht möglich (Adresse/Region)',
+  pricing_error:  'Preis- oder Angebotsfehler',
+  other:          'Sonstiger Grund',
+};
 
 @Injectable()
 export class OrdersService {
@@ -260,7 +272,78 @@ export class OrdersService {
   }
 
   async cancel(id: string, userId: string) {
+    // Kunden-Storno: nur die eigene Bestellung.
     const order = await this.findOne(id, userId);
+    return this._executeCancellation(order, { cancelledBy: 'customer' });
+  }
+
+  // ── Händler-Storno ──────────────────────────────────────────────────────
+  // Typischer Fall: der Händler hat den Artikel nicht mehr auf Lager, obwohl
+  // der Kunde schon bezahlt/gemietet hat. Gleiche Mechanik wie der Kunden-
+  // Storno (Refund + Lager + Kaution-Freigabe), aber mit Eigentumsprüfung,
+  // Pflicht-Grund (aus fester Liste) und Benachrichtigung an den Kunden.
+  async cancelAsMerchant(id: string, merchantUserId: string, reasonCode?: string, note?: string) {
+    if (!reasonCode) {
+      throw new BadRequestException('Bitte einen Storno-Grund angeben');
+    }
+
+    const order = await this.orderRepo.findOne({
+      where: { id },
+      relations: ['productVariant', 'productVariant.product', 'productVariant.product.merchant', 'user'],
+    });
+    if (!order) throw new NotFoundException('Bestellung nicht gefunden');
+
+    // Gehört diese Bestellung dem Shop dieses Händlers? (gleiche Prüfung wie Versand)
+    const merchantProfile = await this.merchantProfileRepo?.findOne({ where: { userId: merchantUserId } });
+    const merchantId = merchantProfile?.id ?? merchantUserId;
+    if (order.productVariant?.product?.merchantId !== merchantId) {
+      throw new ForbiddenException('Diese Bestellung gehört nicht deinem Shop');
+    }
+
+    // Nur solange NICHT versandt. Ist die Ware schon unterwegs/geliefert, ist
+    // das ein Rückgabe-Fall (über den Support), kein Storno.
+    if (![OrderStatus.PENDING, OrderStatus.PAID].includes(order.status)) {
+      throw new BadRequestException(
+        'Storno nur möglich, solange die Bestellung noch nicht versandt ist. Ist die Ware bereits unterwegs, läuft das über die Rückgabe/den Support.',
+      );
+    }
+
+    const label = MERCHANT_CANCEL_REASONS[reasonCode] || MERCHANT_CANCEL_REASONS.other;
+    const storedReason = note?.trim() ? `${label}: ${note.trim()}` : label;
+    const wasPaid = order.status === OrderStatus.PAID;
+
+    const result = await this._executeCancellation(order, {
+      cancelledBy: 'merchant',
+      reason: storedReason,
+    });
+
+    // Kunden-Benachrichtigung im Hintergrund (blockiert die HTTP-Antwort nicht).
+    void (async () => {
+      try {
+        if (order.user?.email) {
+          await this.notifications.sendOrderCancelled(order.user.email, {
+            firstName:    order.user.firstName || 'Kunde',
+            productTitle: order.productVariant?.product?.title || 'Artikel',
+            orderNumber:  order.id.substring(0, 8).toUpperCase(),
+            reason:       label,
+            isRental:     order.type === OrderType.RENTAL,
+            refunded:     wasPaid,
+          });
+        }
+      } catch (e: any) {
+        this.logger.warn(`Storno-E-Mail fehlgeschlagen: ${e.message}`);
+      }
+    })();
+
+    return result;
+  }
+
+  // Gemeinsame Storno-Mechanik für Kunde, Händler und Admin.
+  private async _executeCancellation(
+    order: Order,
+    opts: { cancelledBy: 'customer' | 'merchant' | 'admin'; reason?: string },
+  ) {
+    const id = order.id;
     if (![OrderStatus.PENDING, OrderStatus.PAID].includes(order.status)) {
       throw new BadRequestException('Stornierung nur bei pending oder paid möglich');
     }
@@ -283,7 +366,11 @@ export class OrdersService {
       }
     }
 
-    await this.orderRepo.update(id, { status: OrderStatus.CANCELLED });
+    await this.orderRepo.update(id, {
+      status: OrderStatus.CANCELLED,
+      cancelledBy: opts.cancelledBy,
+      ...(opts.reason ? { cancelReason: opts.reason } : {}),
+    });
 
     // Stock wiederherstellen
     if (order.type === OrderType.PURCHASE) {
@@ -345,7 +432,72 @@ export class OrdersService {
       .leftJoinAndSelect('o.user', 'u')
       .leftJoinAndSelect('o.rentals', 'r')   // ← Rental mit laden!
       .where('p.merchant_id = :merchantId', { merchantId })
+      // WICHTIG: Der Händler sieht nur Bestellungen mit ECHTER Zahlung.
+      //  • 'pending' = angelegt, aber nie bezahlt (Checkout abgebrochen).
+      //  • 'cancelled' OHNE erfolgreiche Zahlung = fehlgeschlagener Versuch
+      //    (stripe_payment_intent_id wird NUR bei erfolgreicher Zahlung gesetzt).
+      // Beides wird ausgeblendet. Echte (auch später stornierte/erstattete)
+      // Bestellungen haben eine stripe_payment_intent_id und bleiben sichtbar.
+      .andWhere('o.status != :pending', { pending: OrderStatus.PENDING })
+      .andWhere('NOT (o.status = :cancelled AND o.stripe_payment_intent_id IS NULL)', { cancelled: OrderStatus.CANCELLED })
       .orderBy('o.created_at', 'DESC')
       .getMany();
+  }
+
+  // ── Aufräumen: nie bezahlte Bestellungen entfernen ────────────────────────
+  // Bestellungen entstehen als 'pending', BEVOR bezahlt wird. Bricht der Kunde
+  // den Checkout ab (keine Karte eingegeben, Tab geschlossen), bliebe die
+  // Bestellung sonst liegen und würde beim Kauf Lagerbestand blockieren.
+  // Alle 10 Minuten: offene Bestellungen, die älter als 15 Min sind, prüfen und
+  // NUR dann löschen, wenn bei Stripe wirklich keine Zahlung mehr unterwegs ist.
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async cleanupAbandonedOrders() {
+    const cutoff = new Date(Date.now() - 15 * 60 * 1000);
+    const stale = await this.orderRepo.find({
+      where: { status: OrderStatus.PENDING, createdAt: LessThan(cutoff) },
+    });
+    if (!stale.length) return;
+
+    // Stripe-Status, bei denen sicher KEIN Geld (mehr) kommt → löschbar.
+    // Nicht löschen bei: processing (z. B. SEPA, dauert Tage), requires_action
+    // (3-D-Secure noch offen), requires_capture, succeeded.
+    const DELETABLE = new Set([
+      'requires_payment_method',
+      'requires_confirmation',
+      'canceled',
+    ]);
+
+    let removed = 0;
+    for (const order of stale) {
+      try {
+        let safeToDelete = false;
+        if (!order.checkoutPaymentIntentId) {
+          // Nie bis zur Zahlung gekommen → sicher löschbar.
+          safeToDelete = true;
+        } else {
+          const pi = await this.stripe.paymentIntents.retrieve(order.checkoutPaymentIntentId);
+          safeToDelete = DELETABLE.has(pi.status);
+        }
+        if (!safeToDelete) continue;
+        await this._deleteUnpaidOrder(order);
+        removed++;
+      } catch (e: any) {
+        this.logger.warn(`Aufräumen Order ${order.id} fehlgeschlagen: ${e.message}`);
+      }
+    }
+    if (removed) this.logger.log(`${removed} unbezahlte Bestellung(en) entfernt`);
+  }
+
+  // Löscht eine NIE bezahlte Bestellung sauber: Lager zurück (Kauf),
+  // Miet-Zeile(n) weg, dann die Bestellung. Nur für 'pending' — daran hängt
+  // kein Geld, keine Provision und keine Auszahlung.
+  private async _deleteUnpaidOrder(order: Order) {
+    if (order.status !== OrderStatus.PENDING) return;
+    if (order.type === OrderType.PURCHASE && order.productVariantId) {
+      await this.variantRepo.increment({ id: order.productVariantId }, 'stockQuantity', 1);
+    }
+    // FK: zuerst evtl. Miet-Zeile(n), dann die Bestellung.
+    await this.rentalRepo.delete({ orderId: order.id });
+    await this.orderRepo.delete({ id: order.id });
   }
 }

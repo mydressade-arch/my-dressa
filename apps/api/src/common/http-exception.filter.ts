@@ -45,7 +45,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message = 'Interner Serverfehler';
     }
 
-    this.logger.error(`${req.method} ${req.url} → ${status}: ${message}`);
+    // Log-Level nach Status staffeln:
+    //  • 5xx  = echte Serverfehler → error
+    //  • 401/403 = normale Auth-Zustände (abgelaufener/kein Token) → debug (kein Lärm)
+    //  • übrige 4xx = Client-Fehler → warn
+    const line = `${req.method} ${req.url} → ${status}: ${message}`;
+    if (status >= 500) {
+      this.logger.error(line);
+    } else if (status === 401 || status === 403) {
+      this.logger.debug(line);
+    } else {
+      this.logger.warn(line);
+    }
     res.status(status).json({ statusCode: status, message });
   }
 }

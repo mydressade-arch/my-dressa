@@ -6,6 +6,7 @@ import { Repository, IsNull, In } from 'typeorm';
 import { Commission } from './commission.entity';
 import { MerchantPayout, PayoutStatus } from './merchant-payout.entity';
 import { MerchantProfile } from '../users/merchant-profile.entity';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class CommissionsService {
@@ -17,7 +18,28 @@ export class CommissionsService {
     private readonly payoutRepo: Repository<MerchantPayout>,
     @InjectRepository(MerchantProfile)
     private readonly merchantRepo: Repository<MerchantProfile>,
+    private readonly notifications: NotificationsService,
   ) {}
+
+  // Händler per E-Mail über eine Auszahlung informieren (best effort).
+  private async notifyPayout(merchantId: string, amount: number, remaining: number, manual: boolean) {
+    try {
+      const merchant = await this.merchantRepo.findOne({
+        where: { id: merchantId },
+        relations: ['user'],
+      });
+      if (merchant?.user?.email) {
+        await this.notifications.sendPayoutCompleted(merchant.user.email, {
+          firstName: merchant.user.firstName || 'Händler',
+          amount,
+          remaining,
+          manual,
+        });
+      }
+    } catch (e: any) {
+      this.logger.warn(`Auszahlungs-E-Mail fehlgeschlagen: ${e.message}`);
+    }
+  }
 
   // ── Händler: Statistiken ─────────────────────────────────────────────────
   // SQL-Bedingung: Eine Einnahme ist "reif" (auszahlbar), wenn die zugehörige
@@ -264,7 +286,87 @@ export class CommissionsService {
       });
     }
 
+    // Händler benachrichtigen. manual = keine Stripe-Überweisung (Bank).
+    const remainingOpen = await this.getMatureOpenSum(payout.merchantId);
+    await this.notifyPayout(payout.merchantId, actualAmount, remainingOpen, !finalTransferId || finalTransferId === 'manual');
+
     return { message: `€${actualAmount.toFixed(2)} Auszahlung genehmigt` };
+  }
+
+  // ── Admin: manuelle Auszahlung erfassen ───────────────────────────────────
+  // Für den Fall, dass der Admin dem Händler das Geld bereits per Banküberweisung
+  // geschickt hat (ggf. ohne vorherige Anfrage des Händlers). Erfasst die erfolgte
+  // Zahlung und setzt das auszahlbare Guthaben auf 0 — über denselben, getesteten
+  // Weg wie eine genehmigte Anfrage (Provisionen werden der Auszahlung zugeordnet).
+  // amount: optionaler Teilbetrag. Ohne Angabe wird alles Auszahlbare erfasst.
+  // Es werden KOMPLETTE Bestell-Provisionen (älteste zuerst) bis zum Zielbetrag
+  // ausgezahlt — der Rest bleibt offen (Guthaben muss NICHT auf 0). Kein Stripe-
+  // Transfer (Referenz 'manual'), da bereits manuell per Bank überwiesen.
+  async recordManualPayout(merchantId: string, adminId: string, amount?: number, note?: string) {
+    const rows = await this.matureOpenCommissionsQB(merchantId)
+      .select('c.id', 'id')
+      .addSelect('c.merchant_amount', 'amt')
+      .orderBy('c.created_at', 'ASC')
+      .getRawMany();
+
+    const available = Math.round(rows.reduce((a, r) => a + Number(r.amt || 0), 0) * 100) / 100;
+    if (available <= 0) {
+      throw new BadRequestException('Kein auszahlbarer Betrag vorhanden.');
+    }
+
+    // Zielbetrag: ohne Angabe → alles; nie mehr als verfügbar.
+    const target = (amount == null || amount >= available)
+      ? available
+      : Math.round(Number(amount) * 100) / 100;
+    if (target <= 0) {
+      throw new BadRequestException('Betrag muss größer als 0 sein.');
+    }
+
+    // Ganze Positionen aufsummieren, ohne den Zielbetrag zu überschreiten.
+    let acc = 0;
+    const ids: string[] = [];
+    for (const r of rows) {
+      const a = Number(r.amt || 0);
+      if (Math.round((acc + a) * 100) / 100 <= target + 0.001) {
+        acc = Math.round((acc + a) * 100) / 100;
+        ids.push(r.id);
+      }
+    }
+    if (ids.length === 0) {
+      const min = Math.min(...rows.map((r) => Number(r.amt || 0)));
+      throw new BadRequestException(
+        `Betrag zu niedrig — die kleinste auszahlbare Position beträgt €${min.toFixed(2)}.`,
+      );
+    }
+
+    const payout = this.payoutRepo.create({
+      merchantId,
+      amount: acc,
+      status: PayoutStatus.PAID,
+      stripeTransferId: 'manual',
+      note: note?.trim() || 'Manuell vom Admin erfasst (Banküberweisung)',
+      paidAt: new Date(),
+      reviewedBy: adminId,
+      reviewedAt: new Date(),
+    });
+    await this.payoutRepo.save(payout);
+    await this.commissionRepo.update({ id: In(ids) }, { payoutId: payout.id });
+
+    const merchant = await this.merchantRepo.findOne({ where: { id: merchantId } });
+    if (merchant) {
+      await this.merchantRepo.update(merchant.id, {
+        balancePaid: Math.round((Number(merchant.balancePaid) + acc) * 100) / 100,
+      });
+    }
+
+    const remaining = Math.round((available - acc) * 100) / 100;
+    await this.notifyPayout(merchantId, acc, remaining, true);
+
+    return {
+      message: `€${acc.toFixed(2)} als ausgezahlt erfasst.${remaining > 0 ? ` Verbleibend: €${remaining.toFixed(2)}.` : ' Auszahlbares Guthaben jetzt €0.'}`,
+      amountPaid: acc,
+      remaining,
+    };
   }
 
   // ── Admin: Auszahlung ablehnen ────────────────────────────────────────────

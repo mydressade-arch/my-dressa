@@ -53,7 +53,7 @@ function ProductDetail() {
       </div>
     </div>
   )
-  if (!product) return <div style={{ padding: 80, textAlign: 'center', color: '#5e5e5b' }}>Produkt nicht gefunden</div>
+  if (!product) return <div style={{ padding: 80, textAlign: 'center', color: '#5e5e5b' }}>{t('Produkt nicht gefunden', 'Product not found')}</div>
 
   const images = product.images?.length > 0 ? product.images : [{ url: PLACEHOLDER }]
   const sizes  = [...new Set((product.variants || []).filter((v: any) => Number(v.stockQuantity) > 0).map((v: any) => v.size))]
@@ -63,9 +63,9 @@ function ProductDetail() {
     <div style={{ maxWidth: 1440, margin: '0 auto', padding:'clamp(24px,3vw,48px) clamp(16px,4vw,64px)' }}>
       {/* Breadcrumb */}
       <nav style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5e5e5b', marginBottom: 40, display: 'flex', gap: 8 }}>
-        <a href="/" style={{ color: '#5e5e5b', textDecoration: 'none' }}>Home</a>
+        <a href="/" style={{ color: '#5e5e5b', textDecoration: 'none' }}>{t('Startseite', 'Home')}</a>
         <span>›</span>
-        <a href="/products" style={{ color: '#5e5e5b', textDecoration: 'none' }}>Collection</a>
+        <a href="/products" style={{ color: '#5e5e5b', textDecoration: 'none' }}>{t('Kollektion', 'Collection')}</a>
         <span>›</span>
         <span style={{ color: '#1c1b1b' }}>{product.title}</span>
       </nav>
@@ -129,7 +129,7 @@ function ProductDetail() {
           {/* Size selector */}
           {sizes.length > 0 && (
             <div style={{ marginBottom: 20 }}>
-              <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5e5e5b', marginBottom: 10 }}>Size</p>
+              <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5e5e5b', marginBottom: 10 }}>{t('Größe', 'Size')}</p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {(sizes as string[]).map(size => (
                   <button key={size} onClick={() => { const v = product.variants.find((v:any)=>v.size===size); if(v) setSelectedVariant(v) }}
@@ -150,13 +150,13 @@ function ProductDetail() {
           {product.isForRent && (
             <div style={{ border: '1px solid #c4c7c7', padding: 20, marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5e5e5b' }}>Rental Experience</p>
+                <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5e5e5b' }}>{t('Miet-Erlebnis', 'Rental Experience')}</p>
                 <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', background: '#064E3B', color: '#fff', padding: '3px 8px' }}>{t('Sofort verfügbar', 'Available now')}</span>
               </div>
               <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, marginBottom: 4 }}>
-                €{product.rentalPrice} <span style={{ fontSize: 16, fontWeight: 400, color: '#5e5e5b' }}>/ Miete</span>
+                €{product.rentalPrice} <span style={{ fontSize: 16, fontWeight: 400, color: '#5e5e5b' }}>/ {t('Miete','rental')}</span>
               </p>
-              <p style={{ fontSize: 12, color: '#5e5e5b', marginBottom: 16 }}>{Number(product.rentalDurationDays || 1)} Tage Mietdauer. Kaution: €{Number(product.depositAmount) || 50}.</p>
+              <p style={{ fontSize: 12, color: '#5e5e5b', marginBottom: 16 }}>{t(`${Number(product.rentalDurationDays || 1)} Tage Mietdauer. Kaution: €${Number(product.depositAmount) || 50}.`, `${Number(product.rentalDurationDays || 1)} days rental period. Deposit: €${Number(product.depositAmount) || 50}.`)}</p>
 
               {showCalendar && selectedVariant ? (
                 <RentalCalendar
@@ -174,7 +174,7 @@ function ProductDetail() {
               ) : (
                 <button onClick={() => { if(!user){router.push('/auth/login');return}; setShowCalendar(true) }}
                   style={{ width: '100%', background: '#9E896A', color: '#fff', border: 'none', padding: '14px', fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }}>
-                  Reserve for Rental
+                  {t('Zum Mieten reservieren','Reserve for Rental')}
                 </button>
               )}
             </div>
@@ -184,8 +184,8 @@ function ProductDetail() {
           {product.isForSale && product.variants?.some((v: any) => v.stockQuantity > 0) && (
             <div style={{ border: '1px solid #c4c7c7', padding: 20, marginBottom: 24 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5e5e5b' }}>Ownership</p>
-                <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', background: '#E5E1D8', color: '#1c1b1b', padding: '3px 8px' }}>Investment Piece</span>
+                <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5e5e5b' }}>{t('Eigentum', 'Ownership')}</p>
+                <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', background: '#E5E1D8', color: '#1c1b1b', padding: '3px 8px' }}>{t('Investitionsstück', 'Investment Piece')}</span>
               </div>
               <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, marginBottom: 4 }}>€{product.salePrice}</p>
               <p style={{ fontSize: 12, color: '#5e5e5b', marginBottom: 16 }}>{t('Sichere dir dieses Teil dauerhaft für deine Garderobe.', 'Secure this for your permanent collection.')}</p>
@@ -205,7 +205,7 @@ function ProductDetail() {
           )}
 
           {/* Trust badges */}
-          {[['local_shipping','Complimentary Concierge Shipping'],['assignment_return','Hassle-free Returns within 14 Days']].map(([icon,label])=>(
+          {[['local_shipping',t('Kostenloser Concierge-Versand','Complimentary Concierge Shipping')],['assignment_return',t('Unkomplizierte Rückgabe innerhalb 14 Tagen','Hassle-free Returns within 14 Days')]].map(([icon,label])=>(
             <div key={icon} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: '1px solid #f1edec' }}>
               <Icon name={icon} style={{ fontSize: 20, color: '#5e5e5b' }} />
               <span style={{ fontSize: 13, color: '#5e5e5b' }}>{label}</span>

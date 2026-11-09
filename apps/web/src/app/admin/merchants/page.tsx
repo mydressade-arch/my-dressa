@@ -40,13 +40,13 @@ export default function AdminMerchantsPage() {
     <div>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:32 }}>
         <div>
-          <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, marginBottom:4 }}>Händler</h1>
-          <p style={{ color:'#5e5e5b', fontSize:14 }}>{merchants.length} registrierte Shops</p>
+          <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, marginBottom:4 }}>{t('Händler','Merchants')}</h1>
+          <p style={{ color:'#5e5e5b', fontSize:14 }}>{merchants.length} {t('registrierte Shops','registered shops')}</p>
         </div>
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Shop oder E-Mail suchen..."
+          placeholder={t('Shop oder E-Mail suchen...','Search shop or email...')}
           style={{ padding:'10px 14px', fontSize:13, border:'1px solid #c4c7c7', outline:'none', width:240 }}
         />
       </div>
@@ -64,7 +64,7 @@ export default function AdminMerchantsPage() {
             {loading ? (
               [1,2,3].map(i => <tr key={i}><td colSpan={9} style={{ padding:'12px 16px' }}><div style={{ height:16, background:'#f1edec', borderRadius:4 }} /></td></tr>)
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={9} style={{ padding:'48px', textAlign:'center', color:'#5e5e5b' }}>Keine Händler gefunden</td></tr>
+              <tr><td colSpan={9} style={{ padding:'48px', textAlign:'center', color:'#5e5e5b' }}>{t('Keine Händler gefunden','No merchants found')}</td></tr>
             ) : filtered.map((m: any) => (
               <tr key={m.id} style={{ borderBottom:'1px solid #f9f6f5' }}>
                 <td style={{ padding:'14px 16px', fontWeight:700 }}>
@@ -129,7 +129,7 @@ export default function AdminMerchantsPage() {
               <button onClick={() => setBankModal(null)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20 }}>×</button>
             </div>
             {bankLoading ? (
-              <p style={{ color:'#5e5e5b', fontSize:13, padding:'20px 0', textAlign:'center' }}>Laden...</p>
+              <p style={{ color:'#5e5e5b', fontSize:13, padding:'20px 0', textAlign:'center' }}>{t('Laden...','Loading...')}</p>
             ) : bankModal.data?.hasBank ? (
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                 <div style={{ background:'#FAEEDA', padding:'8px 12px', fontSize:12, color:'#633806', display:'flex', gap:6, alignItems:'center' }}>
@@ -156,8 +156,8 @@ export default function AdminMerchantsPage() {
             ) : (
               <div style={{ textAlign:'center', padding:'32px 0', color:'#5e5e5b' }}>
                 <Icon name="account_balance" style={{ fontSize:36, display:'inline-block', marginBottom:8, color:'#c4c7c7' }} />
-                <p style={{ fontSize:13 }}>Keine Bankverbindung hinterlegt</p>
-                <p style={{ fontSize:12, color:'#9e9e9b', marginTop:4 }}>Händler muss IBAN unter Merchant → Bankverbindung eingeben</p>
+                <p style={{ fontSize:13 }}>{t('Keine Bankverbindung hinterlegt','No bank account on file')}</p>
+                <p style={{ fontSize:12, color:'#9e9e9b', marginTop:4 }}>{t('Händler muss IBAN unter Händler → Bankverbindung eingeben','Merchant must enter IBAN under Merchant → Bank account')}</p>
               </div>
             )}
           </div>

@@ -21,7 +21,7 @@ function PurchaseInner() {
   const { user }  = useAuthStore()
   const variantId = params.get('variantId') || ''
 
-  const { t } = useLangStore()
+  const { t, lang } = useLangStore()
   const [product, setProduct]     = useState<any>(null)
   const [variant, setVariant]     = useState<any>(null)
   const [loading, setLoading]     = useState(true)
@@ -43,10 +43,9 @@ function PurchaseInner() {
   }
 
   const [step, setStep]               = useState<'details' | 'payment'>('details')
-  const [clientSecret, setClientSecret] = useState('')
-  const [orderId, setOrderId]         = useState('')
   const [stripeInstance, setStripeInstance] = useState<any>(null)
   const [stripeReady, setStripeReady] = useState(false)
+  const [allowSepa, setAllowSepa]     = useState(false)
 
   useEffect(() => {
     if (!user) { router.push('/auth/login'); return }
@@ -62,9 +61,14 @@ function PurchaseInner() {
 
   useEffect(() => {
     getStripe().then(s => { setStripeInstance(s); setStripeReady(true) })
+    // SEPA-Verfügbarkeit (Admin-Einstellung) für die Zahlungsarten.
+    api.get('/settings/payment-methods').then(({ data }) => setAllowSepa(!!data?.allowSepaPurchase)).catch(() => {})
   }, [])
 
-  const handleConfirm = async (e: React.FormEvent) => {
+  // WICHTIG: Hier wird NICHTS mehr angelegt. Nur Adresse prüfen und zur Zahlung
+  // wechseln. Die Bestellung entsteht erst in der Zahlung, NACHDEM die Karte
+  // eingegeben und von Stripe geprüft wurde (siehe StripePaymentForm).
+  const handleConfirm = (e: React.FormEvent) => {
     e.preventDefault()
     const addrErrs = validateAddress(addr)
     if (Object.keys(addrErrs).length > 0) {
@@ -72,32 +76,8 @@ function PurchaseInner() {
       return
     }
     setAddrErrors({})
-    setSubmitting(true); setError('')
-    try {
-      // 1. Order erstellen
-      const { data: orderData } = await api.post('/orders', {
-        productVariantId: variantId,
-        type: 'purchase',
-        shippingAddress: addr,
-      })
-      // 2. Payment Intent holen
-      const { data: paymentData } = await api.post('/payments/create-intent', {
-        orderId: orderData.id,
-      })
-      setOrderId(orderData.id)
-      setClientSecret(paymentData.clientSecret)
-      setStep('payment')
-    } catch (e: any) {
-      const status = (e as any).response?.status
-      const msg    = (e as any).response?.data?.message
-      console.error('Checkout error:', status, msg)
-      if (status === 401) {
-        setError('Session abgelaufen — bitte erneut einloggen')
-        setTimeout(() => router.push('/auth/login'), 2000)
-      } else {
-        setError(Array.isArray(msg) ? msg.join(', ') : msg || 'Checkout failed')
-      }
-    } finally { setSubmitting(false) }
+    setError('')
+    setStep('payment')
   }
 
   if (loading) return <div style={{ padding:80, textAlign:'center', color:'#9e9e9b' }}>{t('Lädt…', 'Loading…')}</div>
@@ -177,9 +157,13 @@ function PurchaseInner() {
             </button>
           </form>
         ) : (
-          stripeReady && clientSecret && stripeInstance ? (
+          stripeReady && stripeInstance ? (
             <Elements stripe={stripeInstance} options={{
-              clientSecret,
+              mode: 'payment',
+              amount: Math.round((Number(product.salePrice||0) + Number(product.shippingCost||0)) * 100),
+              currency: 'eur',
+              locale: lang === 'de' ? 'de' : 'en',
+              paymentMethodTypes: allowSepa ? ['card', 'sepa_debit'] : ['card'],
               appearance: {
                 theme: 'stripe',
                 variables: {
@@ -193,7 +177,8 @@ function PurchaseInner() {
               },
             }}>
               <StripePaymentForm
-                orderId={orderId}
+                variantId={variantId}
+                addr={addr}
                 amount={Number(product.salePrice||0) + Number(product.shippingCost||0)}
                 onBack={() => setStep('details')}
               />
@@ -265,8 +250,9 @@ function PurchaseInner() {
   )
 }
 
-function StripePaymentForm({ orderId, amount, onBack }: {
-  orderId: string
+function StripePaymentForm({ variantId, addr, amount, onBack }: {
+  variantId: string
+  addr: { street: string; city: string; zip: string; country: string }
   amount: number
   onBack: () => void
 }) {
@@ -281,20 +267,46 @@ function StripePaymentForm({ orderId, amount, onBack }: {
     if (!stripe || !elements) return
     setPaying(true); setError('')
 
+    // 1) Karte prüfen. Leere/ungültige Kartendaten → NUR Fehlermeldung,
+    //    es wird KEINE Bestellung angelegt (nichts passiert ohne Zahlung).
     const { error: submitError } = await elements.submit()
     if (submitError) {
-      setError(submitError.message || 'Fehler'); setPaying(false); return
+      setError(submitError.message || t('Bitte Kartendaten prüfen', 'Please check your card details'))
+      setPaying(false); return
     }
 
-    const { error: confirmError } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/checkout/success?orderId=${orderId}`,
-      },
-    })
+    try {
+      // 2) Erst JETZT (Karte ist gültig) Bestellung + PaymentIntent anlegen.
+      const { data: orderData } = await api.post('/orders', {
+        productVariantId: variantId,
+        type: 'purchase',
+        shippingAddress: addr,
+      })
+      const { data: paymentData } = await api.post('/payments/create-intent', {
+        orderId: orderData.id,
+      })
 
-    if (confirmError) {
-      setError(confirmError.message || 'Zahlung fehlgeschlagen')
+      // 3) Zahlung bestätigen.
+      const { error: confirmError } = await stripe.confirmPayment({
+        elements,
+        clientSecret: paymentData.clientSecret,
+        confirmParams: {
+          return_url: `${window.location.origin}/checkout/success?orderId=${orderData.id}`,
+        },
+      })
+
+      if (confirmError) {
+        setError(confirmError.message || t('Zahlung fehlgeschlagen', 'Payment failed'))
+        setPaying(false)
+      }
+    } catch (err: any) {
+      const status = err?.response?.status
+      const msg    = err?.response?.data?.message
+      if (status === 401) {
+        setError(t('Session abgelaufen — bitte erneut einloggen', 'Session expired — please sign in again'))
+      } else {
+        setError(Array.isArray(msg) ? msg.join(', ') : msg || t('Zahlung fehlgeschlagen', 'Payment failed'))
+      }
       setPaying(false)
     }
   }
@@ -326,7 +338,7 @@ function StripePaymentForm({ orderId, amount, onBack }: {
 
       <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
         <Icon name="lock" style={{ fontSize:14, color:'#9e9e9b' }} />
-        <p style={{ fontSize:11, color:'#9e9e9b', margin:0 }}>Secured by Stripe · SSL encrypted</p>
+        <p style={{ fontSize:11, color:'#9e9e9b', margin:0 }}>{t('Gesichert durch Stripe · SSL-verschlüsselt','Secured by Stripe · SSL encrypted')}</p>
       </div>
     </form>
   )

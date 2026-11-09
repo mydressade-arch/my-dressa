@@ -425,6 +425,79 @@ export class NotificationsService {
     await this.sendEmail(to, 'Information zur Kaution — My Dressa', html);
   }
 
+  // ─── Auszahlung an Händler erfolgt ──────────────────────────────────────────
+  async sendPayoutCompleted(to: string, details: {
+    firstName: string;
+    amount: number;
+    remaining?: number;
+    manual?: boolean;
+  }) {
+    const html = layout(`
+      ${heading('Auszahlung veranlasst ✓')}
+      <p style="font-family:sans-serif;font-size:14px;color:#5e5e5b;line-height:1.7;margin:0 0 24px;">
+        Hallo ${details.firstName}, gute Nachrichten — eine Auszahlung an dich wurde veranlasst.
+      </p>
+      <div style="background:#EAF3DE;padding:20px;margin:0 0 24px;border-left:3px solid #27500A;">
+        <p style="font-family:sans-serif;font-size:18px;font-weight:700;color:#27500A;margin:0 0 4px;">
+          €${Number(details.amount).toFixed(2)}
+        </p>
+        <p style="font-family:sans-serif;font-size:12px;color:#27500A;margin:0;">
+          ${details.manual
+            ? 'Der Betrag wurde per Banküberweisung veranlasst und erscheint je nach Bank in 1–3 Werktagen auf deinem Konto.'
+            : 'Der Betrag ist unterwegs auf dein hinterlegtes Konto.'}
+        </p>
+      </div>
+      ${Number(details.remaining ?? 0) > 0 ? `
+        <p style="font-family:sans-serif;font-size:13px;color:#5e5e5b;line-height:1.7;margin:0 0 24px;">
+          Es verbleiben noch <strong>€${Number(details.remaining).toFixed(2)}</strong> auszahlbares Guthaben,
+          das mit einer späteren Auszahlung folgt.
+        </p>
+      ` : ''}
+      <a href="${this.frontendUrl}/merchant/earnings" style="${BUTTON_STYLE}">Zu meinen Einnahmen →</a>
+    `, this.frontendUrl);
+
+    await this.sendEmail(to, `Auszahlung über €${Number(details.amount).toFixed(2)} — My Dressa`, html);
+  }
+
+  // ─── Bestellung vom Händler storniert ──────────────────────────────────────
+  async sendOrderCancelled(to: string, details: {
+    firstName: string;
+    productTitle: string;
+    orderNumber: string;
+    reason: string;
+    isRental: boolean;
+    refunded: boolean;
+  }) {
+    const html = layout(`
+      ${heading('Deine Bestellung wurde storniert')}
+      <p style="font-family:sans-serif;font-size:14px;color:#5e5e5b;line-height:1.7;margin:0 0 20px;">
+        Hallo ${details.firstName},<br>
+        leider musste der Händler deine ${details.isRental ? 'Miete' : 'Bestellung'}
+        <strong>#${details.orderNumber}</strong> stornieren.
+      </p>
+      <div style="background:#fdf8f8;border:1px solid #e8e3e1;padding:20px;margin:0 0 24px;">
+        ${row('Produkt', details.productTitle)}
+        ${row('Grund', details.reason)}
+      </div>
+      ${details.refunded ? `
+        <div style="background:#EAF3DE;padding:20px;margin:0 0 24px;border-left:3px solid #27500A;">
+          <p style="font-family:sans-serif;font-size:14px;font-weight:700;color:#27500A;margin:0 0 4px;">
+            Deine Zahlung wird vollständig zurückerstattet
+          </p>
+          <p style="font-family:sans-serif;font-size:12px;color:#27500A;margin:0;">
+            Die Rückerstattung erscheint in 5–10 Werktagen auf deinem Zahlungsmittel.${details.isRental ? ' Eine evtl. reservierte Kaution wird sofort freigegeben.' : ''}
+          </p>
+        </div>
+      ` : ''}
+      <p style="font-family:sans-serif;font-size:13px;color:#5e5e5b;line-height:1.7;margin:0 0 24px;">
+        Es tut uns leid für die Umstände. Vielleicht findest du etwas Passendes bei einem anderen Händler.
+      </p>
+      <a href="${this.frontendUrl}/products" style="${BUTTON_STYLE}">Weiter stöbern →</a>
+    `, this.frontendUrl);
+
+    await this.sendEmail(to, `Stornierung deiner Bestellung #${details.orderNumber} — My Dressa`, html);
+  }
+
   // ─── 8. Merchant-Antrag genehmigt ──────────────────────────────────────────
   async sendMerchantApproved(to: string, firstName: string, shopName: string) {
     const html = layout(`

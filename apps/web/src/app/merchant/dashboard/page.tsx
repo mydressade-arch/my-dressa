@@ -51,9 +51,9 @@ export default function MerchantDashboardPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="font-serif text-3xl font-bold mb-1">Dashboard</h1>
-          <p className="text-secondary text-sm">Your shop at a glance</p>
+          <p className="text-secondary text-sm">{t('Dein Shop auf einen Blick','Your shop at a glance')}</p>
         </div>
-        <Link href="/merchant/products/new"><Button variant="primary" size="md">+ New Product</Button></Link>
+        <Link href="/merchant/products/new"><Button variant="primary" size="md">{t('+ Neues Produkt','+ New Product')}</Button></Link>
       </div>
 
       {/* Stripe Warning Banner */}
@@ -62,12 +62,12 @@ export default function MerchantDashboardPage() {
           <div style={{ display:'flex', gap:10, alignItems:'center' }}>
             <Icon name="warning" style={{ fontSize:20, color:'#633806', flexShrink:0 }} />
             <p style={{ fontSize:13, color:'#633806' }}>
-              <strong>Stripe nicht verbunden</strong> — Kunden können deine Produkte noch nicht kaufen oder mieten.
+              <strong>{t('Keine Auszahlungsmethode','No payout method')}</strong> — {t('hinterlege Stripe oder eine Bankverbindung, damit wir dir dein Geld auszahlen können.','set up Stripe or a bank account so we can pay out your earnings.')}
             </p>
           </div>
           <button onClick={() => router.push('/merchant/stripe')}
             style={{ background:'#633806', color:'#fff', border:'none', padding:'8px 16px', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
-            Jetzt verbinden
+            {t('Jetzt einrichten','Set up now')}
           </button>
         </div>
       )}
@@ -75,7 +75,7 @@ export default function MerchantDashboardPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         <StatCard icon="checkroom"  label={t('Produkte','Products')}    value={products.length} sub={t('Aktive Angebote','Active listings')} />
         <StatCard icon="package_2"  label={t('Bestellungen','Orders')}      value={orders.length}   sub={t('Gesamt','All time')} />
-        <StatCard icon="payments"   label="Revenue"     value={`€${totalRevenue.toFixed(2)}`} sub="After 10% commission" />
+        <StatCard icon="payments"   label={t('Umsatz','Revenue')}     value={`€${totalRevenue.toFixed(2)}`} sub={t('Nach 10% Provision','After 10% commission')} />
         <StatCard icon="hourglass_empty" label={t('Ausstehend','Pending')} value={orders.filter(o=>o.status==='paid').length} sub={t('Zu versenden','To ship')} />
       </div>
 

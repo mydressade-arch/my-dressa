@@ -94,9 +94,16 @@ api.interceptors.response.use(
         return api(original)
       }
 
-      // Refresh fehlgeschlagen → Session beenden
+      // Refresh fehlgeschlagen → Session sauber beenden.
+      // Auch den persistierten Zustand-Store leeren, sonst zeigt die UI weiter
+      // "eingeloggt" an, obwohl kein gültiger Token mehr da ist.
       localStorage.removeItem('accessToken')
       localStorage.removeItem('refreshToken')
+      localStorage.removeItem('dressa-auth')
+      // Nicht auf Auth-Seiten umleiten (sonst Login-Schleife)
+      if (!window.location.pathname.startsWith('/auth/')) {
+        window.location.href = '/auth/login?expired=1'
+      }
     }
     return Promise.reject(err)
   }
@@ -144,6 +151,8 @@ export const ordersApi = {
   myMerchantOrders: ()           => api.get('/orders/merchant-orders'),
   detail:     (id: string)       => api.get(`/orders/${id}`),
   cancel:     (id: string)       => api.post(`/orders/${id}/cancel`),
+  merchantCancel: (id: string, reason: string, note?: string) =>
+    api.post(`/orders/${id}/merchant-cancel`, { reason, note }),
   updateStatus: (id: string, status: string) => api.patch(`/orders/${id}/status`, { status }),
 }
 
@@ -158,6 +167,8 @@ export const commissionsApi = {
   merchantPayouts: () => api.get('/commissions/merchant-payouts'),
   merchantHistory: () => api.get('/commissions/merchant-history'),
   adminReport:    () => api.get('/commissions/admin-report'),
+  manualPayout:   (merchantId: string, amount?: number, note?: string) =>
+    api.post(`/commissions/admin/merchants/${merchantId}/manual-payout`, { amount, note }),
 }
 
 // Extra helper

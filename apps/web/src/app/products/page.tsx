@@ -48,6 +48,22 @@ function ProductsInner() {
     router.replace(`/products${url.toString() ? '?' + url.toString() : ''}`, { scroll: false })
   }, [router])
 
+  // Filter aus der URL NEU einlesen, wenn sich die Query ändert (z. B. über die
+  // Header-Buttons New/Rent/Buy/Vintage, während man schon auf /products ist).
+  // Ohne das würde die Seite nur beim ersten Laden reagieren. String als
+  // Dependency, damit keine Render-Schleife entsteht.
+  const paramsKey = searchParams.toString()
+  useEffect(() => {
+    const sp = new URLSearchParams(paramsKey)
+    setCategory(sp.get('category') || 'All')
+    setForRent(sp.get('forRent') === 'true')
+    setForSale(sp.get('forSale') === 'true')
+    setSelectedSize(sp.get('size') || '')
+    const s = sp.get('search') || ''
+    setSearchInput(s)
+    setSearch(s)
+  }, [paramsKey])
+
   useEffect(() => {
     let cancelled = false
     const run = async () => {
@@ -179,7 +195,7 @@ function ProductsInner() {
           <div style={{ position:'sticky', top:88 }}>
 
             {/* Type filter */}
-            <FilterSection title="Type">
+            <FilterSection title={mounted ? t("Typ", 'Type') : 'Typ'}>
               <FilterToggle
                 label={mounted ? t("Mieten", 'For Rent') : 'Mieten'}
                 sublabel={mounted ? t("Ausleihen & zurückgeben", 'Borrow & return') : 'Ausleihen & zurückgeben'}

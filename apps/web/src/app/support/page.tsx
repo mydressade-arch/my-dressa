@@ -84,7 +84,8 @@ export default function SupportDashboard() {
             {t('Alle anzeigen →', 'View all →')}
           </Link>
         </div>
-        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+        <div style={{ overflowX:'auto' }}>
+<table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
           <thead>
             <tr style={{ borderBottom:'1px solid #f1edec', background:'#fdf8f8' }}>
               {[t('Bestellung','Order'), t('Kunde','Customer'), t('Produkt','Product'), t('Status','Status'), t('Betrag','Amount')].map(h => (
@@ -113,6 +114,7 @@ export default function SupportDashboard() {
             })}
           </tbody>
         </table>
+</div>
       </div>
     </div>
   )

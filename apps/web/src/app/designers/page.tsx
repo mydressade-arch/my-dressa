@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import { useLangStore } from '@/store/lang.store'
 
 const DESIGNERS = [
   { name:'Valentino',     cat:'Couture',       country:'Italy'    },
@@ -13,10 +14,11 @@ const DESIGNERS = [
 ]
 
 export default function DesignersPage() {
+  const { t } = useLangStore()
   return (
     <div style={{ maxWidth:1440, margin:'0 auto', width:'100%', padding:'clamp(24px,3vw,48px) clamp(16px,4vw,64px)' }}>
-      <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:36, fontWeight:700, marginBottom:6 }}>Designers</h1>
-      <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:40 }}>Discover pieces from the world's most coveted fashion houses.</p>
+      <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:36, fontWeight:700, marginBottom:6 }}>{t('Designer','Designers')}</h1>
+      <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:40 }}>{t('Entdecke Stücke der begehrtesten Modehäuser der Welt.',"Discover pieces from the world's most coveted fashion houses.")}</p>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:20, marginBottom:48 }}>
         {DESIGNERS.map(d=>(
           <Link key={d.name} href={`/products?search=${encodeURIComponent(d.name)}`}
@@ -28,9 +30,9 @@ export default function DesignersPage() {
         ))}
       </div>
       <div style={{ textAlign:'center', padding:'32px 0', borderTop:'1px solid #f1edec' }}>
-        <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:16 }}>Entdecke die ganze Kollektion.</p>
+        <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:16 }}>{t('Entdecke die ganze Kollektion.','Discover the whole collection.')}</p>
         <Link href="/products" style={{ background:'#1c1b1b', color:'#fff', padding:'12px 24px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textDecoration:'none' }}>
-          Browse All Pieces
+          {t('Alle Stücke ansehen','Browse All Pieces')}
         </Link>
       </div>
     </div>

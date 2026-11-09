@@ -131,7 +131,7 @@ export default function AdminOrdersPage() {
   return (
     <div>
       <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, marginBottom:4 }}>{t('Bestellungen','Orders')}</h1>
-      <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:24 }}>All platform orders</p>
+      <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:24 }}>{t('Alle Bestellungen der Plattform','All platform orders')}</p>
 
       {msg && <div style={{ padding:'10px 16px', background:'#EAF3DE', color:'#27500A', fontSize:13, marginBottom:16 }}>{msg}</div>}
 
@@ -225,7 +225,7 @@ export default function AdminOrdersPage() {
             {loading ? (
               [1,2,3,4].map(i => <tr key={i}><td colSpan={10} style={{ padding:'8px 10px' }}><div style={{ height:16, background:'#f1edec', borderRadius:4 }} /></td></tr>)
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={10} style={{ padding:'48px', textAlign:'center', color:'#5e5e5b' }}>Keine Bestellungen</td></tr>
+              <tr><td colSpan={10} style={{ padding:'48px', textAlign:'center', color:'#5e5e5b' }}>{t('Keine Bestellungen','No orders')}</td></tr>
             ) : filtered.map((o: any) => {
               const nextOptions = NEXT_STATUSES[o.status] || []
               return (
@@ -317,8 +317,8 @@ export default function AdminOrdersPage() {
       {trackingOrderId && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
           <div style={{ background:'#fff', padding:28, maxWidth:400, width:'90%' }}>
-            <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:20, fontWeight:700, marginBottom:6 }}>DHL Sendungsnummer</h2>
-            <p style={{ fontSize:13, color:'#5e5e5b', marginBottom:20 }}>Order Status wird automatisch auf "shipped" gesetzt.</p>
+            <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:20, fontWeight:700, marginBottom:6 }}>{t('DHL Sendungsnummer','DHL tracking number')}</h2>
+            <p style={{ fontSize:13, color:'#5e5e5b', marginBottom:20 }}>{t('Der Bestellstatus wird automatisch auf „shipped" gesetzt.','Order status is automatically set to "shipped".')}</p>
             <input value={trackingNum} onChange={e => setTrackingNum(e.target.value)}
               placeholder="z.B. 1234567890"
               style={{ width:'100%', padding:'8px 10px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const, fontFamily:'monospace', marginBottom:16 }} />

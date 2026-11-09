@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Icon } from '@/components/ui/Icon'
+import { useLangStore } from '@/store/lang.store'
 
 /**
  * Passwort-Eingabefeld mit "Anzeigen/Verbergen"-Auge.
@@ -27,6 +28,7 @@ export function PasswordInput({
   value, onChange, placeholder, style, onKeyDown,
   autoComplete, required, name, id,
 }: PasswordInputProps) {
+  const { t } = useLangStore()
   const [visible, setVisible] = useState(false)
 
   return (
@@ -46,7 +48,7 @@ export function PasswordInput({
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
-        aria-label={visible ? 'Passwort verbergen' : 'Passwort anzeigen'}
+        aria-label={visible ? t('Passwort verbergen','Hide password') : t('Passwort anzeigen','Show password')}
         tabIndex={-1}
         style={{
           position: 'absolute',

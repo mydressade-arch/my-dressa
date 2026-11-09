@@ -12,9 +12,14 @@ export default function LoginPage() {
   const { login, isLoading, user } = useAuthStore()
   const { t } = useLangStore()
   const [mounted, setMounted] = useState(false)
+  const [sessionExpired, setSessionExpired] = useState(false)
 
   useEffect(() => {
     setMounted(true)
+    // Nach abgelaufener/beendeter Session leiten wir mit ?expired=1 hierher
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('expired')) {
+      setSessionExpired(true)
+    }
   }, [])
 
   // Redirect if already logged in
@@ -111,6 +116,12 @@ export default function LoginPage() {
               <PasswordInput value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required
                 style={{ padding: '12px 14px', fontSize: 14, border: '1px solid #c4c7c7', outline: 'none', background: '#fdf8f8' }} />
             </div>
+
+            {sessionExpired && !error && (
+              <div style={{ padding: '12px 14px', background: '#FAEEDA', color: '#633806', fontSize: 13 }}>
+                {t('Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.', 'Your session has expired. Please sign in again.')}
+              </div>
+            )}
 
             {error && !requires2FA && (
               <div style={{ padding: '12px 14px', background: '#ffdad6', color: '#ba1a1a', fontSize: 13 }}>

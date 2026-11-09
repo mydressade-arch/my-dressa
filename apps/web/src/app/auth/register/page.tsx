@@ -39,7 +39,7 @@ export default function RegisterPage() {
           <Icon name="check" style={{ color: '#fff', fontSize: 32 }} />
         </div>
         <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, marginBottom: 8 }}>{t('Konto erstellt!', 'Account created!')}</h2>
-        <p style={{ color: '#5e5e5b', fontSize: 14 }}>Du wirst zum Login weitergeleitet...</p>
+        <p style={{ color: '#5e5e5b', fontSize: 14 }}>{t('Du wirst zum Login weitergeleitet...', 'Redirecting you to login...')}</p>
       </div>
     </div>
   )
@@ -101,8 +101,9 @@ export default function RegisterPage() {
             )}
 
             <p style={{ fontSize: 12, color: '#5e5e5b' }}>
-              By creating an account you agree to our{' '}
-              <Link href="/terms" style={{ color: '#1c1b1b', fontWeight: 600 }}>Terms of Service</Link>.
+              {t('Mit der Erstellung eines Kontos stimmst du unseren ', 'By creating an account you agree to our ')}
+              <Link href="/terms" style={{ color: '#1c1b1b', fontWeight: 600 }}>{t('AGB', 'Terms of Service')}</Link>
+              {t(' zu.', '.')}
             </p>
 
             <button type="submit" disabled={loading}

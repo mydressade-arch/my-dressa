@@ -49,6 +49,19 @@ export class OrdersController {
     return this.ordersService.cancel(id, user.id);
   }
 
+  // Händler storniert eine Bestellung (z. B. nicht mehr auf Lager) — mit Grund.
+  @Post(':id/merchant-cancel')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.MERCHANT, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Händler storniert Bestellung mit Grund' })
+  merchantCancel(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { reason?: string; note?: string },
+    @CurrentUser() user: User,
+  ) {
+    return this.ordersService.cancelAsMerchant(id, user.id, body?.reason, body?.note);
+  }
+
   @Patch(':id/status')
   @UseGuards(RolesGuard)
   @Roles(UserRole.MERCHANT, UserRole.ADMIN)

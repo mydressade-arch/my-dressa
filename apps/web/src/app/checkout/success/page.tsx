@@ -31,26 +31,26 @@ function SuccessInner() {
         </div>
 
         <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:32, fontWeight:700, marginBottom:12, color:'#1c1b1b' }}>
-          Payment Successful!
+          {t('Zahlung erfolgreich!', 'Payment Successful!')}
         </h1>
 
         <p style={{ fontSize:14, color:'#5e5e5b', lineHeight:1.7, marginBottom:8 }}>
-          Your order has been confirmed. You will receive a confirmation email shortly.
+          {t('Deine Bestellung wurde bestätigt. Du erhältst in Kürze eine Bestätigungs-E-Mail.', 'Your order has been confirmed. You will receive a confirmation email shortly.')}
         </p>
 
         {orderId && (
           <p style={{ fontSize:12, color:'#9e9e9b', marginBottom:32, fontFamily:'monospace' }}>
-            Order #{orderId.slice(0, 8).toUpperCase()}
+            {t('Bestellung', 'Order')} #{orderId.slice(0, 8).toUpperCase()}
           </p>
         )}
 
         <div style={{ background:'#fdf8f8', border:'1px solid #e8e3e1', padding:20, marginBottom:32, textAlign:'left' }}>
-          <p style={{ fontSize:13, color:'#1c1b1b', fontWeight:600, marginBottom:8 }}>What happens next?</p>
+          <p style={{ fontSize:13, color:'#1c1b1b', fontWeight:600, marginBottom:8 }}>{t('Wie geht es weiter?', 'What happens next?')}</p>
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {[
-              ['email', 'Confirmation email sent to your inbox'],
-              ['local_shipping', 'Merchant will prepare and ship your order'],
-              ['package_2', 'Track your order status in My Account'],
+              ['email', t('Bestätigungs-E-Mail an dein Postfach gesendet', 'Confirmation email sent to your inbox')],
+              ['local_shipping', t('Der Händler bereitet deine Bestellung vor und versendet sie', 'Merchant will prepare and ship your order')],
+              ['package_2', t('Verfolge den Status unter „Mein Konto“', 'Track your order status in My Account')],
             ].map(([icon, text]) => (
               <div key={icon} style={{ display:'flex', alignItems:'center', gap:10 }}>
                 <Icon name={icon} style={{ fontSize:16, color:'#9E896A' }} />
@@ -63,16 +63,16 @@ function SuccessInner() {
         <div style={{ display:'flex', gap:12, justifyContent:'center' }}>
           <Link href="/account"
             style={{ background:'#1c1b1b', color:'#fff', padding:'12px 24px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', textDecoration:'none' }}>
-            View My Orders
+            {t('Meine Bestellungen', 'View My Orders')}
           </Link>
           <Link href="/products"
             style={{ background:'none', border:'1px solid #c4c7c7', color:'#1c1b1b', padding:'12px 24px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', textDecoration:'none' }}>
-            Continue Shopping
+            {t('Weiter shoppen', 'Continue Shopping')}
           </Link>
         </div>
 
         <p style={{ fontSize:11, color:'#c4c7c7', marginTop:20 }}>
-          Redirecting to your account in {countdown}s...
+          {t(`Weiterleitung zu deinem Konto in ${countdown}s...`, `Redirecting to your account in ${countdown}s...`)}
         </p>
       </div>
     </div>

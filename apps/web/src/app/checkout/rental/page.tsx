@@ -47,7 +47,7 @@ function RentalCheckoutInner() {
   const [consent, setConsent]     = useState({ agb:false, rental:false, liability:false, deposit:false })
 
   // Stripe payment step
-  const { t } = useLangStore()
+  const { t, lang } = useLangStore()
   const [step, setStep]               = useState<'details' | 'payment'>('details')
   const [clientSecret, setClientSecret]         = useState('')
   const [depositClientSecret, setDepositClientSecret] = useState('')
@@ -93,37 +93,10 @@ function RentalCheckoutInner() {
       return
     }
     setAddrErrors({})
-    setSubmitting(true); setError('')
-    try {
-      // Token prüfen bevor wir anfangen
-      // 1. Rental + Order erstellen
-      const { data: rentalData } = await rentalsApi.create({
-        productVariantId: variantId,
-        startDate, endDate,
-        shippingAddress: addr,
-        consent: { agbVersion:'1.0', rentalTermsVersion:'1.0', liabilityAccepted:true, depositAccepted:true, depositTermsVersion:'1.0' },
-      })
-
-      // 2. Payment Intent für diese Order erstellen
-      const { data: paymentData } = await api.post('/payments/create-intent', {
-        orderId: rentalData.orderId,
-      })
-
-      setOrderId(rentalData.orderId)
-      setClientSecret(paymentData.rentalClientSecret)
-      setDepositClientSecret(paymentData.depositClientSecret || '')
-      setStep('payment')
-    } catch (e: any) {
-      const status = (e as any).response?.status
-      const msg    = (e as any).response?.data?.message
-      console.error('Checkout error:', status, msg)
-      if (status === 401) {
-        setError('Session abgelaufen — bitte erneut einloggen')
-        setTimeout(() => router.push('/auth/login'), 2000)
-      } else {
-        setError(Array.isArray(msg) ? msg.join(', ') : msg || 'Booking failed')
-      }
-    } finally { setSubmitting(false) }
+    setError('')
+    // WICHTIG: Hier wird NICHTS angelegt. Miete + Bestellung entstehen erst in
+    // der Zahlung, NACHDEM die Karte eingegeben und von Stripe geprüft wurde.
+    setStep('payment')
   }
 
   if (loading) return <div style={{ padding:80, textAlign:'center', color:'#9e9e9b' }}>Laden...</div>
@@ -183,7 +156,7 @@ function RentalCheckoutInner() {
             </div>
 
             <div style={{ background:'#fff', border:'1px solid #c4c7c7', padding:24 }}>
-              <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600, marginBottom:20, paddingBottom:14, borderBottom:'1px solid #f1edec' }}>Terms & Conditions</h2>
+              <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600, marginBottom:20, paddingBottom:14, borderBottom:'1px solid #f1edec' }}>{t('Bedingungen', 'Terms & Conditions')}</h2>
               {([
                 ['agb', t('Ich akzeptiere die Allgemeinen Geschäftsbedingungen (AGB)', 'I accept the General Terms and Conditions')],
                 ['rental', t('Ich akzeptiere die Mietbedingungen. Bei verspäteter Rückgabe kann die Kaution einbehalten und eine Strafgebühr erhoben werden.', 'I accept the Rental Terms. Late returns may forfeit the deposit and incur a penalty fee.')],
@@ -236,9 +209,13 @@ function RentalCheckoutInner() {
           </form>
         ) : (
           // Step 2: Stripe Payment
-          stripeReady && clientSecret && stripeInstance ? (
+          stripeReady && stripeInstance ? (
             <Elements stripe={stripeInstance} options={{
-              clientSecret,
+              mode: 'payment',
+              amount: Math.round((rentalFee + shippingCost) * 100),
+              currency: 'eur',
+              locale: lang === 'de' ? 'de' : 'en',
+              paymentMethodTypes: ['card'],
               appearance: {
                 theme: 'stripe',
                 variables: {
@@ -253,10 +230,11 @@ function RentalCheckoutInner() {
               },
             }}>
               <StripePaymentForm
-                orderId={orderId}
+                variantId={variantId}
+                startDate={startDate}
+                endDate={endDate}
+                addr={addr}
                 amount={total}
-                clientSecret={clientSecret}
-                depositClientSecret={depositClientSecret}
                 onBack={() => setStep('details')}
               />
             </Elements>
@@ -269,9 +247,9 @@ function RentalCheckoutInner() {
                 </div>
               ) : !clientSecret ? (
                 <div>
-                  <p style={{ color:'#ba1a1a', fontWeight:600, marginBottom:8 }}>⚠️ Payment Intent fehlt</p>
-                  <p style={{ fontSize:13 }}>Bitte gehe zurück und versuche es erneut.</p>
-                  <button onClick={() => setStep('details')} style={{ marginTop:16, padding:'10px 20px', background:'#1c1b1b', color:'#fff', border:'none', cursor:'pointer', fontSize:12, fontWeight:600 }}>← Zurück</button>
+                  <p style={{ color:'#ba1a1a', fontWeight:600, marginBottom:8 }}>⚠️ {t('Zahlung nicht initialisiert', 'Payment not initialised')}</p>
+                  <p style={{ fontSize:13 }}>{t('Bitte gehe zurück und versuche es erneut.', 'Please go back and try again.')}</p>
+                  <button onClick={() => setStep('details')} style={{ marginTop:16, padding:'10px 20px', background:'#1c1b1b', color:'#fff', border:'none', cursor:'pointer', fontSize:12, fontWeight:600 }}>← {t('Zurück', 'Back')}</button>
                 </div>
               ) : (
                 <>
@@ -355,11 +333,12 @@ function RentalCheckoutInner() {
 }
 
 // ── Stripe Payment Form Component ─────────────────────────────────────────────
-function StripePaymentForm({ orderId, amount, clientSecret, depositClientSecret, onBack }: {
-  orderId: string
+function StripePaymentForm({ variantId, startDate, endDate, addr, amount, onBack }: {
+  variantId: string
+  startDate: string
+  endDate: string
+  addr: { street: string; city: string; zip: string; country: string }
   amount: number
-  clientSecret?: string
-  depositClientSecret?: string
   onBack: () => void
 }) {
   const stripe   = useStripe()
@@ -374,39 +353,55 @@ function StripePaymentForm({ orderId, amount, clientSecret, depositClientSecret,
     if (!stripe || !elements) return
     setPaying(true); setError('')
 
+    // 1) Karte prüfen. Leere/ungültige Kartendaten → NUR Fehlermeldung,
+    //    es wird KEINE Miete/Bestellung angelegt (nichts passiert ohne Zahlung).
     const { error: submitError } = await elements.submit()
     if (submitError) {
-      setError(submitError.message || 'Fehler beim Absenden')
+      setError(submitError.message || t('Bitte Kartendaten prüfen', 'Please check your card details'))
       setPaying(false); return
     }
 
-    // 1. MIETE bestätigen (wird sofort abgebucht). Dabei wird die Karte
-    //    des Kunden erfasst — dieselbe Karte nutzen wir dann für die Kaution.
-    const { error: mainError } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/checkout/success?orderId=${orderId}`,
-      },
-      redirect: 'if_required',
-    })
+    try {
+      // 2) Erst JETZT (Karte ist gültig) Miete + Bestellung + PaymentIntent anlegen.
+      const { data: rentalData } = await rentalsApi.create({
+        productVariantId: variantId,
+        startDate, endDate,
+        shippingAddress: addr,
+        consent: { agbVersion:'1.0', rentalTermsVersion:'1.0', liabilityAccepted:true, depositAccepted:true, depositTermsVersion:'1.0' },
+      })
+      const { data: paymentData } = await api.post('/payments/create-intent', {
+        orderId: rentalData.orderId,
+      })
 
-    if (mainError) {
-      setError(mainError.message || 'Zahlung fehlgeschlagen')
+      // 3) MIETE bestätigen. Die Kaution wird NICHT hier im Browser bestätigt —
+      //    sie reserviert das Backend nach bezahlter Miete off_session mit
+      //    derselben Karte. Scheitert das, storniert/erstattet das Backend.
+      const { error: mainError } = await stripe.confirmPayment({
+        elements,
+        clientSecret: paymentData.rentalClientSecret,
+        confirmParams: {
+          return_url: `${window.location.origin}/checkout/success?orderId=${rentalData.orderId}`,
+        },
+        redirect: 'if_required',
+      })
+
+      if (mainError) {
+        setError(mainError.message || t('Zahlung fehlgeschlagen', 'Payment failed'))
+        setPaying(false)
+        return
+      }
+
+      window.location.href = `${window.location.origin}/checkout/success?orderId=${rentalData.orderId}`
+    } catch (err: any) {
+      const status = err?.response?.status
+      const msg    = err?.response?.data?.message
+      if (status === 401) {
+        setError(t('Session abgelaufen — bitte erneut einloggen', 'Session expired — please sign in again'))
+      } else {
+        setError(Array.isArray(msg) ? msg.join(', ') : msg || t('Buchung fehlgeschlagen', 'Booking failed'))
+      }
       setPaying(false)
-      return
     }
-
-    // 2. KAUTION — wird NICHT mehr hier im Browser bestätigt.
-    //    Eine gespeicherte Karte wiederzuverwenden ist eine Off-Session-
-    //    Zahlung und muss serverseitig mit off_session:true laufen (sonst
-    //    lehnt Stripe die Browser-Bestätigung mit 400 ab). Sobald der
-    //    Webhook die bezahlte Miete meldet, reserviert das Backend die
-    //    Kaution automatisch mit derselben (gespeicherten) Karte. Scheitert
-    //    das, storniert das Backend die Miete und erstattet sie zurück.
-    //    Das Frontend muss hier also nichts weiter tun.
-
-    // Weiterleitung zur Success-Seite (Miete bezahlt; Kaution folgt serverseitig)
-    window.location.href = `${window.location.origin}/checkout/success?orderId=${orderId}`
   }
 
   return (
@@ -438,7 +433,7 @@ function StripePaymentForm({ orderId, amount, clientSecret, depositClientSecret,
 
       <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, marginTop:4 }}>
         <Icon name="lock" style={{ fontSize:14, color:'#9e9e9b' }} />
-        <p style={{ fontSize:11, color:'#9e9e9b', margin:0 }}>Secured by Stripe · SSL encrypted</p>
+        <p style={{ fontSize:11, color:'#9e9e9b', margin:0 }}>{t('Gesichert durch Stripe · SSL-verschlüsselt','Secured by Stripe · SSL encrypted')}</p>
       </div>
     </form>
   )

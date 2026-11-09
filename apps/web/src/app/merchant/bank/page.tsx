@@ -28,18 +28,18 @@ export default function MerchantBankPage() {
       const { data } = await api.post('/bank/account', form) as any
       setBankData({ hasBank: true, ibanMasked: data.ibanMasked, accountName: form.accountName, bic: form.bic, bankName: form.bankName })
       setShowForm(false)
-      toast('Bankdaten gespeichert ✓', 'success')
+      toast(t('Bankdaten gespeichert ✓','Bank details saved ✓'), 'success')
     } catch (e: any) {
-      toast(e.response?.data?.message || 'Fehler', 'error')
+      toast(e.response?.data?.message || t('Fehler','Error'), 'error')
     } finally { setSaving(false) }
   }
 
-  if (loading) return <div style={{ padding:64, textAlign:'center' }}>Laden...</div>
+  if (loading) return <div style={{ padding:64, textAlign:'center' }}>{t('Laden...','Loading...')}</div>
 
   return (
     <div style={{ maxWidth:600 }}>
-      <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, marginBottom:8 }}>Bankverbindung</h1>
-      <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:32 }}>Für Auszahlungen ohne Stripe. Wird mit AES-256 verschlüsselt gespeichert.</p>
+      <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, marginBottom:8 }}>{t('Bankverbindung','Bank account')}</h1>
+      <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:32 }}>{t('Für Auszahlungen ohne Stripe. Wird mit AES-256 verschlüsselt gespeichert.','For payouts without Stripe. Stored encrypted with AES-256.')}</p>
 
       {bankData?.hasBank && !showForm && (
         <div style={{ background:'#fff', border:'1px solid #c4c7c7', padding:24, marginBottom:20 }}>
@@ -50,10 +50,10 @@ export default function MerchantBankPage() {
               </div>
               <div>
                 <p style={{ fontWeight:600, fontSize:15 }}>{bankData.accountName}</p>
-                <p style={{ fontSize:12, color:'#5e5e5b' }}>{bankData.bankName || 'Bank'}</p>
+                <p style={{ fontSize:12, color:'#5e5e5b' }}>{bankData.bankName || t('Bank','Bank')}</p>
               </div>
             </div>
-            <button onClick={() => setShowForm(true)} style={{ fontSize:12, fontWeight:600, textTransform:'uppercase', padding:'8px 16px', background:'none', border:'1px solid #c4c7c7', cursor:'pointer' }}>Ändern</button>
+            <button onClick={() => setShowForm(true)} style={{ fontSize:12, fontWeight:600, textTransform:'uppercase', padding:'8px 16px', background:'none', border:'1px solid #c4c7c7', cursor:'pointer' }}>{t('Ändern','Edit')}</button>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:12 }}>
             <div style={{ background:'#fdf8f8', padding:'12px 16px' }}>
@@ -69,20 +69,20 @@ export default function MerchantBankPage() {
           </div>
           <div style={{ background:'#E6F1FB', padding:'10px 14px', marginTop:16, fontSize:12, color:'#0C447C', display:'flex', gap:8 }}>
             <Icon name="lock" style={{ fontSize:16 }} />
-            IBAN ist AES-256 verschlüsselt. Nur Admins sehen die vollständige IBAN.
+            {t('IBAN ist AES-256 verschlüsselt. Nur Admins sehen die vollständige IBAN.','IBAN is AES-256 encrypted. Only admins see the full IBAN.')}
           </div>
         </div>
       )}
 
       {showForm && (
         <form onSubmit={save} style={{ background:'#fff', border:'1px solid #c4c7c7', padding:24 }}>
-          <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600, marginBottom:20 }}>Bankdaten eingeben</h2>
+          <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:600, marginBottom:20 }}>{t('Bankdaten eingeben','Enter bank details')}</h2>
           <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
             {[
-              { key:'accountName', label:'Kontoinhaber *', placeholder:t('Max Mustermann', 'John Doe'), mono:false },
+              { key:'accountName', label:t('Kontoinhaber','Account holder')+' *', placeholder:t('Max Mustermann', 'John Doe'), mono:false },
               { key:'iban', label:'IBAN *', placeholder:'DE89 3704 0044 0532 0130 00', mono:true },
               { key:'bic', label:'BIC / SWIFT', placeholder:'COBADEFFXXX', mono:true },
-              { key:'bankName', label:'Bank Name', placeholder:'Commerzbank', mono:false },
+              { key:'bankName', label:t('Bankname','Bank name'), placeholder:'Commerzbank', mono:false },
             ].map(({ key, label, placeholder, mono }) => (
               <div key={key}>
                 <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>{label}</label>
@@ -95,16 +95,16 @@ export default function MerchantBankPage() {
           </div>
           <div style={{ background:'#FAEEDA', padding:'10px 14px', marginTop:16, fontSize:12, color:'#633806', display:'flex', gap:8 }}>
             <Icon name="security" style={{ fontSize:16 }} />
-            Deine IBAN wird verschlüsselt. My Dressa sieht nur die letzten 4 Stellen.
+            {t('Deine IBAN wird verschlüsselt. My Dressa sieht nur die letzten 4 Stellen.','Your IBAN is encrypted. My Dressa only sees the last 4 digits.')}
           </div>
           <div style={{ display:'flex', gap:10, marginTop:20 }}>
             <button type="submit" disabled={saving || !form.accountName || !form.iban}
               style={{ flex:1, background:'#1c1b1b', color:'#fff', border:'none', padding:14, fontSize:12, fontWeight:600, textTransform:'uppercase', cursor:'pointer', opacity:(saving||!form.accountName||!form.iban)?0.5:1 }}>
-              {saving ? t('Speichern...', 'Saving...') : '🔒 Sicher speichern'}
+              {saving ? t('Speichern...', 'Saving...') : t('🔒 Sicher speichern','🔒 Save securely')}
             </button>
             {bankData?.hasBank && (
               <button type="button" onClick={() => setShowForm(false)}
-                style={{ padding:'14px 20px', background:'none', border:'1px solid #c4c7c7', fontSize:12, cursor:'pointer' }}>Abbrechen</button>
+                style={{ padding:'14px 20px', background:'none', border:'1px solid #c4c7c7', fontSize:12, cursor:'pointer' }}>{t('Abbrechen','Cancel')}</button>
             )}
           </div>
         </form>

@@ -91,7 +91,7 @@ export default function ContactPage() {
                     {t('E-Mail', 'Email')} *
                   </label>
                   <input type="email" value={form.email} onChange={up('email')} required
-                    placeholder="deine@email.de"
+                    placeholder={t('deine@email.de','you@email.com')}
                     style={{ width: '100%', padding: '12px 14px', fontSize: 14, border: '1px solid #c4c7c7', outline: 'none', background: '#fdf8f8', boxSizing: 'border-box' as const }} />
                 </div>
               </div>

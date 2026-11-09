@@ -101,4 +101,17 @@ export class CommissionsController {
   adminReport() {
     return this.commissionsService.getAdminReport();
   }
+
+  // Admin erfasst eine bereits manuell (per Bank) getätigte Auszahlung.
+  @Post('admin/merchants/:merchantId/manual-payout')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: '[Admin] Manuelle Auszahlung erfassen (Guthaben auf 0)' })
+  manualPayout(
+    @Param('merchantId', ParseUUIDPipe) merchantId: string,
+    @CurrentUser() admin: User,
+    @Body('amount') amount?: number,
+    @Body('note') note?: string,
+  ) {
+    return this.commissionsService.recordManualPayout(merchantId, admin.id, amount, note);
+  }
 }

@@ -127,20 +127,20 @@ export default function NewProductPage() {
           </h2>
           <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
             <div>
-              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Titel *</label>
-              <input value={form.title} onChange={up('title')} required placeholder="z.B. Elegantes Abendkleid"
+              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>{t('Titel','Title')} *</label>
+              <input value={form.title} onChange={up('title')} required placeholder={t('z.B. Elegantes Abendkleid','e.g. Elegant evening dress')}
                 style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }} />
             </div>
             <div>
-              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Beschreibung</label>
-              <textarea value={form.description} onChange={up('description')} rows={3} placeholder="Produktbeschreibung..."
+              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>{t('Beschreibung','Description')}</label>
+              <textarea value={form.description} onChange={up('description')} rows={3} placeholder={t('Produktbeschreibung...','Product description...')}
                 style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', resize:'vertical', boxSizing:'border-box' as const }} />
             </div>
             <div>
-              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Kategorie</label>
+              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>{t('Kategorie','Category')}</label>
               <select value={form.category} onChange={up('category')}
                 style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }}>
-                <option value="">Kategorie wählen</option>
+                <option value="">{t('Kategorie wählen','Choose category')}</option>
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
@@ -165,36 +165,36 @@ export default function NewProductPage() {
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:12 }}>
             {form.isForSale && (
               <div>
-                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Verkaufspreis (€) *</label>
+                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>{t('Verkaufspreis','Sale price')} (€) *</label>
                 <input type="number" step="0.01" min="0" value={form.salePrice} onChange={up('salePrice')} placeholder="0.00"
                   style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }} />
               </div>
             )}
             {form.isForRent && (
               <div>
-                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Mietpreis (fester Preis pro Miete) (€) *</label>
+                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>{t('Mietpreis (fester Preis pro Miete)','Rental price (fixed per rental)')} (€) *</label>
                 <input type="number" step="0.01" min="0" value={form.rentalPrice} onChange={up('rentalPrice')} placeholder="0.00"
                   style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }} />
               </div>
             )}
             <div>
-              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>Versandkosten (€)</label>
+              <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#5e5e5b', display:'block', marginBottom:6 }}>{t('Versandkosten','Shipping cost')} (€)</label>
               <input type="number" step="0.01" min="0" value={form.shippingCost} onChange={up('shippingCost')} placeholder="4.99"
                 style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const }} />
             </div>
             {form.isForRent && (
               <div>
-                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#0C447C', display:'block', marginBottom:6 }}>Kaution (€) *</label>
-                <input type="number" step="0.01" min="0" value={form.depositAmount} onChange={up('depositAmount')} placeholder="z.B. 50.00"
+                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#0C447C', display:'block', marginBottom:6 }}>{t('Kaution','Deposit')} (€) *</label>
+                <input type="number" step="0.01" min="0" value={form.depositAmount} onChange={up('depositAmount')} placeholder={t('z.B. 50.00','e.g. 50.00')}
                   style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'2px solid #0C447C', outline:'none', boxSizing:'border-box' as const }} />
               </div>
             )}
             {form.isForRent && (
               <div>
-                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#0C447C', display:'block', marginBottom:6 }}>Mietdauer (Tage)</label>
+                <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'#0C447C', display:'block', marginBottom:6 }}>{t('Mietdauer (Tage)','Rental duration (days)')}</label>
                 <input type="number" min="1" step="1" value={form.rentalDurationDays}
                   onChange={e => setForm(f => ({...f, rentalDurationDays: e.target.value}))}
-                  placeholder="z.B. 6"
+                  placeholder={t('z.B. 6','e.g. 6')}
                   style={{ width:'100%', padding:'10px 14px', fontSize:14, border:'1px solid #c4c7c7', outline:'none', boxSizing:'border-box' as const, background:'#fff' }} />
               </div>
             )}
@@ -221,7 +221,7 @@ export default function NewProductPage() {
                   {colorOptions.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
                 <input type="number" min="0" value={v.stockQuantity||1} onChange={e => setVariants(vs => vs.map((x,j) => j===i ? {...x, stockQuantity:parseInt(e.target.value)||0} : x))}
-                  placeholder="Stk"
+                  placeholder={t('Stk','Qty')}
                   style={{ padding:'8px 12px', fontSize:13, border:'1px solid #c4c7c7', outline:'none', textAlign:'center' }} />
                 {variants.length > 1 && (
                   <button type="button" onClick={() => setVariants(vs => vs.filter((_,j) => j!==i))}
@@ -254,7 +254,7 @@ export default function NewProductPage() {
             <button type="button" onClick={() => fileRef.current?.click()}
               style={{ width:100, height:120, border:'2px dashed #c4c7c7', background:'#fdf8f8', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4, color:'#9e9e9b' }}>
               <Icon name="add_photo_alternate" style={{ fontSize:28 }} />
-              <span style={{ fontSize:11 }}>Hinzufügen</span>
+              <span style={{ fontSize:11 }}>{t('Hinzufügen','Add')}</span>
             </button>
           </div>
           <input ref={fileRef} type="file" multiple accept="image/*" style={{ display:'none' }}

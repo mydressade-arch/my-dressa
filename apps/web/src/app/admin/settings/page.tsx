@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { settingsApi } from '@/lib/api'
 import { Icon } from '@/components/ui/Icon'
 import { HomeImagesManager } from './HomeImagesManager'
+import { useLangStore } from '@/store/lang.store'
 
 const ACCENT = '#9E896A'
 
@@ -27,6 +28,7 @@ function ListSetting({
   suffix?: string
   icon: string
 }) {
+  const { t } = useLangStore()
   const [input, setInput] = useState(values.join(', '))
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
@@ -77,11 +79,11 @@ function ListSetting({
           disabled={saving || !dirty}
           style={{ padding: '11px 24px', fontSize: 13, fontWeight: 600, background: dirty ? '#1A1A1A' : '#cfcac8', color: '#fff', border: 'none', borderRadius: 8, cursor: (saving || !dirty) ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, whiteSpace: 'nowrap' }}
         >
-          {saving ? '…' : 'Speichern'}
+          {saving ? '…' : t('Speichern','Save')}
         </button>
       </div>
       <p style={{ fontSize: 11, color: '#b0aca9', marginTop: 8 }}>
-        Mehrere Werte mit Komma trennen.
+        {t('Mehrere Werte mit Komma trennen.','Separate multiple values with a comma.')}
       </p>
     </div>
   )
@@ -90,6 +92,7 @@ function ListSetting({
 type Tab = 'payments' | 'catalog' | 'home'
 
 export default function AdminSettingsPage() {
+  const { t } = useLangStore()
   const [durations, setDurations] = useState<number[]>([7, 10])
   const [colors, setColors] = useState<string[]>([])
   const [sizes, setSizes] = useState<string[]>([])
@@ -121,25 +124,25 @@ export default function AdminSettingsPage() {
     try {
       await settingsApi.adminSetPaymentMethods(next)
       setAllowSepa(next)
-      notify(next ? 'SEPA-Lastschrift beim Kauf aktiviert ✓' : 'SEPA-Lastschrift deaktiviert ✓')
+      notify(next ? t('SEPA-Lastschrift beim Kauf aktiviert ✓','SEPA direct debit for purchases activated ✓') : t('SEPA-Lastschrift deaktiviert ✓','SEPA direct debit deactivated ✓'))
     } catch {
-      notify('Fehler beim Speichern')
+      notify(t('Fehler beim Speichern','Error while saving'))
     } finally { setSavingSepa(false) }
   }
 
   const TABS: { id: Tab; label: string; icon: string }[] = [
-    { id: 'payments', label: 'Zahlungen', icon: 'payments' },
-    { id: 'catalog',  label: 'Katalog',   icon: 'category' },
-    { id: 'home',     label: 'Startseite', icon: 'image' },
+    { id: 'payments', label: t('Zahlungen','Payments'), icon: 'payments' },
+    { id: 'catalog',  label: t('Katalog','Catalog'),   icon: 'category' },
+    { id: 'home',     label: t('Startseite','Home page'), icon: 'image' },
   ]
 
   return (
     <div style={{ maxWidth: 820 }}>
       <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 30, fontWeight: 700, marginBottom: 6 }}>
-        Einstellungen
+        {t('Einstellungen','Settings')}
       </h1>
       <p style={{ color: '#5e5e5b', fontSize: 14, marginBottom: 24 }}>
-        Zentrale Werte, die du ohne Code-Änderung anpassen kannst.
+        {t('Zentrale Werte, die du ohne Code-Änderung anpassen kannst.','Central values you can change without touching code.')}
       </p>
 
       {/* Floating Toast */}
@@ -181,12 +184,11 @@ export default function AdminSettingsPage() {
                 <div style={{ width: 34, height: 34, borderRadius: 8, background: '#faf6f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Icon name="account_balance" style={{ fontSize: 18, color: ACCENT }} />
                 </div>
-                <h2 style={{ fontSize: 16, fontWeight: 600 }}>Zahlungsmethoden beim Kauf</h2>
+                <h2 style={{ fontSize: 16, fontWeight: 600 }}>{t('Zahlungsmethoden beim Kauf','Payment methods for purchases')}</h2>
               </div>
               <p style={{ color: '#5e5e5b', fontSize: 13, margin: '0 0 18px 44px', lineHeight: 1.6 }}>
-                Kreditkarte (Visa, Mastercard) ist immer möglich. Zusätzlich kannst du
-                SEPA-Lastschrift (IBAN) beim <b>Kauf</b> erlauben. Beim <b>Mieten</b> ist
-                immer nur Karte möglich — die Kaution braucht eine Karten-Reservierung.
+                {t('Kreditkarte (Visa, Mastercard) ist immer möglich. Zusätzlich kannst du SEPA-Lastschrift (IBAN) beim Kauf erlauben. Beim Mieten ist immer nur Karte möglich — die Kaution braucht eine Karten-Reservierung.',
+                   'Credit card (Visa, Mastercard) is always available. You can additionally allow SEPA direct debit (IBAN) for purchases. For rentals only card is possible — the deposit requires a card hold.')}
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px', background: '#faf6f5', borderRadius: 8, border: '1px solid #efe9e7' }}>
                 <button
@@ -206,12 +208,12 @@ export default function AdminSettingsPage() {
                 </button>
                 <div>
                   <p style={{ fontSize: 13.5, fontWeight: 600, color: '#1c1b1b' }}>
-                    SEPA-Lastschrift beim Kauf {allowSepa ? 'erlaubt' : 'deaktiviert'}
+                    {t('SEPA-Lastschrift beim Kauf','SEPA direct debit for purchases')} {allowSepa ? t('erlaubt','allowed') : t('deaktiviert','disabled')}
                   </p>
                   <p style={{ fontSize: 11.5, color: '#9e9e9b', marginTop: 2 }}>
                     {allowSepa
-                      ? 'Kunden können per IBAN kaufen (Zahlung dauert einige Tage).'
-                      : 'Nur Kreditkarte beim Kauf.'}
+                      ? t('Kunden können per IBAN kaufen (Zahlung dauert einige Tage).','Customers can pay by IBAN (payment takes a few days).')
+                      : t('Nur Kreditkarte beim Kauf.','Card only for purchases.')}
                   </p>
                 </div>
               </div>
@@ -222,42 +224,42 @@ export default function AdminSettingsPage() {
           {tab === 'catalog' && (
             <>
               <ListSetting
-                title="Mietdauern"
+                title={t('Mietdauern','Rental durations')}
                 icon="event"
-                description="Welche Mietdauern darf der Händler pro Kleid auswählen?"
+                description={t('Welche Mietdauern darf der Händler pro Kleid auswählen?','Which rental durations can the merchant choose per item?')}
                 placeholder="7, 10"
                 values={durations.map(String)}
                 numeric
-                suffix=" Tage"
+                suffix={t(' Tage',' days')}
                 onSave={async (vals) => {
                   const nums = vals.map(v => parseInt(v, 10)).filter(n => Number.isFinite(n) && n > 0)
                   const res = await settingsApi.adminSetRentalDurations(nums)
                   setDurations((res as any).data?.durations ?? nums)
-                  notify('Mietdauern gespeichert ✓')
+                  notify(t('Mietdauern gespeichert ✓','Rental durations saved ✓'))
                 }}
               />
               <ListSetting
-                title="Größen"
+                title={t('Größen','Sizes')}
                 icon="straighten"
-                description="Größen, aus denen der Händler beim Anlegen eines Produkts wählen kann."
+                description={t('Größen, aus denen der Händler beim Anlegen eines Produkts wählen kann.','Sizes the merchant can choose from when creating a product.')}
                 placeholder="XS, S, M, L, XL, 36, 38, 40"
                 values={sizes}
                 onSave={async (vals) => {
                   const res = await settingsApi.adminSetProductSizes(vals)
                   setSizes((res as any).data?.sizes ?? vals)
-                  notify('Größen gespeichert ✓')
+                  notify(t('Größen gespeichert ✓','Sizes saved ✓'))
                 }}
               />
               <ListSetting
-                title="Farben"
+                title={t('Farben','Colors')}
                 icon="palette"
-                description="Farben, aus denen der Händler beim Anlegen eines Produkts wählen kann."
-                placeholder="Schwarz, Weiß, Rot, Blau"
+                description={t('Farben, aus denen der Händler beim Anlegen eines Produkts wählen kann.','Colors the merchant can choose from when creating a product.')}
+                placeholder={t('Schwarz, Weiß, Rot, Blau','Black, White, Red, Blue')}
                 values={colors}
                 onSave={async (vals) => {
                   const res = await settingsApi.adminSetProductColors(vals)
                   setColors((res as any).data?.colors ?? vals)
-                  notify('Farben gespeichert ✓')
+                  notify(t('Farben gespeichert ✓','Colors saved ✓'))
                 }}
               />
             </>

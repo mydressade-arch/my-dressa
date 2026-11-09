@@ -27,6 +27,7 @@ export default function MerchantEarningsPage() {
   const [msgType, setMsgType] = useState<'ok'|'err'>('ok')
   const [history, setHistory] = useState<any[]>([])
   const [stripeStatus, setStripeStatus] = useState<any>(null)
+  const [bankStatus, setBankStatus] = useState<any>(null)
 
   const load = () => {
     Promise.all([
@@ -35,12 +36,14 @@ export default function MerchantEarningsPage() {
       api.get('/payments/merchant/transfers').catch(() => ({ data: [] })),
       commissionsApi.merchantHistory().catch(() => ({ data: [] })),
       api.get('/payments/merchant/stripe-status').catch(() => ({ data: null })),
-    ]).then(([s, p, tr, h, ss]: any) => {
+      api.get('/bank/account').catch(() => ({ data: null })),
+    ]).then(([s, p, tr, h, ss, bk]: any) => {
       setStats(s.data)
       setPayouts(p.data || [])
       setTransfers(tr.data || [])
       setHistory(h.data || [])
       setStripeStatus(ss.data || null)
+      setBankStatus(bk.data || null)
     }).catch(() => {}).finally(() => setLoading(false))
   }
 
@@ -122,9 +125,9 @@ export default function MerchantEarningsPage() {
         <td class="num net">+€${fmtEur(h.net)}</td>
         <td><span class="st ${h.status==='paid'?'paid':'pend'}">${statusLabel(h.status)}</span></td>
       </tr>`).join('')
-    const today = new Date().toLocaleDateString('de-DE', { day:'2-digit', month:'long', year:'numeric' })
-    const html = `<!doctype html><html lang="de"><head><meta charset="utf-8">
-<title>My Dressa — Einnahmen-Abrechnung</title>
+    const today = new Date().toLocaleDateString(t('de-DE','en-GB'), { day:'2-digit', month:'long', year:'numeric' })
+    const html = `<!doctype html><html lang="${t('de','en')}"><head><meta charset="utf-8">
+<title>${t('My Dressa — Einnahmen-Abrechnung','My Dressa — Earnings Statement')}</title>
 <style>
 * { box-sizing:border-box; }
 body { font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif; color:#1c1b1b; margin:0; padding:40px; }
@@ -151,27 +154,27 @@ tfoot td { padding:12px 10px; border-top:2px solid #1c1b1b; font-weight:700; }
 @page { margin:14mm; } @media print { body { padding:0; } }
 </style></head><body>
 <div class="head">
-  <div class="brand">My Dressa<small>Mode-Verleih</small></div>
-  <div class="doc"><b>Einnahmen-Abrechnung</b><br>Erstellt am ${today}</div>
+  <div class="brand">My Dressa<small>${t('Mode-Verleih','Fashion Rental')}</small></div>
+  <div class="doc"><b>${t('Einnahmen-Abrechnung','Earnings Statement')}</b><br>${t('Erstellt am','Created on')} ${today}</div>
 </div>
 <div class="meta">
   <div><b>${escapeHtml(merchantName)}</b><br>${escapeHtml(user?.email || '')}</div>
-  <div style="text-align:right">${history.length} Transaktionen</div>
+  <div style="text-align:right">${history.length} ${t('Transaktionen','transactions')}</div>
 </div>
 <div class="cards">
-  <div class="card"><div class="l">Gesamt verdient</div><div class="v">€${fmtEur(totNet)}</div></div>
-  <div class="card"><div class="l">Ausgezahlt</div><div class="v">€${fmtEur(paidNet)}</div></div>
-  <div class="card"><div class="l">Ausstehend</div><div class="v">€${fmtEur(pendNet)}</div></div>
+  <div class="card"><div class="l">${t('Gesamt verdient','Total earned')}</div><div class="v">€${fmtEur(totNet)}</div></div>
+  <div class="card"><div class="l">${t('Ausgezahlt','Paid out')}</div><div class="v">€${fmtEur(paidNet)}</div></div>
+  <div class="card"><div class="l">${t('Ausstehend','Pending')}</div><div class="v">€${fmtEur(pendNet)}</div></div>
 </div>
 <table>
   <thead><tr>
-    <th>Datum</th><th>Artikel</th><th>Art</th>
-    <th style="text-align:right">Brutto</th><th style="text-align:right">Gebühr</th>
-    <th style="text-align:right">Dein Netto</th><th>Status</th>
+    <th>${t('Datum','Date')}</th><th>${t('Artikel','Item')}</th><th>${t('Art','Type')}</th>
+    <th style="text-align:right">${t('Brutto','Gross')}</th><th style="text-align:right">${t('Gebühr','Fee')}</th>
+    <th style="text-align:right">${t('Dein Netto','Your net')}</th><th>${t('Status','Status')}</th>
   </tr></thead>
   <tbody>${rowsHtml}</tbody>
   <tfoot><tr>
-    <td colspan="3">SUMME</td>
+    <td colspan="3">${t('SUMME','TOTAL')}</td>
     <td class="num">€${fmtEur(totGross)}</td>
     <td class="num">−€${fmtEur(totFee)}</td>
     <td class="num net">+€${fmtEur(totNet)}</td>
@@ -179,8 +182,8 @@ tfoot td { padding:12px 10px; border-top:2px solid #1c1b1b; font-weight:700; }
   </tr></tfoot>
 </table>
 <div class="foot">
-  My Dressa berechnet 15 % Provision auf Verkäufe und 10 % auf Mieten. Versandkosten gehen vollständig an den Händler.<br>
-  Diese Abrechnung wurde automatisch erstellt und dient zur Übersicht. My Dressa · Made in Germany.
+  ${t('My Dressa berechnet 15 % Provision auf Verkäufe und 10 % auf Mieten. Versandkosten gehen vollständig an den Händler.','My Dressa charges 15% commission on sales and 10% on rentals. Shipping costs go entirely to the merchant.')}<br>
+  ${t('Diese Abrechnung wurde automatisch erstellt und dient zur Übersicht. My Dressa · Made in Germany.','This statement was generated automatically for your overview. My Dressa · Made in Germany.')}
 </div>
 <script>window.onload=function(){setTimeout(function(){window.print()},350)}<\/script>
 </body></html>`
@@ -205,46 +208,74 @@ tfoot td { padding:12px 10px; border-top:2px solid #1c1b1b; font-weight:700; }
         </div>
       )}
 
-      {/* Stripe-Aktivierung — prominent, wenn noch nicht vollständig eingerichtet.
-          Ohne aktives Stripe-Konto kann der Händler KEINE Auszahlungen erhalten. */}
-      {stripeStatus && !(stripeStatus.connected && stripeStatus.onboardingComplete) && (
-        <div style={{ background:'#FAEEDA', border:'1px solid #f0cd92', padding:'20px 24px', marginBottom:24, display:'flex', gap:16, alignItems:'center', flexWrap:'wrap' }}>
-          <div style={{ width:44, height:44, background:'#fff', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-            <Icon name="account_balance" style={{ fontSize:22, color:'#635BFF' }} />
+      {/* Auszahlungsmethode — der Händler WÄHLT: entweder Stripe (automatische
+          Auszahlung) ODER Bankverbindung (wir überweisen manuell). Stripe ist
+          NICHT verpflichtend. Verkaufen geht immer; eine Methode wird nur für
+          die Auszahlung des Guthabens benötigt. */}
+      {(() => {
+        const stripeReady = stripeStatus?.connected && stripeStatus?.onboardingComplete
+        const bankReady   = !!bankStatus?.hasBank
+
+        // Eine Methode ist aktiv → kurze Bestätigung.
+        if (stripeReady) return (
+          <div style={{ background:'#EAF3DE', border:'1px solid #c5dda8', padding:'12px 20px', marginBottom:24, display:'flex', gap:10, alignItems:'center', flexWrap:'wrap' }}>
+            <Icon name="verified" style={{ fontSize:20, color:'#27500A' }} />
+            <span style={{ fontSize:13, color:'#27500A', fontWeight:600, flex:1, minWidth:180 }}>
+              {t('Stripe aktiv — Auszahlungen laufen automatisch', 'Stripe active — payouts run automatically')}
+            </span>
+            <a href="/merchant/bank" style={{ fontSize:12, color:'#27500A', textDecoration:'underline' }}>
+              {t('stattdessen Bankverbindung nutzen', 'use a bank account instead')}
+            </a>
           </div>
-          <div style={{ flex:1, minWidth:220 }}>
-            <p style={{ fontSize:15, fontWeight:700, color:'#633806', marginBottom:3 }}>
-              {t('Stripe-Konto einrichten', 'Set up your Stripe account')}
-            </p>
-            <p style={{ fontSize:13, color:'#633806', lineHeight:1.6 }}>
-              {stripeStatus.connected
-                ? t('Fast fertig — bitte schließe die Verifizierung ab, damit Auszahlungen möglich sind.',
-                    'Almost done — finish verification so you can receive payouts.')
-                : t('Richte dein Stripe-Konto ein, um deine Einnahmen ausgezahlt zu bekommen.',
-                    'Set up Stripe to receive your earnings as payouts.')}
-            </p>
+        )
+        if (bankReady) return (
+          <div style={{ background:'#EAF3DE', border:'1px solid #c5dda8', padding:'12px 20px', marginBottom:24, display:'flex', gap:10, alignItems:'center', flexWrap:'wrap' }}>
+            <Icon name="account_balance" style={{ fontSize:20, color:'#27500A' }} />
+            <span style={{ fontSize:13, color:'#27500A', fontWeight:600, flex:1, minWidth:180 }}>
+              {t('Bankverbindung hinterlegt — Auszahlung per Überweisung', 'Bank account on file — payout via bank transfer')}
+            </span>
+            <a href="/merchant/stripe" style={{ fontSize:12, color:'#27500A', textDecoration:'underline' }}>
+              {t('stattdessen Stripe nutzen', 'use Stripe instead')}
+            </a>
           </div>
-          <a href="/merchant/stripe"
-            style={{ background:'#635BFF', color:'#fff', textDecoration:'none', padding:'12px 24px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', flexShrink:0 }}>
-            {stripeStatus.connected ? t('Verifizierung abschließen','Finish verification') : t('Stripe einrichten','Set up Stripe')}
-          </a>
-        </div>
-      )}
-      {stripeStatus && stripeStatus.connected && stripeStatus.onboardingComplete && (
-        <div style={{ background:'#EAF3DE', border:'1px solid #c5dda8', padding:'12px 20px', marginBottom:24, display:'flex', gap:10, alignItems:'center' }}>
-          <Icon name="verified" style={{ fontSize:20, color:'#27500A' }} />
-          <span style={{ fontSize:13, color:'#27500A', fontWeight:600 }}>
-            {t('Stripe aktiv — Auszahlungen möglich', 'Stripe active — payouts enabled')}
-          </span>
-        </div>
-      )}
+        )
+
+        // Noch keine Methode → Auswahl anbieten (zwei gleichwertige Optionen).
+        return (
+          <div style={{ background:'#FAEEDA', border:'1px solid #f0cd92', padding:'20px 24px', marginBottom:24 }}>
+            <p style={{ fontSize:15, fontWeight:700, color:'#633806', marginBottom:4 }}>
+              {t('So wirst du ausgezahlt', 'How you get paid')}
+            </p>
+            <p style={{ fontSize:13, color:'#633806', lineHeight:1.6, marginBottom:16 }}>
+              {t('Deine Einnahmen sammeln sich und werden ausgezahlt. Wähle einfach eine Methode — du kannst sie jederzeit ändern. Ein Stripe-Konto ist nicht verpflichtend.',
+                 'Your earnings accumulate and get paid out. Just pick one method — you can change it anytime. A Stripe account is not required.')}
+            </p>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:12 }}>
+              <a href="/merchant/stripe" style={{ display:'flex', gap:12, alignItems:'center', background:'#fff', border:'1px solid #e8e3e1', padding:'14px 16px', textDecoration:'none' }}>
+                <Icon name="bolt" style={{ fontSize:22, color:'#635BFF', flexShrink:0 }} />
+                <span style={{ minWidth:0 }}>
+                  <span style={{ display:'block', fontSize:13, fontWeight:700, color:'#1c1b1b' }}>{t('Stripe verbinden', 'Connect Stripe')}</span>
+                  <span style={{ display:'block', fontSize:12, color:'#5e5e5b', overflowWrap:'break-word' }}>{t('Automatische Auszahlung', 'Automatic payouts')}</span>
+                </span>
+              </a>
+              <a href="/merchant/bank" style={{ display:'flex', gap:12, alignItems:'center', background:'#fff', border:'1px solid #e8e3e1', padding:'14px 16px', textDecoration:'none' }}>
+                <Icon name="account_balance" style={{ fontSize:22, color:'#27500A', flexShrink:0 }} />
+                <span style={{ minWidth:0 }}>
+                  <span style={{ display:'block', fontSize:13, fontWeight:700, color:'#1c1b1b' }}>{t('Bankverbindung hinterlegen', 'Add bank account')}</span>
+                  <span style={{ display:'block', fontSize:12, color:'#5e5e5b', overflowWrap:'break-word' }}>{t('Wir überweisen manuell (IBAN)', 'We transfer manually (IBAN)')}</span>
+                </span>
+              </a>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Stats */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:16, marginBottom:32 }}>
         {[
-          { label:'Total Earned',   value:`€${Number(stats?.totalEarned||0).toFixed(2)}`,   icon:'payments',      color:'#064E3B' },
-          { label:'Pending Payout', value:`€${pendingAmount.toFixed(2)}`,                    icon:'hourglass_empty', color:'#9E896A' },
-          { label:'Total Orders',   value:stats?.orderCount||0,                              icon:'package_2',     color:'#185FA5' },
+          { label:t('Gesamt verdient','Total Earned'),   value:`€${Number(stats?.totalEarned||0).toFixed(2)}`,   icon:'payments',      color:'#064E3B' },
+          { label:t('Auszahlbar','Pending Payout'), value:`€${pendingAmount.toFixed(2)}`,                    icon:'hourglass_empty', color:'#9E896A' },
+          { label:t('Bestellungen gesamt','Total Orders'),   value:stats?.orderCount||0,                              icon:'package_2',     color:'#185FA5' },
         ].map(({ label, value, icon, color }) => (
           <div key={label} style={{ background:'#fff', border:'1px solid #c4c7c7', padding:24 }}>
             <div style={{ width:40, height:40, background:'#f1edec', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:16 }}>
@@ -397,7 +428,7 @@ tfoot td { padding:12px 10px; border-top:2px solid #1c1b1b; font-weight:700; }
             <textarea
               value={note}
               onChange={e => setNote(e.target.value)}
-              placeholder="z.B. Bitte auf mein Stripe-Konto überweisen..."
+              placeholder={t('z.B. Bitte auf mein Stripe-Konto überweisen...','e.g. Please transfer to my Stripe account...')}
               rows={3}
               style={{ width:'100%', padding:'12px 14px', fontSize:13, border:'1px solid #c4c7c7', outline:'none', resize:'vertical', boxSizing:'border-box' as const, marginBottom:12 }}
             />
@@ -419,7 +450,7 @@ tfoot td { padding:12px 10px; border-top:2px solid #1c1b1b; font-weight:700; }
       <div style={{ background:'#f7f3f2', border:'1px solid #c4c7c7', padding:20, marginBottom:32, display:'flex', gap:12, alignItems:'flex-start' }}>
         <Icon name="info" style={{ fontSize:20, color:'#9E896A', flexShrink:0 }} />
         <div style={{ fontSize:13, color:'#5e5e5b', lineHeight:1.6 }}>
-          <strong style={{ color:'#1c1b1b' }}>Commission:</strong> My Dressa berechnet 15% auf Verkäufe und 10% auf Mieten. Versandkosten gehen vollständig an dich.
+          <strong style={{ color:'#1c1b1b' }}>{t('Provision:','Commission:')}</strong> {t('My Dressa berechnet 15% auf Verkäufe und 10% auf Mieten. Versandkosten gehen vollständig an dich.','My Dressa charges 15% on sales and 10% on rentals. Shipping costs go entirely to you.')}
         </div>
       </div>
 

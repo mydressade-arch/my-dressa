@@ -52,24 +52,28 @@ export default function AdminPayoutsPage() {
       // Reload receipts
       const { data } = await api.get(`/bank/payouts/${payoutId}/receipts`) as any
       setReceipts(prev => ({...prev, [payoutId]: data}))
-      notify('Quittung hochgeladen ✓')
+      notify(t('Beleg hochgeladen ✓','Receipt uploaded ✓'))
     } catch (e: any) {
-      notify(e.response?.data?.message || 'Fehler')
+      notify(e.response?.data?.message || t('Fehler','Error'))
     } finally { setUploadingId(null) }
   }
 
-  const approve = async (id: string) => {
+  // manual=true → als per Bank bezahlt verbuchen, OHNE Stripe-Transfer (Referenz
+  // 'manual' verhindert, dass approvePayout bei einem Stripe-Händler zusätzlich
+  // überweist = keine Doppelzahlung). manual=false → per Stripe auszahlen.
+  const approve = async (id: string, manual: boolean) => {
     setProcessing(id)
     try {
+      const transferId = manual ? (stripeId.trim() || 'manual') : (stripeId.trim() || undefined)
       const { data } = await api.patch(`/commissions/payouts/${id}/approve`, {
-        stripeTransferId: stripeId || undefined
+        stripeTransferId: transferId
       }) as any
       notify(data.message)
       setApproveId(null)
       setStripeId('')
       load()
     } catch (e: any) {
-      notify(e.response?.data?.message || 'Fehler')
+      notify(e.response?.data?.message || t('Fehler','Error'))
     } finally { setProcessing(null) }
   }
 
@@ -84,7 +88,7 @@ export default function AdminPayoutsPage() {
       setRejectReason('')
       load()
     } catch (e: any) {
-      notify(e.response?.data?.message || 'Fehler')
+      notify(e.response?.data?.message || t('Fehler','Error'))
     } finally { setProcessing(null) }
   }
 
@@ -98,7 +102,7 @@ export default function AdminPayoutsPage() {
   return (
     <div>
       <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, marginBottom:4 }}>{t('Auszahlungsanfragen','Payout requests')}</h1>
-      <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:24 }}>Händler Auszahlungsanfragen verwalten</p>
+      <p style={{ color:'#5e5e5b', fontSize:14, marginBottom:24 }}>{t('Händler-Auszahlungsanfragen verwalten','Manage merchant payout requests')}</p>
 
       {msg && (
         <div style={{ padding:'10px 16px', background:'#EAF3DE', color:'#27500A', fontSize:13, marginBottom:16 }}>{msg}</div>
@@ -106,9 +110,9 @@ export default function AdminPayoutsPage() {
 
       {/* Tabs */}
       <div style={{ display:'flex', borderBottom:'1px solid #c4c7c7', marginBottom:24 }}>
-        {([['pending','Pending'], ['all','All']] as const).map(([t, label]) => (
-          <button key={t} onClick={() => setTab(t)}
-            style={{ padding:'10px 20px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', background:'none', border:'none', cursor:'pointer', borderBottom:`2px solid ${tab===t?'#1c1b1b':'transparent'}`, color:tab===t?'#1c1b1b':'#5e5e5b', marginBottom:-1 }}>
+        {([['pending',t('Offen','Pending')], ['all',t('Alle','All')]] as const).map(([id, label]) => (
+          <button key={id} onClick={() => setTab(id as 'pending'|'all')}
+            style={{ padding:'10px 20px', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', background:'none', border:'none', cursor:'pointer', borderBottom:`2px solid ${tab===id?'#1c1b1b':'transparent'}`, color:tab===id?'#1c1b1b':'#5e5e5b', marginBottom:-1 }}>
             {label}
           </button>
         ))}
@@ -121,7 +125,7 @@ export default function AdminPayoutsPage() {
       ) : payouts.length === 0 ? (
         <div style={{ textAlign:'center', padding:'64px 0', border:'1px solid #c4c7c7', color:'#5e5e5b' }}>
           <Icon name="payments" style={{ fontSize:'clamp(24px,3vw,40px)', display:'inline-block', marginBottom:12, color:'#c4c7c7' }} />
-          {tab === 'pending' ? 'Keine offenen Auszahlungsanfragen' : 'Keine Auszahlungen vorhanden'}
+          {tab === 'pending' ? t('Keine offenen Auszahlungsanfragen','No open payout requests') : t('Keine Auszahlungen vorhanden','No payouts')}
         </div>
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
@@ -140,10 +144,10 @@ export default function AdminPayoutsPage() {
                       </span>
                     </div>
                     <p style={{ fontSize:12, color:'#5e5e5b', marginBottom:4 }}>
-                      Merchant ID: <span style={{ fontFamily:'monospace' }}>{p.merchantId.slice(0,8)}...</span>
+                      {t('Händler-ID','Merchant ID')}: <span style={{ fontFamily:'monospace' }}>{p.merchantId.slice(0,8)}...</span>
                     </p>
                     <p style={{ fontSize:12, color:'#5e5e5b', marginBottom:4 }}>
-                      Angefragt: {new Date(p.createdAt).toLocaleDateString('de-DE', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' })}
+                      {t('Angefragt','Requested')}: {new Date(p.createdAt).toLocaleDateString(t('de-DE','en-GB'), { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' })}
                     </p>
                     {p.note && (
                       <div style={{ background:'#fdf8f8', padding:'8px 12px', marginTop:8, fontSize:13, color:'#1c1b1b', borderLeft:'3px solid #9E896A' }}>
@@ -160,10 +164,10 @@ export default function AdminPayoutsPage() {
                     )}
                     {p.status === 'paid' && !p.stripeTransferId && (
                       <div style={{ marginTop:8 }}>
-                        <p style={{ fontSize:11, color:'#9e9e9b', marginBottom:6 }}>Manuell überwiesen</p>
+                        <p style={{ fontSize:11, color:'#9e9e9b', marginBottom:6 }}>{t('Manuell überwiesen','Manually transferred')}</p>
                         <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', color:'#9E896A', cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
                           <Icon name="upload" style={{ fontSize:14 }} />
-                          Quittung hochladen
+                          {t('Beleg hochladen','Upload receipt')}
                           <input type="file" accept="image/*,.pdf" style={{ display:'none' }}
                             onChange={e => {
                               const file = e.target.files?.[0]
@@ -173,7 +177,7 @@ export default function AdminPayoutsPage() {
                         {receipts[p.id]?.map((r: any) => (
                           <a key={r.id} href={r.receiptUrl} target="_blank" rel="noopener noreferrer"
                             style={{ fontSize:11, color:'#0C447C', display:'block', marginTop:4 }}>
-                            📄 Quittung {new Date(r.createdAt).toLocaleDateString('de-DE')}
+                            📄 {t('Beleg','Receipt')} {new Date(r.createdAt).toLocaleDateString(t('de-DE','en-GB'))}
                           </a>
                         ))}
                       </div>
@@ -183,13 +187,13 @@ export default function AdminPayoutsPage() {
                   {p.status === 'pending' && (
                     <div>
                       {approveId === p.id ? (
-                        <div style={{ display:'flex', flexDirection:'column', gap:8, minWidth:240 }}>
-                          <div style={{ background:'#E6F1FB', padding:'8px 12px', fontSize:12, color:'#0C447C' }}>
-                            💡 Wenn der Händler Stripe Connect hat, wird der Transfer automatisch ausgeführt.
+                        <div style={{ display:'flex', flexDirection:'column', gap:8, minWidth:260 }}>
+                          <div style={{ background:'#E6F1FB', padding:'8px 12px', fontSize:12, color:'#0C447C', lineHeight:1.5 }}>
+                            💡 {t('Wähle, wie du auszahlst: automatisch über Stripe (nur wenn der Händler ein Stripe-Konto hat) oder manuell per Banküberweisung, die du selbst ausführst.','Choose how you pay: automatically via Stripe (only if the merchant has a Stripe account) or manually by bank transfer that you do yourself.')}
                           </div>
                           {bankData[p.merchantId]?.hasBank && (
                             <div style={{ background:'#f7f3f2', border:'1px solid #e8e3e1', padding:'12px', fontSize:12 }}>
-                              <p style={{ fontWeight:600, marginBottom:4 }}>🏦 Bankverbindung:</p>
+                              <p style={{ fontWeight:600, marginBottom:4 }}>🏦 {t('Bankverbindung:','Bank account:')}</p>
                               <p>{bankData[p.merchantId].accountName}</p>
                               <p style={{ fontFamily:'monospace' }}>{bankData[p.merchantId].iban}</p>
                               {bankData[p.merchantId].bic && <p>BIC: {bankData[p.merchantId].bic}</p>}
@@ -197,26 +201,31 @@ export default function AdminPayoutsPage() {
                             </div>
                           )}
                           <input
-                            placeholder="Stripe Transfer ID (falls manuell überwiesen)"
+                            placeholder={t('Stripe Transfer-ID (optional, nur bei eigener Stripe-Überweisung)','Stripe transfer ID (optional, only for your own Stripe transfer)')}
                             value={stripeId}
                             onChange={e => setStripeId(e.target.value)}
                             style={{ padding:'8px 12px', fontSize:12, border:'1px solid #c4c7c7', outline:'none', fontFamily:'monospace' }}
                           />
-                          <div style={{ display:'flex', gap:8 }}>
-                            <button onClick={() => approve(p.id)} disabled={processing===p.id}
-                              style={{ flex:1, background:'#27500A', color:'#fff', border:'none', padding:'9px', fontSize:11, fontWeight:600, textTransform:'uppercase', cursor:'pointer', opacity:processing===p.id?0.5:1 }}>
-                              {processing===p.id ? '...' : '✓ Confirm Approve'}
-                            </button>
-                            <button onClick={() => { setApproveId(null); setStripeId('') }}
-                              style={{ background:'none', border:'1px solid #c4c7c7', padding:'9px 12px', fontSize:11, cursor:'pointer' }}>
-                              Cancel
-                            </button>
-                          </div>
+                          {/* Zwei klare Wege */}
+                          <button onClick={() => approve(p.id, true)} disabled={processing===p.id}
+                            style={{ background:'#0C447C', color:'#fff', border:'none', padding:'10px', fontSize:11, fontWeight:600, textTransform:'uppercase', cursor:'pointer', opacity:processing===p.id?0.5:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                            <Icon name="account_balance" style={{ fontSize:15 }} />
+                            {processing===p.id ? '...' : t('Per Bank bezahlt — als bezahlt markieren','Paid by bank — mark as paid')}
+                          </button>
+                          <button onClick={() => approve(p.id, false)} disabled={processing===p.id}
+                            style={{ background:'#635BFF', color:'#fff', border:'none', padding:'10px', fontSize:11, fontWeight:600, textTransform:'uppercase', cursor:'pointer', opacity:processing===p.id?0.5:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                            <Icon name="bolt" style={{ fontSize:15 }} />
+                            {processing===p.id ? '...' : t('Automatisch per Stripe auszahlen','Pay out automatically via Stripe')}
+                          </button>
+                          <button onClick={() => { setApproveId(null); setStripeId('') }}
+                            style={{ background:'none', border:'1px solid #c4c7c7', padding:'9px 12px', fontSize:11, cursor:'pointer' }}>
+                            {t('Abbrechen','Cancel')}
+                          </button>
                         </div>
                       ) : rejectId === p.id ? (
                         <div style={{ display:'flex', flexDirection:'column', gap:8, minWidth:240 }}>
                           <input
-                            placeholder="Ablehnungsgrund (optional)"
+                            placeholder={t('Ablehnungsgrund (optional)','Reason for rejection (optional)')}
                             value={rejectReason}
                             onChange={e => setRejectReason(e.target.value)}
                             style={{ padding:'8px 12px', fontSize:12, border:'1px solid #c4c7c7', outline:'none' }}
@@ -224,11 +233,11 @@ export default function AdminPayoutsPage() {
                           <div style={{ display:'flex', gap:8 }}>
                             <button onClick={() => reject(p.id)} disabled={processing===p.id}
                               style={{ flex:1, background:'#ba1a1a', color:'#fff', border:'none', padding:'9px', fontSize:11, fontWeight:600, textTransform:'uppercase', cursor:'pointer', opacity:processing===p.id?0.5:1 }}>
-                              {processing===p.id ? '...' : '✕ Confirm Reject'}
+                              {processing===p.id ? '...' : t('✕ Ablehnung bestätigen','✕ Confirm Reject')}
                             </button>
                             <button onClick={() => { setRejectId(null); setRejectReason('') }}
                               style={{ background:'none', border:'1px solid #c4c7c7', padding:'9px 12px', fontSize:11, cursor:'pointer' }}>
-                              Cancel
+                              {t('Abbrechen','Cancel')}
                             </button>
                           </div>
                         </div>
@@ -236,11 +245,11 @@ export default function AdminPayoutsPage() {
                         <div style={{ display:'flex', gap:10 }}>
                           <button onClick={() => { setApproveId(p.id); loadBankData(p.merchantId) }}
                             style={{ background:'#27500A', color:'#fff', border:'none', padding:'10px 20px', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', cursor:'pointer' }}>
-                            ✓ Approve
+                            ✓ {t('Auszahlen','Pay out')}
                           </button>
                           <button onClick={() => setRejectId(p.id)}
                             style={{ background:'none', border:'1px solid #ba1a1a', color:'#ba1a1a', padding:'10px 20px', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', cursor:'pointer' }}>
-                            ✕ Reject
+                            ✕ {t('Ablehnen','Reject')}
                           </button>
                         </div>
                       )}
