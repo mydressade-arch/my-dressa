@@ -224,17 +224,45 @@ export class CommissionsService {
 
   // ── Admin: Alle offenen Anfragen ─────────────────────────────────────────
   async getAllPendingPayouts() {
-    return this.payoutRepo.find({
+    const rows = await this.payoutRepo.find({
       where: { status: PayoutStatus.PENDING },
       order: { createdAt: 'ASC' }, // älteste zuerst
     });
+    return this.enrichPayouts(rows);
   }
 
   // ── Admin: Alle Anfragen (mit Filter) ────────────────────────────────────
   async getAllPayouts(status?: PayoutStatus) {
     const where: any = {};
     if (status) where.status = status;
-    return this.payoutRepo.find({ where, order: { createdAt: 'DESC' } });
+    const rows = await this.payoutRepo.find({ where, order: { createdAt: 'DESC' } });
+    return this.enrichPayouts(rows);
+  }
+
+  // Händler-Infos (Shop, Inhaber, E-Mail, Auszahlungsmethode) an die Payouts
+  // hängen, damit der Admin sofort sieht, WER das Geld bekommt und WIE.
+  private async enrichPayouts(payouts: any[]): Promise<any[]> {
+    if (!payouts.length) return [];
+    const ids = [...new Set(payouts.map((p) => p.merchantId))];
+    const info = await this.merchantRepo.query(
+      `SELECT mp.id, mp.shop_name AS "shopName", mp.stripe_account_id AS "stripeAccountId",
+              u.first_name AS "firstName", u.last_name AS "lastName", u.email AS "email"
+         FROM merchant_profiles mp
+         LEFT JOIN users u ON u.id = mp.user_id
+        WHERE mp.id = ANY($1)`,
+      [ids],
+    );
+    const map = new Map(info.map((r: any) => [r.id, r]));
+    return payouts.map((p) => {
+      const m: any = map.get(p.merchantId) || {};
+      return {
+        ...p,
+        merchantName:  [m.firstName, m.lastName].filter(Boolean).join(' ') || '—',
+        shopName:      m.shopName || '—',
+        merchantEmail: m.email || '',
+        payoutMethod:  m.stripeAccountId ? 'stripe' : 'bank',
+      };
+    });
   }
 
   // ── Admin: Auszahlung genehmigen ─────────────────────────────────────────

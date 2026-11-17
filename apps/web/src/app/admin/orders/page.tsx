@@ -229,7 +229,23 @@ export default function AdminOrdersPage() {
                       </div>
                     )}
                   </td>
-                  <td style={{ padding:'8px 10px', fontWeight:500, maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{o.productVariant?.product?.title||'—'}</td>
+                  <td style={{ padding:'8px 10px', maxWidth:180 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:0 }}>
+                      <div style={{ width:32, height:40, flexShrink:0, borderRadius:4, overflow:'hidden', background:'#f1edec' }}>
+                        {o.productVariant?.product?.images?.[0]?.url ? (
+                          <img src={o.productVariant.product.images[0].url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                        ) : (
+                          <div style={{ width:'100%', height:'100%', display:'grid', placeItems:'center', color:'#c4b79e' }}>
+                            <Icon name="checkroom" style={{ fontSize:16 }} />
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ minWidth:0 }}>
+                        <div style={{ fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{o.productVariant?.product?.title||'—'}</div>
+                        {o.productVariant?.size && <div style={{ fontSize:10, color:'#9e9e9b' }}>{o.productVariant.size}{o.productVariant?.color ? ` · ${o.productVariant.color}` : ''}</div>}
+                      </div>
+                    </div>
+                  </td>
                   <td style={{ padding:'8px 10px', fontSize:12, color:'#5e5e5b', maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                     {o.productVariant?.product?.merchant?.shopName || '—'}
                   </td>

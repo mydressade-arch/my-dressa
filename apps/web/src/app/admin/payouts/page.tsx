@@ -139,15 +139,26 @@ export default function AdminPayoutsPage() {
                       <p style={{ fontFamily:"'Playfair Display', serif", fontWeight:700, fontSize:22, color:'#064E3B' }}>
                         €{Number(p.amount).toFixed(2)}
                       </p>
-                      <span style={{ fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', padding:'3px 8px', background:s.bg, color:s.color }}>
-                        {p.status}
+                      <span style={{ fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', padding:'3px 8px', borderRadius:4, background:s.bg, color:s.color }}>
+                        {({ pending:t('Offen','Pending'), paid:t('Ausgezahlt','Paid'), rejected:t('Abgelehnt','Rejected'), processing:t('In Bearbeitung','Processing'), failed:t('Fehlgeschlagen','Failed') } as any)[p.status] || p.status}
+                      </span>
+                    </div>
+                    <div style={{ marginBottom:8 }}>
+                      <p style={{ fontWeight:700, fontSize:15, color:'#1c1b1b', marginBottom:2 }}>{p.shopName || '—'}</p>
+                      <p style={{ fontSize:12, color:'#5e5e5b' }}>
+                        <Icon name="person" style={{ fontSize:13, verticalAlign:'-2px', color:'#9e9e9b' }} /> {p.merchantName || '—'}
+                        {p.merchantEmail ? <span style={{ color:'#9e9e9b' }}> · {p.merchantEmail}</span> : null}
+                      </p>
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:4, marginTop:6, fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', padding:'3px 8px', borderRadius:4,
+                        background: p.payoutMethod === 'stripe' ? '#ede9ff' : '#EAF3DE',
+                        color: p.payoutMethod === 'stripe' ? '#4b3fb5' : '#27500A' }}>
+                        <Icon name={p.payoutMethod === 'stripe' ? 'bolt' : 'account_balance'} style={{ fontSize:13 }} />
+                        {p.payoutMethod === 'stripe' ? t('Auszahlung via Stripe','Payout via Stripe') : t('Banküberweisung (manuell)','Bank transfer (manual)')}
                       </span>
                     </div>
                     <p style={{ fontSize:12, color:'#5e5e5b', marginBottom:4 }}>
-                      {t('Händler-ID','Merchant ID')}: <span style={{ fontFamily:'monospace' }}>{p.merchantId.slice(0,8)}...</span>
-                    </p>
-                    <p style={{ fontSize:12, color:'#5e5e5b', marginBottom:4 }}>
-                      {t('Angefragt','Requested')}: {new Date(p.createdAt).toLocaleDateString(t('de-DE','en-GB'), { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' })}
+                      {t('Händler-ID','Merchant ID')}: <span style={{ fontFamily:'monospace' }}>{p.merchantId.slice(0,8)}…</span>
+                      {' · '}{t('Angefragt','Requested')}: {new Date(p.createdAt).toLocaleDateString(t('de-DE','en-GB'), { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' })}
                     </p>
                     {p.note && (
                       <div style={{ background:'#fdf8f8', padding:'8px 12px', marginTop:8, fontSize:13, color:'#1c1b1b', borderLeft:'3px solid #9E896A' }}>

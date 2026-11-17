@@ -194,7 +194,7 @@ export class AdminService {
 
   async getAllOrders(page = 1, limit = 20) {
     const [orders, total] = await this.orderRepo.findAndCount({
-      relations: ['user', 'productVariant', 'productVariant.product', 'productVariant.product.merchant', 'rentals'],
+      relations: ['user', 'productVariant', 'productVariant.product', 'productVariant.product.images', 'productVariant.product.merchant', 'rentals'],
       order: { createdAt: 'DESC' }, skip: (page-1)*limit, take: limit,
     });
     return { orders, total, page, totalPages: Math.ceil(total/limit) };
