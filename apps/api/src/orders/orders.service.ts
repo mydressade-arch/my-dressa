@@ -242,6 +242,57 @@ export class OrdersService {
     return { message: 'Rückgabe beantragt — Händler wird benachrichtigt' };
   }
 
+  // Prüft, ob für diese Bestellung bereits eine Provision an den Händler
+  // AUSGEZAHLT wurde (payout_id gesetzt). Ist das der Fall und die Bestellung
+  // wird nun erstattet, hat der Händler das Geld schon erhalten → der Admin
+  // muss den Betrag manuell zurückfordern/verrechnen (kein automatischer
+  // Clawback über Stripe möglich bei manueller Auszahlung).
+  private async checkClawback(orderId: string, context: string): Promise<{ paidOut: boolean; amount: number }> {
+    try {
+      const rows = await this.orderRepo.manager.query(
+        `SELECT COALESCE(SUM(c.merchant_amount),0) AS amount,
+                MAX(m.shop_name) AS shop_name
+         FROM commissions c
+         LEFT JOIN merchant_profiles m ON m.id = c.merchant_id
+         WHERE c.order_id = $1 AND c.payout_id IS NOT NULL`,
+        [orderId],
+      );
+      const amount = Math.round(Number(rows?.[0]?.amount || 0) * 100) / 100;
+      const shopName = rows?.[0]?.shop_name || '—';
+      if (amount > 0) {
+        this.logger.error(
+          `⚠️ CLAWBACK (${context}): Order ${orderId} wird erstattet, aber €${amount} wurden bereits an den Händler „${shopName}" ausgezahlt — manuelle Rückforderung nötig.`,
+        );
+        // Admin per E-Mail alarmieren (best-effort, blockiert den Flow nicht).
+        void (async () => {
+          try {
+            const adminEmail = this.config.get<string>('ADMIN_ALERT_EMAIL') || 'admin@mydressa.de';
+            await this.notifications.sendEmail(
+              adminEmail,
+              `⚠️ Clawback nötig — Bestellung ${orderId.substring(0, 8).toUpperCase()}`,
+              `<div style="font-family:sans-serif;line-height:1.6">
+                 <h2 style="color:#ba1a1a">Manuelle Rückforderung erforderlich</h2>
+                 <p>Die Bestellung <strong>${orderId.substring(0, 8).toUpperCase()}</strong> wurde erstattet/storniert (${context}),
+                 aber die Händler-Provision von <strong>€${amount.toFixed(2)}</strong> wurde bereits an den Händler
+                 <strong>${shopName}</strong> ausgezahlt.</p>
+                 <p>Der Betrag erscheint nicht mehr im Guthaben des Händlers. Bitte fordere die bereits
+                 getätigte Auszahlung von <strong>€${amount.toFixed(2)}</strong> manuell zurück oder verrechne sie
+                 mit der nächsten Auszahlung.</p>
+                 <p style="color:#5e5e5b;font-size:13px">Order-ID: ${orderId}</p>
+               </div>`,
+            );
+          } catch (e: any) {
+            this.logger.warn(`Clawback-Admin-E-Mail fehlgeschlagen: ${e.message}`);
+          }
+        })();
+      }
+      return { paidOut: amount > 0, amount };
+    } catch (e: any) {
+      this.logger.warn(`Clawback-Prüfung fehlgeschlagen: ${e.message}`);
+      return { paidOut: false, amount: 0 };
+    }
+  }
+
   // ── Händler: Rückgabe bestätigen → Admin genehmigt Refund ────────────────
   async approveReturn(orderId: string) {
     const order = await this.orderRepo.findOne({ where: { id: orderId } });
@@ -268,7 +319,13 @@ export class OrdersService {
       }
     }
 
-    return { message: 'Rückgabe genehmigt — Kunde wird erstattet (5-10 Werktage)' };
+    // Clawback-Warnung: wurde die Provision für diese Bestellung schon ausgezahlt?
+    const clawback = await this.checkClawback(orderId, 'Rückgabe');
+
+    return {
+      message: 'Rückgabe genehmigt — Kunde wird erstattet (5-10 Werktage)',
+      clawbackWarning: clawback.paidOut ? clawback.amount : null,
+    };
   }
 
   async cancel(id: string, userId: string) {
@@ -415,11 +472,15 @@ export class OrdersService {
       }
     }
 
+    // Clawback-Warnung: wurde die Provision für diese Bestellung schon ausgezahlt?
+    const clawback = await this.checkClawback(id, 'Storno');
+
     return {
       message: order.status === OrderStatus.PAID
         ? `Storniert. Rückerstattung wird in 5-10 Werktagen gutgeschrieben.${refundId ? ` (Ref: ${refundId})` : ''}`
         : 'Storniert.',
       refundId,
+      clawbackWarning: clawback.paidOut ? clawback.amount : null,
     };
   }
 

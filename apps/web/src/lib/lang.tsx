@@ -4,6 +4,12 @@ export { useLangStore, useLang } from '@/store/lang.store'
 import { useLangStore } from '@/store/lang.store'
 
 export function LangProvider({ children }: { children: React.ReactNode }) {
+  // Gespeicherte Sprache erst NACH dem ersten Render laden. So stimmt der erste
+  // Client-Render mit dem Server überein (beide 'de') — kein Hydration-Mismatch.
+  // Direkt danach wechselt die App auf die gespeicherte Sprache.
+  useEffect(() => {
+    try { useLangStore.persist.rehydrate() } catch {}
+  }, [])
   return <>{children}</>
 }
 

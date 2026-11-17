@@ -148,11 +148,28 @@ export class AdminService {
   }
 
   async getAllMerchants() {
+    // Salden LIVE aus den Provisionen rechnen (gleiche Quelle wie die Händler-
+    // Einnahmenseite), NICHT aus den gespeicherten balance_*-Lauffeldern — die
+    // können durch Stornos/Erstattungen aus der Vergangenheit abweichen.
+    // Stornierte/erstattete Vorgänge zählen nicht (gleicher Filter wie v149):
+    //   • o.status nicht 'cancelled'/'refunded'
+    //   • kein zurückgegebener KAUF (purchase + returned)
+    // Ausstehend = noch nicht ausgezahlt (payout_id NULL), Ausgezahlt = payout_id gesetzt.
+    const VALID = `o.status NOT IN ('cancelled','refunded') AND NOT (o.type = 'purchase' AND o.status = 'returned')`;
     const rows = await this.merchantRepo.query(`
       SELECT
         mp.id, mp.shop_name as "shopName", mp.is_verified as "isVerified",
         mp.stripe_account_id as "stripeAccountId",
-        mp.balance_pending as "balancePending", mp.balance_paid as "balancePaid",
+        COALESCE((
+          SELECT SUM(c.merchant_amount) FROM commissions c
+          JOIN orders o ON o.id = c.order_id
+          WHERE c.merchant_id = mp.id AND c.payout_id IS NULL AND ${VALID}
+        ), 0) as "balancePending",
+        COALESCE((
+          SELECT SUM(c.merchant_amount) FROM commissions c
+          JOIN orders o ON o.id = c.order_id
+          WHERE c.merchant_id = mp.id AND c.payout_id IS NOT NULL AND ${VALID}
+        ), 0) as "balancePaid",
         mp.created_at as "createdAt",
         u.email, u.first_name as "firstName", u.last_name as "lastName",
         (SELECT COUNT(*) FROM products p WHERE p.merchant_id = mp.id) as "productCount"
@@ -168,8 +185,8 @@ export class AdminService {
       lastName:       m.lastName || '',
       isVerified:     m.isVerified,
       stripeConnected: !!m.stripeAccountId,
-      balancePending: m.balancePending,
-      balancePaid:    m.balancePaid,
+      balancePending: Number(m.balancePending || 0),
+      balancePaid:    Number(m.balancePaid || 0),
       productCount:   Number(m.productCount || 0),
       createdAt:      m.createdAt,
     }));
@@ -281,7 +298,11 @@ export class AdminService {
         this.userRepo.count(),
         this.productRepo.count({ where: { status: ProductStatus.ACTIVE } }),
         this.orderRepo.count(),
-        this.commissionRepo.createQueryBuilder('c').select('SUM(c.platform_amount)','revenue').getRawOne(),
+        this.commissionRepo.createQueryBuilder('c')
+          .leftJoin('orders', 'o', 'o.id = c.order_id')
+          .select('SUM(c.platform_amount)','revenue')
+          .where(`(o.status NOT IN ('cancelled','refunded') AND NOT (o.type = 'purchase' AND o.status = 'returned'))`)
+          .getRawOne(),
         this.merchantRepo.count({ where: { isVerified: false } }),
       ]);
 

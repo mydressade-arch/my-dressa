@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 import { Icon } from '@/components/ui/Icon'
+import { ordersApi } from '@/lib/api'
 
 export default function MerchantLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthStore()
@@ -12,13 +13,41 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
   const router = useRouter()
   const pathname = usePathname()
 
+  // Benachrichtigung auf "Bestellungen": Vorgänge, die der Händler bearbeiten
+  // muss. Bernstein = normale Aktion (versenden / Rückgabe bestätigen),
+  // Rot = dringend (überfällige Rückgabe).
+  const [orderAlerts, setOrderAlerts] = useState<{ amber: number; red: number }>({ amber: 0, red: 0 })
+  useEffect(() => {
+    if (!user || (user.role !== 'merchant' && user.role !== 'admin')) return
+    const load = () => {
+      ordersApi.myMerchantOrders().then(({ data }: any) => {
+        let amber = 0, red = 0
+        ;(data || []).forEach((o: any) => {
+          const rental = o.rentals?.[0] || o.rental
+          if (rental?.status === 'overdue') red++ // dringend: überfällig
+          else if (o.status === 'paid') amber++ // noch zu versenden
+          else if (o.type === 'rental' && rental &&
+                   (rental.customerConfirmedReturn || rental.status === 'pending_return') &&
+                   o.status !== 'returned' && rental.status !== 'returned') amber++ // Rückgabe bestätigen
+        })
+        setOrderAlerts({ amber, red })
+      }).catch(() => {})
+    }
+    load()
+    const i = setInterval(load, 30000)
+    return () => clearInterval(i)
+  }, [user])
+
+  const ordersBadge = orderAlerts.amber + orderAlerts.red
+  const ordersBadgeColor = orderAlerts.red > 0 ? '#ba1a1a' : '#b9791a'
+
   const NAV = [
-    { href: '/merchant/dashboard', icon: 'dashboard',   label: t(t('Dashboard', 'Dashboard'),     'Dashboard')      },
-    { href: '/merchant/products',  icon: 'checkroom',   label: t(t('Produkte', 'Products'),      'Products')       },
-    { href: '/merchant/orders',    icon: 'package_2',   label: t(t('Bestellungen', 'Orders'),  'Orders')         },
-    { href: '/merchant/earnings',  icon: 'payments',    label: t(t('Einnahmen', 'Earnings'),     'Earnings')       },
-    { href: '/merchant/bank',      icon: 'account_balance', label: t(t('Bankverbindung', 'Bank Account'), 'Bank Account') },
-    { href: '/account',            icon: 'person',      label: t(t('Profil', 'Profile'),        'Profile')        },
+    { href: '/merchant/dashboard', icon: 'dashboard',   label: t(t('Dashboard', 'Dashboard'),     'Dashboard'),     badge: 0, color: '#b9791a' },
+    { href: '/merchant/products',  icon: 'checkroom',   label: t(t('Produkte', 'Products'),      'Products'),      badge: 0, color: '#b9791a' },
+    { href: '/merchant/orders',    icon: 'package_2',   label: t(t('Bestellungen', 'Orders'),  'Orders'),        badge: ordersBadge, color: ordersBadgeColor },
+    { href: '/merchant/earnings',  icon: 'payments',    label: t(t('Einnahmen', 'Earnings'),     'Earnings'),      badge: 0, color: '#b9791a' },
+    { href: '/merchant/bank',      icon: 'account_balance', label: t(t('Bankverbindung', 'Bank Account'), 'Bank Account'), badge: 0, color: '#b9791a' },
+    { href: '/account',            icon: 'person',      label: t(t('Profil', 'Profile'),        'Profile'),       badge: 0, color: '#b9791a' },
   ]
   const [hydrated, setHydrated] = useState(false)
 
@@ -53,7 +82,12 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
                   : 'text-secondary hover:text-primary hover:bg-surface-container-low'
               }`}>
               <Icon name={item.icon} style={{ fontSize: 20 }} />
-              {item.label}
+              <span style={{ flex: 1 }}>{item.label}</span>
+              {item.badge > 0 && (
+                <span style={{ background:item.color, color:'#fff', fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:10, minWidth:18, textAlign:'center' }}>
+                  {item.badge > 99 ? '99+' : item.badge}
+                </span>
+              )}
             </Link>
           ))}
         </nav>

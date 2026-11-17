@@ -32,6 +32,36 @@ export function Navbar() {
     })
   }, [user])
 
+  // Blaues Info-Badge am Konto: Bestellungen/Mieten mit Statuswechsel seit dem
+  // letzten Besuch der Account-Seite. Nur LESEN des "seen"-Stands — die
+  // Account-Seite setzt ihn zurück, sobald der Kunde dort war.
+  const [orderUpdates, setOrderUpdates] = useState(0)
+  useEffect(() => {
+    if (!user) { setOrderUpdates(0); return }
+    let alive = true
+    const load = () => {
+      import('@/lib/api').then(({ ordersApi, rentalsApi }) => {
+        Promise.all([
+          ordersApi.myOrders().catch(() => ({ data: [] })),
+          rentalsApi.myRentals().catch(() => ({ data: [] })),
+        ]).then(([o, r]: any) => {
+          if (!alive) return
+          try {
+            const key = `mydressa_seen_orders_${user.id}`
+            const prev = JSON.parse(localStorage.getItem(key) || '{}')
+            let n = 0
+            ;((o as any).data || []).forEach((x: any) => { if (prev[x.id] !== undefined && prev[x.id] !== x.status) n++ })
+            ;((r as any).data || []).forEach((x: any) => { const k = 'r_' + x.id; if (prev[k] !== undefined && prev[k] !== x.status) n++ })
+            setOrderUpdates(n)
+          } catch {}
+        })
+      })
+    }
+    load()
+    const i = setInterval(load, 60000)
+    return () => { alive = false; clearInterval(i) }
+  }, [user])
+
   // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -157,10 +187,16 @@ export function Navbar() {
                 <div ref={profileRef} style={{ position:'relative' }}>
                   <button onClick={() => setProfileOpen(p => !p)}
                     style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 10px', background: profileOpen ? 'rgba(28,27,27,0.06)' : 'none', border:'none', cursor:'pointer', borderRadius:2 }}>
-                    <div style={{ width:28, height:28, borderRadius:'50%', background:'#1c1b1b', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <div style={{ position:'relative', width:28, height:28, borderRadius:'50%', background:'#1c1b1b', display:'flex', alignItems:'center', justifyContent:'center' }}>
                       <span style={{ fontSize:12, fontWeight:700, color:'#fdf8f8', textTransform:'uppercase' }}>
                         {user.firstName[0]}{user.lastName[0]}
                       </span>
+                      {orderUpdates > 0 && (
+                        <span title={t('Aktualisierte Bestellungen','Updated orders')}
+                          style={{ position:'absolute', top:-2, right:-2, minWidth:14, height:14, padding:'0 3px', borderRadius:7, background:'#0C447C', border:'2px solid #fdf8f8', color:'#fff', fontSize:9, fontWeight:700, lineHeight:'10px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                          {orderUpdates > 9 ? '9+' : orderUpdates}
+                        </span>
+                      )}
                     </div>
                     <span style={{ fontSize:12, fontWeight:600, color:'#1c1b1b', maxWidth:80, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                       {user.firstName}
@@ -203,7 +239,12 @@ export function Navbar() {
                             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                           >
                             <Icon name={item.icon} style={{ fontSize:18, color:'#9E896A' }} />
-                            {item.label}
+                            <span style={{ flex:1 }}>{item.label}</span>
+                            {item.href === '/account?tab=0' && orderUpdates > 0 && (
+                              <span style={{ minWidth:16, height:16, padding:'0 5px', borderRadius:8, background:'#E6F1FB', color:'#0C447C', fontSize:10, fontWeight:700, display:'inline-flex', alignItems:'center', justifyContent:'center' }}>
+                                {orderUpdates > 9 ? '9+' : orderUpdates}
+                              </span>
+                            )}
                           </Link>
                         </div>
                       ))}
@@ -216,7 +257,7 @@ export function Navbar() {
                         onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = 'transparent')}
                       >
                         <Icon name="logout" style={{ fontSize:18 }} />
-                        Sign Out
+                        {t('Abmelden', 'Sign Out')}
                       </button>
                     </div>
                   )}
@@ -224,7 +265,7 @@ export function Navbar() {
               ) : (
                 <Link href="/auth/login"
                   style={{ marginLeft:4, fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', padding:'7px 16px', background:'#1c1b1b', color:'#fff', textDecoration:'none', borderRadius:2 }}>
-                  Sign In
+                  {t('Anmelden', 'Sign In')}
                 </Link>
               )}
             </div>

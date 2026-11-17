@@ -146,6 +146,12 @@ export class ProductsService {
 
     // Laufende Mieten je Variante (belegt = active/overdue, und alles was
     // bezahlt ist aber noch nicht zurück).
+    // Belegt = dieselbe Regel wie der Buchungskalender (checkAvailability):
+    //   • laufende Miete (active/overdue/pending_return), ODER
+    //   • Bestellung bezahlt/unterwegs/geliefert (webhook-unabhängig), ODER
+    //   • frische PENDING-Miete (laufender Checkout, max. 20 Min).
+    // Stornierte/zurückgegebene Mieten und stornierte Orders zählen NIE —
+    // so erscheint ein Kleid nie fälschlich dauerhaft als „belegt".
     const rows = await this.productRepo.manager.query(
       `SELECT o.product_variant_id AS variant_id,
               COUNT(*)             AS busy,
@@ -153,7 +159,13 @@ export class ProductsService {
          FROM rentals r
          JOIN orders o ON o.id = r.order_id
         WHERE o.product_variant_id = ANY($1)
-          AND r.status IN ('active','overdue','pending')
+          AND r.status NOT IN ('cancelled','returned')
+          AND o.status <> 'cancelled'
+          AND (
+                r.status IN ('active','overdue','pending_return')
+             OR o.status IN ('paid','shipped','delivered')
+             OR (r.status = 'pending' AND r.created_at > NOW() - INTERVAL '20 minutes')
+          )
         GROUP BY o.product_variant_id`,
       [variantIds],
     );

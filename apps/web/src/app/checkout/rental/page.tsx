@@ -210,12 +210,25 @@ function RentalCheckoutInner() {
         ) : (
           // Step 2: Stripe Payment
           stripeReady && stripeInstance ? (
+            <>
+            <div style={{ display:'flex', alignItems:'flex-start', gap:10, background:'#f7f3ee', border:'1px solid #ece3d6', borderRadius:8, padding:'12px 14px', marginBottom:16 }}>
+              <Icon name="info" style={{ fontSize:18, color:'#9E896A', marginTop:1 }} />
+              <p style={{ fontSize:12.5, color:'#5e5e5b', lineHeight:1.5, margin:0 }}>
+                {t('Für Mieten ist nur Kartenzahlung möglich. Die Kaution wird als Reservierung auf der Karte hinterlegt und nach der Rückgabe wieder freigegeben — das geht per Bank­lastschrift (SEPA) leider nicht.',
+                   'For rentals only card payment is available. The deposit is placed as a hold on your card and released after the return — this is not possible with bank direct debit (SEPA).')}
+              </p>
+            </div>
             <Elements stripe={stripeInstance} options={{
               mode: 'payment',
               amount: Math.round((rentalFee + shippingCost) * 100),
               currency: 'eur',
               locale: lang === 'de' ? 'de' : 'en',
               paymentMethodTypes: ['card'],
+              // MUSS zum PaymentIntent passen (Backend erstellt ihn mit
+              // setup_future_usage: 'off_session', um die Karte für die
+              // Kautions-Reservierung zu speichern). Fehlt das hier, lehnt
+              // Stripe die Bestätigung mit einem setup_future_usage-Mismatch ab.
+              setupFutureUsage: 'off_session',
               appearance: {
                 theme: 'stripe',
                 variables: {
@@ -238,6 +251,7 @@ function RentalCheckoutInner() {
                 onBack={() => setStep('details')}
               />
             </Elements>
+            </>
           ) : (
             <div style={{ padding:40, textAlign:'center', color:'#5e5e5b' }}>
               {!stripeInstance && stripeReady ? (

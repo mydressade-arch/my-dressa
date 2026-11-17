@@ -90,4 +90,18 @@ export class DamageReportsController {
     const amount = merchantAmount ? Number(merchantAmount) : undefined;
     return this.damageReportsService.retainDeposit(id, admin.id, note, amount);
   }
+
+  // ── Admin: Meldung schließen OHNE Kautions-Aktion (Duplikat/irrtümlich) ────
+  @Patch(':id/dismiss')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: '[Admin] Meldung schließen ohne Kautions-Aktion' })
+  @ApiBody({ schema: { example: { note: 'Duplikat — bereits über andere Meldung gelöst' } } })
+  dismiss(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() admin: User,
+    @Body('note') note?: string,
+  ) {
+    return this.damageReportsService.dismissReport(id, admin.id, note);
+  }
 }

@@ -42,6 +42,8 @@ function AccountPageInner() {
   const [submittingReturn, setSubmittingReturn] = useState<string|null>(null)
   const [confirmingReturn, setConfirmingReturn] = useState<string|null>(null)
   const [confirmedReturns, setConfirmedReturns] = useState<Record<string, boolean>>({})
+  // Bestellungen/Mieten mit Statuswechsel seit dem letzten Besuch (rot markiert).
+  const [changedOrders, setChangedOrders] = useState<Set<string>>(new Set())
   // Inline-Rückgabe (Kauf): welche Order gerade einen Grund eingibt + der Text
   const [returnReasonFor, setReturnReasonFor] = useState<string|null>(null)
   const [returnReasonText, setReturnReasonText] = useState('')
@@ -128,8 +130,30 @@ function AccountPageInner() {
       ordersApi.myOrders().catch(() => ({ data: [] })),
       rentalsApi.myRentals().catch(() => ({ data: [] })),
     ]).then(([o, r]) => {
-      setOrders((o as any).data || [])
-      setRentals((r as any).data || [])
+      const ol = (o as any).data || []
+      const rl = (r as any).data || []
+      setOrders(ol)
+      setRentals(rl)
+      // "Aktualisiert"-Markierung: Status, der sich seit dem letzten Besuch
+      // geändert hat, rot hervorheben. Neue (erstmals gesehene) Bestellungen
+      // werden NICHT markiert — nur echte Statuswechsel.
+      try {
+        const key = `mydressa_seen_orders_${user?.id || 'anon'}`
+        const prev = JSON.parse(localStorage.getItem(key) || '{}')
+        const changed = new Set<string>()
+        const nextSeen: Record<string, string> = {}
+        ol.forEach((x: any) => {
+          nextSeen[x.id] = x.status
+          if (prev[x.id] !== undefined && prev[x.id] !== x.status) changed.add(x.id)
+        })
+        rl.forEach((x: any) => {
+          const k = 'r_' + x.id
+          nextSeen[k] = x.status
+          if (prev[k] !== undefined && prev[k] !== x.status) changed.add(x.id)
+        })
+        setChangedOrders(changed)
+        localStorage.setItem(key, JSON.stringify(nextSeen))
+      } catch {}
     }).finally(() => setLoading(false))
   }, [user, router, hydrated])
 
@@ -235,7 +259,7 @@ function AccountPageInner() {
               ) : (
                 <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                   {orders.map((o:any)=>(
-                    <div key={o.id} style={{ background:'#fff', border:'1px solid #c4c7c7', padding:20, display:'flex', justifyContent:'space-between', alignItems:'center', gap:16, flexWrap:'wrap' }}>
+                    <div key={o.id} style={{ background:'#fff', border:`1px solid ${changedOrders.has(o.id) ? '#b9d4f0' : '#c4c7c7'}`, padding:20, display:'flex', justifyContent:'space-between', alignItems:'center', gap:16, flexWrap:'wrap' }}>
                       <div style={{ display:'flex', gap:14, alignItems:'center', flex:'1 1 240px', minWidth:0 }}>
                         <div style={{ width:50, height:64, overflow:'hidden', background:'#f1edec', flexShrink:0 }}>
                           <img src={o.productVariant?.product?.images?.[0]?.url||PH} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
@@ -245,7 +269,15 @@ function AccountPageInner() {
                             {o.productVariant?.product?.title || 'Product'}
                           </p>
                           <p style={{ fontSize:11, color:'#5e5e5b', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>{o.type}</p>
-                          {badge(o.status)}
+                          <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                            {badge(o.status)}
+                            {changedOrders.has(o.id) && (
+                              <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', padding:'3px 8px', borderRadius:10, background:'#E6F1FB', color:'#0C447C' }}>
+                                <span style={{ width:6, height:6, borderRadius:'50%', background:'#0C447C', display:'inline-block' }} />
+                                {t('Aktualisiert','Updated')}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:8, marginLeft:'auto' }}>
@@ -358,7 +390,7 @@ function AccountPageInner() {
               ) : (
                 <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                   {rentals.map((r:any)=>(
-                    <div key={r.id} style={{ background:'#fff', border:'1px solid #c4c7c7', padding:20, display:'flex', justifyContent:'space-between', alignItems:'center', gap:16, flexWrap:'wrap' }}>
+                    <div key={r.id} style={{ background:'#fff', border:`1px solid ${changedOrders.has(r.id) ? '#b9d4f0' : '#c4c7c7'}`, padding:20, display:'flex', justifyContent:'space-between', alignItems:'center', gap:16, flexWrap:'wrap' }}>
                       <div style={{ flex:'1 1 240px', minWidth:0 }}>
                         <p style={{ fontFamily:"'Playfair Display', serif", fontWeight:600, fontSize:15, marginBottom:6 }}>
                           {r.order?.productVariant?.product?.title || 'Product'}
@@ -367,7 +399,15 @@ function AccountPageInner() {
                           <Icon name="calendar_month" style={{ fontSize:16, color:'#9E896A' }} />
                           <span style={{ fontSize:13, color:'#5e5e5b' }}>{r.startDate} → {r.endDate} ({r.durationDays} days)</span>
                         </div>
-                        {badge(r.status)}
+                        <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                          {badge(r.status)}
+                          {changedOrders.has(r.id) && (
+                            <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', padding:'3px 8px', borderRadius:10, background:'#E6F1FB', color:'#0C447C' }}>
+                              <span style={{ width:6, height:6, borderRadius:'50%', background:'#0C447C', display:'inline-block' }} />
+                              {t('Aktualisiert','Updated')}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div style={{ textAlign:'right', marginLeft:'auto' }}>
                         <p style={{ fontSize:13, fontWeight:600, marginBottom:4 }}>{t('Kaution','Deposit')}: €{Number(r.depositAmount || 50).toFixed(2)}</p>

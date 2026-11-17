@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { format, addDays, isBefore, isAfter, startOfDay, parseISO, eachDayOfInterval } from 'date-fns'
+import { de, enUS } from 'date-fns/locale'
 import { useLangStore } from '@/store/lang.store'
 import { rentalsApi } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
@@ -18,7 +19,8 @@ interface Props {
 
 export function RentalCalendar({ productVariantId, rentalPricePerDay, rentalDurationDays = 1, shippingCost = 0, depositAmount, stockQuantity, onConfirm }: Props) {
   const depositValue = depositAmount ? Number(depositAmount) : 0;
-  const { t } = useLangStore()
+  const { t, lang } = useLangStore() as any
+  const dfLocale = lang === 'en' ? enUS : de
   const today = startOfDay(new Date())
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [startDate, setStartDate] = useState<Date | null>(null)
@@ -30,7 +32,7 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, rentalDura
     if (!productVariantId) return
     setLoading(true)
     const from = format(today, 'yyyy-MM-dd')
-    const to   = format(addDays(today, 90), 'yyyy-MM-dd')
+    const to   = format(addDays(today, 180), 'yyyy-MM-dd')
     rentalsApi.checkAvailability({ productVariantId, startDate: from, endDate: to })
       .then(({ data }) => setBlockedRanges(data.blockedRanges || []))
       .catch(() => {})
@@ -96,7 +98,7 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, rentalDura
       {/* Month Navigation */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
         <p style={{ fontSize:12, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'#1c1b1b' }}>
-          {format(currentMonth, 'MMMM yyyy')}
+          {format(currentMonth, 'MMMM yyyy', { locale: dfLocale })}
         </p>
         <div style={{ display:'flex', gap:6 }}>
           <button onClick={prevMonth} style={{ width:28, height:28, border:'1px solid #c4c7c7', background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -110,7 +112,7 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, rentalDura
 
       {/* Weekday Headers */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', marginBottom:4 }}>
-        {['Mo','Di','Mi','Do','Fr','Sa','So'].map(d => (
+        {(lang === 'en' ? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] : ['Mo','Di','Mi','Do','Fr','Sa','So']).map(d => (
           <div key={d} style={{ textAlign:'center', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'#9e9e9b', padding:'4px 0' }}>{d}</div>
         ))}
       </div>
@@ -119,7 +121,7 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, rentalDura
       {loading ? (
         <div style={{ height:200, display:'flex', alignItems:'center', justifyContent:'center', color:'#9e9e9b', fontSize:13 }}>
           <div style={{ width:20, height:20, border:'2px solid #c4c7c7', borderTopColor:'#9E896A', borderRadius:'50%', animation:'spin 0.8s linear infinite', marginRight:8 }} />
-          Verfügbarkeit laden...
+          {t('Verfügbarkeit laden…','Loading availability…')}
         </div>
       ) : (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', border:'1px solid #e8e3e1', borderRight:'none', borderBottom:'none' }}>
@@ -150,7 +152,7 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, rentalDura
               <button key={i}
                 onClick={() => !disabled && handleDayClick(date)}
                 disabled={disabled}
-                title={blocked ? 'Nicht verfügbar — bereits gebucht' : past ? 'Vergangener Tag' : undefined}
+                title={blocked ? t('Nicht verfügbar — bereits gebucht','Unavailable — already booked') : past ? t('Vergangener Tag','Past day') : undefined}
                 style={{
                   borderRight:'1px solid #e8e3e1', borderBottom:'1px solid #e8e3e1',
                   height:44, fontSize:13, fontWeight: (start || end) ? 700 : 400,
@@ -205,15 +207,15 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, rentalDura
           <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
             <div style={{ display:'flex', justifyContent:'space-between', fontSize:13 }}>
               <span style={{ color:'#5e5e5b' }}>{format(startDate,'dd.MM.')} → {format(endDate,'dd.MM.yyyy')}</span>
-              <span style={{ fontWeight:600, color:'#9E896A' }}>{duration} Tage</span>
+              <span style={{ fontWeight:600, color:'#9E896A' }}>{duration} {t('Tage','days')}</span>
             </div>
             <div style={{ display:'flex', justifyContent:'space-between', fontSize:13 }}>
-              <span style={{ color:'#5e5e5b' }}>Mietpreis ({RENTAL_DAYS} Tage)</span>
+              <span style={{ color:'#5e5e5b' }}>{t('Mietpreis','Rental price')} ({RENTAL_DAYS} {t('Tage','days')})</span>
               <span style={{ fontWeight:600 }}>€{rentalTotal.toFixed(2)}</span>
             </div>
             {shipNum > 0 && (
               <div style={{ display:'flex', justifyContent:'space-between', fontSize:13 }}>
-                <span style={{ color:'#5e5e5b' }}>Versand (DHL)</span>
+                <span style={{ color:'#5e5e5b' }}>{t('Versand','Shipping')} (DHL)</span>
                 <span style={{ fontWeight:600 }}>€{shipNum.toFixed(2)}</span>
               </div>
             )}
@@ -222,7 +224,7 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, rentalDura
               <span>€{total.toFixed(2)}</span>
             </div>
             <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'#9e9e9b' }}>
-              <span>Kaution (wird zurückgebucht)</span>
+              <span>{t('Kaution (wird zurückgebucht)','Deposit (will be refunded)')}</span>
               <span>€{depositValue.toFixed(2)}</span>
             </div>
           </div>
@@ -230,19 +232,19 @@ export function RentalCalendar({ productVariantId, rentalPricePerDay, rentalDura
           {stockQuantity != null && stockQuantity < 3 && stockQuantity > 0 && (
             <div style={{ background:'#FAEEDA', border:'1px solid #f8dfbb', padding:'8px 12px', marginBottom:12, display:'flex', alignItems:'center', gap:8, fontSize:12, color:'#633806' }}>
               <Icon name="warning" style={{ fontSize:16 }} />
-              Nur noch <strong>{stockQuantity}</strong> {stockQuantity === 1 ? 'Stück' : 'Stücke'} verfügbar
+              {t('Nur noch','Only')} <strong>{stockQuantity}</strong> {t(stockQuantity === 1 ? 'Stück verfügbar' : 'Stücke verfügbar', 'left')}
             </div>
           )}
           <Button variant="rent" size="lg" className="w-full"
             onClick={() => onConfirm(format(startDate,'yyyy-MM-dd'), format(endDate,'yyyy-MM-dd'))}>
-            Rental bestätigen — €{total.toFixed(2)}
+            {t('Miete bestätigen','Confirm rental')} — €{total.toFixed(2)}
           </Button>
         </div>
       )}
 
       {startDate && !endDate && (
         <p style={{ marginTop:12, fontSize:12, color:'#ba1a1a', textAlign:'center', fontWeight:500 }}>
-          Dieser Zeitraum ({RENTAL_DAYS} Tage ab {format(startDate,'dd.MM.')}) ist nicht komplett verfügbar. Bitte anderes Startdatum wählen.
+          {t(`Dieser Zeitraum (${RENTAL_DAYS} Tage ab ${format(startDate,'dd.MM.')}) ist nicht komplett verfügbar. Bitte anderes Startdatum wählen.`, `This period (${RENTAL_DAYS} days from ${format(startDate,'dd.MM.')}) is not fully available. Please choose another start date.`)}
         </p>
       )}
     </div>

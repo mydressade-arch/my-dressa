@@ -30,6 +30,12 @@ export class Commission {
   @Column({ name: 'payout_id', type: 'varchar', nullable: true })
   payoutId: string | null;
 
+  // 'sale' = normale Verkaufs-/Mietprovision, 'damage_compensation' =
+  // einbehaltene Kaution, die dem Händler als Schadensersatz gutgeschrieben
+  // wurde (z.B. wenn der Händler kein Stripe-Konto hat → manuelle Auszahlung).
+  @Column({ name: 'kind', type: 'varchar', default: 'sale' })
+  kind: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }

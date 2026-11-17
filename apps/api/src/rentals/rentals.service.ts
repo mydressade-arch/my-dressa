@@ -64,22 +64,45 @@ export class RentalsService {
     endDate: string,
   ): Promise<{ available: boolean; blockedRanges: { start: string; end: string }[] }> {
 
-    // Ein Datum wird NUR blockiert, wenn die Miete erfolgreich BEZAHLT wurde.
-    // Nicht bezahlte (PENDING) Mieten blockieren den Kalender NICHT — eine
-    // fehlgeschlagene oder abgebrochene Zahlung darf den Termin nicht sperren.
-    // Der Doppelbuchungs-Schutz greift bei der finalen Buchung (create), die
-    // in einer Transaktion nochmals auf Überschneidung mit BEZAHLTEN Mieten
-    // prüft, bevor die Miete aktiviert wird.
-    const BLOCKING_STATUSES = [
-      RentalStatus.ACTIVE,
-      RentalStatus.PENDING_RETURN,
-      RentalStatus.OVERDUE,
-    ];
+    // Ein Datum ist belegt, wenn eine der folgenden Mieten den Zeitraum deckt.
+    // WICHTIG: Wir richten uns nach dem ORDER-Status, nicht nur nach dem
+    // Rental-Status. Grund: nach erfolgreicher Zahlung setzt der Stripe-Webhook
+    // die Miete auf ACTIVE — verzögert oder fehlt der Webhook, bleibt sie auf
+    // PENDING, obwohl die Bestellung bereits BEZAHLT ist. Würden wir nur auf
+    // ACTIVE schauen, zeigte der Kalender den Termin fälschlich als frei →
+    // Doppelbuchung. Deshalb blockiert:
+    //   • jede laufende Miete (ACTIVE / PENDING_RETURN / OVERDUE), ODER
+    //   • jede Miete, deren Bestellung bezahlt/unterwegs/geliefert ist
+    //     (unabhängig vom Webhook-Timing), ODER
+    //   • eine frische PENDING-Miete (laufender Checkout, max. 20 Min) —
+    //     hält den Termin, damit nicht zwei Kunden gleichzeitig kaufen.
+    // Nie blockierend: stornierte/zurückgegebene Mieten und stornierte Orders.
+    const PENDING_WINDOW_MIN = 20;
+    const pendingCutoff = new Date(Date.now() - PENDING_WINDOW_MIN * 60 * 1000);
 
     const activeRentals = await this.rentalRepo
       .createQueryBuilder('r')
+      .leftJoin('r.order', 'o')
       .where('r.productVariantId = :variantId', { variantId: productVariantId })
-      .andWhere('r.status IN (:...blocking)', { blocking: BLOCKING_STATUSES })
+      .andWhere('r.status NOT IN (:...dead)', {
+        dead: [RentalStatus.CANCELLED, RentalStatus.RETURNED],
+      })
+      .andWhere('(o.id IS NULL OR o.status != :ocancelled)', {
+        ocancelled: OrderStatus.CANCELLED,
+      })
+      .andWhere(
+        `(
+           r.status IN (:...live)
+           OR o.status IN (:...paid)
+           OR (r.status = :pending AND r.created_at > :pendingCutoff)
+         )`,
+        {
+          live: [RentalStatus.ACTIVE, RentalStatus.PENDING_RETURN, RentalStatus.OVERDUE],
+          paid: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED],
+          pending: RentalStatus.PENDING,
+          pendingCutoff,
+        },
+      )
       .select(['r.startDate', 'r.endDate', 'r.status'])
       .getMany();
 
@@ -204,15 +227,22 @@ export class RentalsService {
       const conflicts = await manager
         .getRepository(Rental)
         .createQueryBuilder('r')
+        .innerJoin('r.order', 'o')
         .select('r.id')
         .where('r.product_variant_id = :variantId', { variantId: dto.productVariantId })
         .andWhere('r.status NOT IN (:...excluded)', {
           excluded: [RentalStatus.CANCELLED, RentalStatus.RETURNED],
         })
-        // PENDING zählt nur, wenn frisch (noch im Bezahlfenster)
+        .andWhere('o.status != :ocancelled', { ocancelled: OrderStatus.CANCELLED })
+        // PENDING zählt nur, wenn frisch (im Bezahlfenster) ODER die Bestellung
+        // bereits bezahlt ist (Webhook kann die Miete verzögert auf ACTIVE setzen).
         .andWhere(
-          '(r.status != :pending OR r.created_at > :pendingCutoff)',
-          { pending: RentalStatus.PENDING, pendingCutoff },
+          '(r.status != :pending OR r.created_at > :pendingCutoff OR o.status IN (:...paid))',
+          {
+            pending: RentalStatus.PENDING,
+            pendingCutoff,
+            paid: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED],
+          },
         )
         .andWhere('r.start_date < :endDate', { endDate: endDateStr })
         .andWhere('r.end_date > :startDate', { startDate: startDateStr })
@@ -224,6 +254,13 @@ export class RentalsService {
           'Produkt ist im gewählten Zeitraum nicht mehr verfügbar',
         );
       }
+
+      // Hinweis: Abgebrochene, unbezahlte Checkout-Reste (alte PENDING-Mieten)
+      // werden NICHT hier gelöscht — das übernimmt der Cleanup-Cron, der vor dem
+      // Löschen bei Stripe prüft, ob doch bezahlt wurde. So kann eine bezahlte,
+      // aber per Webhook stark verzögerte Miete niemals versehentlich storniert
+      // werden. Kollidiert eine neue Buchung mit so einem Rest, fängt der
+      // 23P01-Schutz beim Speichern das sauber als „nicht verfügbar" ab.
 
       // Order erstellen
       const order = manager.getRepository(Order).create({
@@ -246,7 +283,19 @@ export class RentalsService {
         durationDays,
         status: RentalStatus.PENDING,
       });
-      await manager.getRepository(Rental).save(rental);
+      try {
+        await manager.getRepository(Rental).save(rental);
+      } catch (e: any) {
+        // 23P01 = exclusion_violation → der DB-Overlap-Schutz hat eine
+        // gleichzeitige Buchung desselben Zeitraums abgefangen (Race Condition).
+        // Sauber als „nicht verfügbar" melden statt mit einem 500 zu crashen.
+        if (e?.code === '23P01') {
+          throw new ConflictException(
+            'Produkt ist im gewählten Zeitraum nicht mehr verfügbar',
+          );
+        }
+        throw e;
+      }
 
       // Deposit (Kaution) erstellen
       const deposit = manager.getRepository(Deposit).create({

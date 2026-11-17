@@ -193,13 +193,13 @@ function ProductDetail() {
               {selectedVariant && selectedVariant.stockQuantity > 0 && selectedVariant.stockQuantity < 3 && (
                 <div style={{ background:'#FAEEDA', border:'1px solid #f8dfbb', padding:'8px 12px', marginBottom:12, display:'flex', alignItems:'center', gap:8, fontSize:12, color:'#633806' }}>
                   <Icon name="warning" style={{ fontSize:16 }} />
-                  Nur noch <strong>{selectedVariant.stockQuantity}</strong> {selectedVariant.stockQuantity === 1 ? 'Stück' : 'Stücke'} verfügbar
+                  {t('Nur noch', 'Only')} <strong>{selectedVariant.stockQuantity}</strong> {t(selectedVariant.stockQuantity === 1 ? 'Stück verfügbar' : 'Stücke verfügbar', selectedVariant.stockQuantity === 1 ? 'left' : 'left')}
                 </div>
               )}
               <button
                 onClick={() => { if(!user){router.push('/auth/login');return}; router.push(`/checkout/purchase?variantId=${selectedVariant?.id}`) }}
                 style={{ width: '100%', background: '#1c1b1b', color: '#fff', border: 'none', padding: '14px', fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }}>
-                Buy Now
+                {t('Jetzt kaufen', 'Buy Now')}
               </button>
             </div>
           )}

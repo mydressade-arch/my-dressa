@@ -49,6 +49,14 @@ export class CommissionsService {
   private readonly MATURE_SQL =
     `((o.type = 'purchase' AND o.status = 'delivered') OR (o.type = 'rental' AND r.status = 'returned'))`;
 
+  // Eine Provision zählt NICHT als Einnahme, wenn die Bestellung storniert
+  // oder erstattet wurde. Wichtig: eine normale Miet-RÜCKGABE setzt den
+  // Order-Status ebenfalls auf 'returned' — das ist der LEGITIME Auszahlungs-
+  // fall und bleibt gültig. Nur ein zurückgegebener KAUF (Kunde hat erstattet
+  // bekommen) sowie jede Stornierung/Erstattung werden ausgeschlossen.
+  private readonly VALID_SQL =
+    `(o.status NOT IN ('cancelled','refunded') AND NOT (o.type = 'purchase' AND o.status = 'returned'))`;
+
   // QueryBuilder für offene (noch nicht ausgezahlte) UND reife Provisionen.
   private matureOpenCommissionsQB(merchantId: string) {
     return this.commissionRepo
@@ -84,21 +92,27 @@ export class CommissionsService {
       .addSelect('c.platform_amount', 'platformAmount')
       .addSelect('c.merchant_amount', 'merchantAmount')
       .addSelect('c.payout_id', 'payoutId')
+      .addSelect('c.kind', 'kind')
       .addSelect('p.title', 'productTitle')
       .addSelect('v.size', 'size')
       .addSelect(`CASE WHEN ${this.MATURE_SQL} THEN 1 ELSE 0 END`, 'mature')
+      .addSelect(`CASE WHEN ${this.VALID_SQL} THEN 0 ELSE 1 END`, 'reversed')
       .where('c.merchant_id = :merchantId', { merchantId })
       .orderBy('c.created_at', 'DESC')
       .getRawMany();
 
     return rows.map((r) => {
-      const mature = Number(r.mature) === 1;
-      // Status: ausgezahlt | auszahlbar (reif, offen) | in Arbeit (noch nicht reif)
-      const status = r.payoutId ? 'paid' : (mature ? 'available' : 'upcoming');
+      const mature   = Number(r.mature) === 1;
+      const reversed = Number(r.reversed) === 1;
+      // Status: storniert/erstattet | ausgezahlt | auszahlbar (reif) | in Arbeit
+      const status = reversed
+        ? 'reversed'
+        : (r.payoutId ? 'paid' : (mature ? 'available' : 'upcoming'));
       return {
         id: r.id,
         date: r.createdAt,
         type: r.type, // 'rental' | 'purchase'
+        kind: r.kind || 'sale', // 'sale' | 'damage_compensation'
         productTitle: r.productTitle || 'Produkt',
         size: r.size || '',
         gross: Number(r.gross ?? 0),
@@ -113,18 +127,22 @@ export class CommissionsService {
   async getMerchantStats(merchantId: string) {
     const result = await this.commissionRepo
       .createQueryBuilder('c')
+      .leftJoin('orders', 'o', 'o.id = c.order_id')
       .select('SUM(c.merchant_amount)', 'totalEarned')
       .addSelect('SUM(c.platform_amount)', 'totalCommission')
       .addSelect('COUNT(*)', 'orderCount')
       .where('c.merchant_id = :merchantId', { merchantId })
+      .andWhere(this.VALID_SQL)
       .getRawOne();
 
-    // Ausstehend = Commissions ohne Payout
+    // Ausstehend = Commissions ohne Payout (stornierte/erstattete raus)
     const pending = await this.commissionRepo
       .createQueryBuilder('c')
+      .leftJoin('orders', 'o', 'o.id = c.order_id')
       .select('SUM(c.merchant_amount)', 'pendingAmount')
       .where('c.merchant_id = :merchantId', { merchantId })
       .andWhere('c.payout_id IS NULL')
+      .andWhere(this.VALID_SQL)
       .getRawOne();
 
     // Offene Auszahlungsanfragen
@@ -391,10 +409,12 @@ export class CommissionsService {
   async getAdminReport() {
     return this.commissionRepo
       .createQueryBuilder('c')
+      .leftJoin('orders', 'o', 'o.id = c.order_id')
       .select('SUM(c.platform_amount)', 'totalPlatformRevenue')
       .addSelect('SUM(c.merchant_amount)', 'totalMerchantPayouts')
       .addSelect('COUNT(*)', 'totalOrders')
       .addSelect('c.type', 'type')
+      .where(this.VALID_SQL)
       .groupBy('c.type')
       .getRawMany();
   }

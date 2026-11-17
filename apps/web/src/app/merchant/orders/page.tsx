@@ -59,12 +59,31 @@ export default function MerchantOrdersPage() {
   const [cancelNote, setCancelNote]     = useState('')
   const [cancelling, setCancelling]     = useState(false)
 
+  // Mieten, für die KEINE neue Schadensmeldung mehr möglich ist (offene
+  // Meldung läuft bereits ODER die Kaution wurde final entschieden).
+  const [blockedRentals, setBlockedRentals] = useState<Set<string>>(new Set())
+
+  const loadBlockedRentals = () => {
+    api.get('/damage-reports/my-reports')
+      .then(({ data }: any) => {
+        const s = new Set<string>()
+        ;(data || []).forEach((r: any) => {
+          const depositResolved = ['released', 'retained', 'partially_retained'].includes(r.depositStatus)
+          const openReport = r.status === 'open' || r.status === 'reviewing'
+          if (depositResolved || openReport) s.add(r.rentalId)
+        })
+        setBlockedRentals(s)
+      })
+      .catch(() => {})
+  }
+
   const load = () => {
     setLoading(true)
     ordersApi.myMerchantOrders()
       .then(({ data }: any) => setOrders(data || []))
       .catch(() => {})
       .finally(() => setLoading(false))
+    loadBlockedRentals()
   }
 
   useEffect(() => { load() }, [])
@@ -151,9 +170,12 @@ export default function MerchantOrdersPage() {
       fd.append('description', damageDesc)
       fd.append('severity', damageSev)
       damagePhotos.forEach(f => fd.append('photos', f))
+      const rid = damageReport.rentalId
       await api.post('/damage-reports', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-      notify('Schadensmeldung gesendet')
+      notify(t('Schadensmeldung gesendet','Damage report sent'))
       setDamageReport(null); setDamageDesc(''); setDamageSev('minor'); setDamagePhotos([])
+      setBlockedRentals(prev => new Set(prev).add(rid)) // Button sofort ausblenden
+      loadBlockedRentals()
     } catch (e: any) { notify(e.response?.data?.message || 'Fehler') }
     finally { setSendingReport(false) }
   }
@@ -215,8 +237,28 @@ export default function MerchantOrdersPage() {
             const canCancel = !isExtension
               && (order.status === 'paid' || order.status === 'pending')
 
+            // Benachrichtigung je Bestellung — semantische Farbe:
+            // Rot = dringend (überfällig), Bernstein = normale Aktion nötig.
+            const isOverdue = rental?.status === 'overdue'
+            const needsShip = order.status === 'paid'
+            const needsReturnConfirm = order.type === 'rental' && rental
+              && (rental.customerConfirmedReturn || rental.status === 'pending_return')
+              && order.status !== 'returned' && rental.status !== 'returned'
+            const needsAction = isOverdue || needsShip || needsReturnConfirm
+            const alert = isOverdue
+              ? { bg:'#fbe9e7', fg:'#ba1a1a', border:'#f3bdb6', label:t('Überfällig — Rückgabe ausstehend','Overdue — return pending') }
+              : needsShip
+                ? { bg:'#FDF3E2', fg:'#8a5a0a', border:'#f0dcb8', label:t('Aktion nötig — bitte versenden','Action needed — please ship') }
+                : { bg:'#FDF3E2', fg:'#8a5a0a', border:'#f0dcb8', label:t('Aktion nötig — Rückgabe bestätigen','Action needed — confirm return') }
+
             return (
-              <div key={order.id} style={{ background:'#fff', border:'1px solid #c4c7c7' }}>
+              <div key={order.id} style={{ background:'#fff', border:`1px solid ${needsAction ? alert.border : '#c4c7c7'}` }}>
+                {needsAction && (
+                  <div style={{ padding:'8px 20px', background:alert.bg, color:alert.fg, fontSize:12, fontWeight:600, display:'flex', alignItems:'center', gap:7 }}>
+                    <span style={{ width:8, height:8, borderRadius:'50%', background:alert.fg, display:'inline-block', flexShrink:0 }} />
+                    {alert.label}
+                  </div>
+                )}
                 {isExtension && (
                   <div style={{ padding:'8px 20px', background:'#FAEEDA', color:'#8a5a00', fontSize:12, fontWeight:600, display:'flex', alignItems:'center', gap:6 }}>
                     <Icon name="more_time" style={{ fontSize:16 }} />
@@ -266,6 +308,13 @@ export default function MerchantOrdersPage() {
                         ? Number(order.merchantAmount)
                         : Math.round((total - commission) * 100) / 100
 
+                      // Rückabgewickelt = kein Anteil für den Händler. Eine normale
+                      // Miet-Rückgabe (rental + returned) bleibt dagegen verdient.
+                      const reversed =
+                        order.status === 'cancelled' ||
+                        order.status === 'refunded' ||
+                        (order.type !== 'rental' && order.status === 'returned')
+
                       return (
                         <>
                           <p style={{ fontSize: 11, color: '#9e9e9b', display: 'flex', justifyContent: 'space-between', gap: 12 }}>
@@ -284,8 +333,22 @@ export default function MerchantOrdersPage() {
                           </p>
                           <div style={{ borderTop: '1px solid #ece7e5', marginTop: 4, paddingTop: 4, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline' }}>
                             <span style={{ fontSize: 11, fontWeight: 600, color: '#1c1b1b' }}>{t('Dein Anteil','Your share')}</span>
-                            <span style={{ fontWeight: 700, fontSize: 19, color: '#064E3B' }}>€{merchant.toFixed(2)}</span>
+                            {reversed ? (
+                              <span style={{ display:'flex', alignItems:'baseline', gap:6 }}>
+                                <span style={{ textDecoration:'line-through', color:'#bbb', fontSize:13 }}>€{merchant.toFixed(2)}</span>
+                                <span style={{ fontWeight: 700, fontSize: 19, color: '#b23b3b' }}>€0,00</span>
+                              </span>
+                            ) : (
+                              <span style={{ fontWeight: 700, fontSize: 19, color: '#064E3B' }}>€{merchant.toFixed(2)}</span>
+                            )}
                           </div>
+                          {reversed && (
+                            <p style={{ fontSize: 10, color: '#b23b3b', marginTop: 4, textAlign: 'right' }}>
+                              {order.status === 'cancelled'
+                                ? t('Bestellung storniert — kein Anteil','Order cancelled — no share')
+                                : t('Erstattet — kein Anteil','Refunded — no share')}
+                            </p>
+                          )}
                         </>
                       )
                     })()}
@@ -345,9 +408,12 @@ export default function MerchantOrdersPage() {
                       <button onClick={async () => {
                         if (!window.confirm('Rückgabe bestätigen? Kunde bekommt Geld zurück.')) return
                         try {
-                          await api.patch(`/orders/${order.id}/approve-return`)
+                          const { data } = await api.patch(`/orders/${order.id}/approve-return`) as any
                           setOrders(o => o.map(x => x.id===order.id ? {...x, status:'returned', returnApproved:true} : x))
                           notify('Rückgabe genehmigt — Stripe Refund ausgeführt ✓', 'success')
+                          if (data?.clawbackWarning) {
+                            notify(`⚠️ Achtung: €${Number(data.clawbackWarning).toFixed(2)} wurden für diese Bestellung bereits ausgezahlt. Der Admin wurde informiert und fordert den Betrag zurück.`, 'error')
+                          }
                         } catch (e:any) { notify(e.response?.data?.message||'Fehler', 'error') }
                       }}
                         style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', padding:'10px 16px', background:'#FCEBEB', color:'#791F1F', border:'1px solid #f5c6c6', cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
@@ -379,7 +445,7 @@ export default function MerchantOrdersPage() {
                     {tab === 'rental' && rental && (rental?.customerConfirmedReturn || rental?.status==='pending_return') && (order.status==='shipped'||order.status==='paid'||order.status==='delivered'||rental?.status==='active'||rental?.status==='pending_return') && (
                       <button onClick={() => setReturnModal({ orderId: order.id, rentalId: rental.id })}
                         style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', padding:'10px 16px', background:'#9E896A', color:'#fff', border:'none', cursor:'pointer' }}>
-                        ✓ Confirm Return
+                        ✓ {t('Rückgabe bestätigen','Confirm Return')}
                       </button>
                     )}
 
@@ -394,11 +460,17 @@ export default function MerchantOrdersPage() {
                         NICHT "guter Zustand" bestätigt hat. Hat er die Rückgabe
                         als "good" quittiert, ist der Fall abgeschlossen und die
                         Kaution wird freigegeben → kein Schaden-Button mehr. */}
-                    {tab === 'rental' && rental && (order.status==='returned'||rental?.status==='returned') && rental?.returnCondition !== 'good' && (
+                    {tab === 'rental' && rental && (order.status==='returned'||rental?.status==='returned') && rental?.returnCondition !== 'good' && !blockedRentals.has(rental.id) && (
                       <button onClick={() => setDamageReport({ rentalId: rental.id, orderId: order.id })}
                         style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', padding:'10px 16px', background:'#FAEEDA', color:'#633806', border:'1px solid #f8dfbb', cursor:'pointer' }}>
-                        ⚠ Schaden melden
+                        ⚠ {t('Schaden melden','Report damage')}
                       </button>
+                    )}
+                    {tab === 'rental' && rental && (order.status==='returned'||rental?.status==='returned') && rental?.returnCondition !== 'good' && blockedRentals.has(rental.id) && (
+                      <span style={{ fontSize:11, fontWeight:600, color:'#9e9e9b', display:'inline-flex', alignItems:'center', gap:6, padding:'10px 4px' }}>
+                        <Icon name="check_circle" style={{ fontSize:15, color:'#9e9e9b' }} />
+                        {t('Schaden gemeldet','Damage reported')}
+                      </span>
                     )}
                   </div>
                 </div>

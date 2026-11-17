@@ -963,8 +963,31 @@ export class PaymentsService {
 
   constructWebhookEvent(rawBody: Buffer, signature: string): Stripe.Event {
     // Fix 3: ?? '' verhindert "undefined nicht assignable zu string"
-    const secret = this.config.get<string>('STRIPE_WEBHOOK_SECRET') ?? '';
-    return this.stripe.webhooks.constructEvent(rawBody, signature, secret);
+    const secret = (this.config.get<string>('STRIPE_WEBHOOK_SECRET') ?? '').trim();
+
+    // Klare Diagnose statt des kryptischen Stripe-Fehlers: Die häufigste
+    // Ursache für "No signatures found matching" ist NICHT der Rohtext,
+    // sondern ein falsches/leeres Secret in der Umgebung (z.B. das temporäre
+    // `stripe listen`-Secret statt des Dashboard-Endpoint-Secrets, ein nach
+    // "Roll secret" veraltetes, oder Test- vs. Live-Modus-Verwechslung).
+    if (!secret) {
+      throw new Error('STRIPE_WEBHOOK_SECRET ist nicht gesetzt (Umgebungsvariable fehlt).');
+    }
+    if (!secret.startsWith('whsec_')) {
+      throw new Error('STRIPE_WEBHOOK_SECRET hat ein ungültiges Format — es muss mit "whsec_" beginnen.');
+    }
+
+    try {
+      return this.stripe.webhooks.constructEvent(rawBody, signature, secret);
+    } catch (err: any) {
+      // Signatur passt nicht → fast immer Secret ≠ Endpoint, der das Event sendete.
+      throw new Error(
+        `Signatur-Prüfung fehlgeschlagen (${err.message}). ` +
+        `Prüfe, ob STRIPE_WEBHOOK_SECRET exakt zum Signing Secret des Endpoints ` +
+        `${this.config.get('API_PUBLIC_URL') ?? ''}/api/v1/webhooks/stripe im Stripe-Dashboard ` +
+        `(richtiger Live-/Test-Modus) passt.`,
+      );
+    }
   }
 
   async getMerchantProfile(userId: string) {

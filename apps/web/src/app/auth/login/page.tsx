@@ -103,7 +103,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
               <label style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5e5e5b', display: 'block', marginBottom: 6 }}>
-                Email Address
+                {t('E-Mail-Adresse', 'Email Address')}
               </label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required
                 style={{ width: '100%', padding: '12px 14px', fontSize: 14, border: '1px solid #c4c7c7', outline: 'none', background: '#fdf8f8', boxSizing: 'border-box' as const, backgroundImage: 'none' }} />
@@ -111,7 +111,7 @@ export default function LoginPage() {
 
             <div>
               <label style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5e5e5b', display: 'block', marginBottom: 6 }}>
-                Password
+                {t('Passwort', 'Password')}
               </label>
               <PasswordInput value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required
                 style={{ padding: '12px 14px', fontSize: 14, border: '1px solid #c4c7c7', outline: 'none', background: '#fdf8f8' }} />
@@ -131,17 +131,17 @@ export default function LoginPage() {
 
             <div style={{ textAlign: 'right' }}>
               <Link href="/auth/forgot-password" style={{ fontSize: 12, color: '#5e5e5b', textDecoration: 'none' }}>
-                Forgot password?
+                {t('Passwort vergessen?', 'Forgot password?')}
               </Link>
             </div>
 
             {requires2FA && (
               <div style={{ background:'#f7f3f2', border:'1px solid #e8e3e1', padding:'16px', textAlign:'center' }}>
                 <p style={{ fontSize:13, fontWeight:600, color:'#1c1b1b', marginBottom:4 }}>
-                  🔐 Zwei-Faktor-Authentifizierung
+                  🔐 {t('Zwei-Faktor-Authentifizierung', 'Two-Factor Authentication')}
                 </p>
                 <p style={{ fontSize:12, color:'#5e5e5b', marginBottom:12 }}>
-                  Gib den 6-stelligen Code aus deiner Authenticator App ein:
+                  {t('Gib den 6-stelligen Code aus deiner Authenticator App ein:', 'Enter the 6-digit code from your authenticator app:')}
                 </p>
                 <input
                   key="2fa-input"
@@ -156,20 +156,20 @@ export default function LoginPage() {
                 />
                 {error && (
                   <p style={{ fontSize:12, color:'#ba1a1a', marginTop:8 }}>
-                    ✗ {error} — bitte neuen Code eingeben
+                    ✗ {error} — {t('bitte neuen Code eingeben', 'please enter a new code')}
                   </p>
                 )}
               </div>
             )}
             <button type="submit" disabled={isLoading}
               style={{ background: '#1c1b1b', color: '#fff', border: 'none', padding: 16, fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.7 : 1, marginTop: 8 }}>
-              {isLoading ? 'Signing in...' : t(t('Anmelden', 'Sign In'), t('Anmelden', 'Sign In'))}
+              {isLoading ? t('Wird angemeldet…', 'Signing in…') : t('Anmelden', 'Sign In')}
             </button>
           </form>
 
           <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid #c4c7c7', textAlign: 'center' }}>
             <p style={{ fontSize: 14, color: '#5e5e5b' }}>
-              New to My Dressa?{' '}
+              {t('Neu bei My Dressa?', 'New to My Dressa?')}{' '}
               <Link href="/auth/register" style={{ color: '#1c1b1b', fontWeight: 600, textDecoration: 'none' }}>{t('Konto erstellen', 'Create account')}</Link>
             </p>
           </div>

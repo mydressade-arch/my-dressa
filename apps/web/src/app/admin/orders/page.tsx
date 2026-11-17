@@ -93,16 +93,6 @@ export default function AdminOrdersPage() {
     } catch { setDamageReports([]) }
   }
 
-  const resolveReport = async (reportId: string) => {
-    const resolution = window.prompt('Auflösungsnotiz:')
-    if (!resolution) return
-    try {
-      await api.patch(`/damage-reports/${reportId}/resolve`, { resolution })
-      notify('Report gelöst')
-      if (viewDamage) loadDamageReports(viewDamage.id)
-    } catch { notify('Fehler') }
-  }
-
   const filtered = orders.filter(o => {
     if (filter !== 'all' && o.status !== filter) return false
     if (search) {
@@ -340,18 +330,18 @@ export default function AdminOrdersPage() {
           <div style={{ background:'#fff', padding:28, maxWidth:560, width:'90%', maxHeight:'80vh', overflow:'auto' }}>
             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:20 }}>
               <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:20, fontWeight:700 }}>
-                Damage Reports
+                {t('Schadensmeldungen','Damage reports')}
               </h2>
               <button onClick={() => setViewDamage(null)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:22, color:'#5e5e5b' }}>×</button>
             </div>
             <p style={{ fontSize:13, color:'#5e5e5b', marginBottom:20 }}>
-              Order: <span style={{ fontFamily:'monospace' }}>{viewDamage.id.slice(0,8)}…</span> · {viewDamage.productVariant?.product?.title}
+              {t('Bestellung','Order')}: <span style={{ fontFamily:'monospace' }}>{viewDamage.id.slice(0,8)}…</span> · {viewDamage.productVariant?.product?.title}
             </p>
 
             {damageReports.length === 0 ? (
               <div style={{ textAlign:'center', padding:'32px 0', color:'#5e5e5b' }}>
                 <Icon name="check_circle" style={{ fontSize:32, display:'inline-block', marginBottom:8, color:'#c4c7c7' }} />
-                Keine Schadensmeldungen für diese Bestellung
+                {t('Keine Schadensmeldungen für diese Bestellung','No damage reports for this order')}
               </div>
             ) : (
               <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
@@ -379,13 +369,14 @@ export default function AdminOrdersPage() {
 
                     {r.resolution ? (
                       <div style={{ background:'#EAF3DE', padding:'8px 12px', fontSize:12, color:'#27500A' }}>
-                        ✓ Gelöst: {r.resolution}
+                        ✓ {t('Gelöst','Resolved')}: {r.resolution}
                       </div>
                     ) : (
-                      <button onClick={() => resolveReport(r.id)}
-                        style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', padding:'6px 14px', background:'#27500A', color:'#fff', border:'none', cursor:'pointer' }}>
-                        Lösen
-                      </button>
+                      <a href="/admin/damage-reports"
+                        style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', padding:'8px 14px', background:'#1c1b1b', color:'#fff', textDecoration:'none', borderRadius:6 }}>
+                        <Icon name="gavel" style={{ fontSize:15 }} />
+                        {t('Im Schaden-Center entscheiden','Decide in damage center')}
+                      </a>
                     )}
                   </div>
                 ))}

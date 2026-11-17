@@ -48,9 +48,10 @@ export const useLangStore = create<LangStore>()(
   )
 )
 
-// Hydrate on client only
-if (typeof window !== 'undefined') {
-  useLangStore.persist.rehydrate()
-}
+// WICHTIG: KEINE Rehydration beim Import!
+// Würde die gespeicherte Sprache schon vor der React-Hydration laden, rendert
+// der Client sofort z.B. Englisch, während der Server (immer 'de') Deutsch
+// geliefert hat → Hydration-Mismatch. Die Rehydration passiert stattdessen
+// zentral im <LangProvider> per useEffect (also erst NACH dem ersten Render).
 
 export const useLang = useLangStore

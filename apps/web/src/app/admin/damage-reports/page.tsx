@@ -35,8 +35,11 @@ export default function AdminDamageReportsPage() {
   const [processing, setProcessing] = useState<string|null>(null)
   const { toast, confirm }          = useUI()
 
+  const fmtD = (d?: string | null) =>
+    d ? new Date(d).toLocaleDateString(t('de-DE','en-GB'), { day:'2-digit', month:'short', year:'numeric' }) : '—'
+
   // Notiz-Modal
-  const [noteModal, setNoteModal]   = useState<{id:string, action:'release'|'retain'}|null>(null)
+  const [noteModal, setNoteModal]   = useState<{id:string, action:'release'|'retain'|'dismiss'}|null>(null)
   const [noteText, setNoteText]     = useState('')
   const [merchantAmt, setMerchantAmt] = useState('')
 
@@ -49,7 +52,7 @@ export default function AdminDamageReportsPage() {
   }
   useEffect(() => { load() }, [tab])
 
-  const openNoteModal = (id: string, action: 'release'|'retain') => {
+  const openNoteModal = (id: string, action: 'release'|'retain'|'dismiss') => {
     setNoteText('')
     setNoteModal({ id, action })
   }
@@ -58,17 +61,20 @@ export default function AdminDamageReportsPage() {
     if (!noteModal) return
     setProcessing(noteModal.id)
     try {
-      const endpoint = noteModal.action === 'release'
-        ? `/damage-reports/${noteModal.id}/release-deposit`
-        : `/damage-reports/${noteModal.id}/retain-deposit`
+      const endpoint =
+        noteModal.action === 'release' ? `/damage-reports/${noteModal.id}/release-deposit`
+        : noteModal.action === 'retain' ? `/damage-reports/${noteModal.id}/retain-deposit`
+        : `/damage-reports/${noteModal.id}/dismiss`
       const body: any = { note: noteText.trim() || undefined }
       if (noteModal.action === 'retain' && merchantAmt) body.merchantAmount = parseFloat(merchantAmt)
       await api.patch(endpoint, body)
       toast(
         noteModal.action === 'release'
           ? t('✓ Kaution komplett an Kunde zurückerstattet (Stripe Refund)','✓ Deposit fully refunded to the customer (Stripe refund)')
-          : t('✗ Kautions-Entscheidung ausgeführt — Restbetrag geht an den Kunden zurück','✗ Deposit decision executed — remaining amount returned to the customer'),
-        noteModal.action === 'release' ? 'success' : 'info'
+          : noteModal.action === 'retain'
+            ? t('✗ Kautions-Entscheidung ausgeführt — Restbetrag geht an den Kunden zurück','✗ Deposit decision executed — remaining amount returned to the customer')
+            : t('Meldung geschlossen','Report closed'),
+        noteModal.action === 'retain' ? 'info' : 'success'
       )
       setNoteModal(null)
       load()
@@ -114,72 +120,122 @@ export default function AdminDamageReportsPage() {
             const s = SEV_STYLE[r.severity] || { bg:'#f1edec', color:'#5e5e5b' }
             const isOpen = r.status !== 'resolved'
             return (
-              <div key={r.id} style={{ background:'#fff', border:'1px solid #c4c7c7', padding:24 }}>
-                {/* Header */}
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16, flexWrap:'wrap', marginBottom:14 }}>
-                  <div>
-                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
-                      <span style={{ fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', padding:'3px 10px', background:s.bg, color:s.color }}>
+              <div key={r.id} style={{ background:'#fff', border:'1px solid #e4ddd7', borderRadius:12, overflow:'hidden', boxShadow:'0 1px 2px rgba(28,27,27,.05)' }}>
+                {/* Kopf: Produktbild + Infos + Aktionen */}
+                <div style={{ display:'flex', flexWrap:'wrap' }}>
+                  {/* Produktbild */}
+                  <div style={{ flex:'0 0 128px', width:128, minHeight:128, background:'#f3ece2', alignSelf:'stretch' }}>
+                    {r.product?.image ? (
+                      <img src={r.product.image} alt={r.product?.title || ''}
+                        style={{ width:'100%', height:'100%', minHeight:128, objectFit:'cover', display:'block' }} />
+                    ) : (
+                      <div style={{ width:'100%', height:'100%', minHeight:128, display:'grid', placeItems:'center', color:'#c4b79e' }}>
+                        <Icon name="checkroom" style={{ fontSize:34 }} />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Infos */}
+                  <div style={{ flex:'1 1 300px', minWidth:0, padding:'16px 20px' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10, flexWrap:'wrap' }}>
+                      <span style={{ fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', padding:'3px 10px', borderRadius:4, background:s.bg, color:s.color }}>
                         {t(SEV_LABEL[r.severity] || r.severity, SEV_LABEL_EN[r.severity] || r.severity)}
                       </span>
-                      <span style={{ fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', padding:'3px 10px', background:isOpen?'#FAEEDA':'#EAF3DE', color:isOpen?'#633806':'#27500A' }}>
+                      <span style={{ fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', padding:'3px 10px', borderRadius:4, background:isOpen?'#FAEEDA':'#EAF3DE', color:isOpen?'#633806':'#27500A' }}>
                         {isOpen ? t('Offen','Open') : t('Erledigt','Resolved')}
                       </span>
                     </div>
-                    <p style={{ fontSize:12, color:'#9e9e9b', fontFamily:'monospace', marginBottom:2 }}>
-                      {t('Miete','Rental')}: {r.rentalId?.slice(0,8)}…
-                    </p>
-                    <p style={{ fontSize:12, color:'#9e9e9b' }}>
-                      {new Date(r.createdAt).toLocaleDateString(t('de-DE','en-GB'), { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' })}{t(' Uhr','')}
+
+                    <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, fontWeight:700, margin:'0 0 10px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                      {r.product?.title || t('Produkt','Product')}
+                      {r.product?.size ? <span style={{ fontSize:13, fontWeight:400, color:'#9e9e9b' }}> · {t('Größe','Size')} {r.product.size}</span> : null}
+                    </h3>
+
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:'6px 20px', fontSize:13, color:'#5e5e5b' }}>
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:5, minWidth:0 }}>
+                        <Icon name="person" style={{ fontSize:16, color:'#9e9e9b' }} />
+                        <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.customer?.name || '—'}</span>
+                      </span>
+                      {r.rental?.startDate && (
+                        <span style={{ display:'inline-flex', alignItems:'center', gap:5 }}>
+                          <Icon name="event" style={{ fontSize:16, color:'#9e9e9b' }} />
+                          {fmtD(r.rental.startDate)} – {fmtD(r.rental.endDate)}
+                        </span>
+                      )}
+                      {r.deposit?.amount != null && (
+                        <span style={{ display:'inline-flex', alignItems:'center', gap:5 }}>
+                          <Icon name="payments" style={{ fontSize:16, color:'#9e9e9b' }} />
+                          {t('Kaution','Deposit')}: <strong style={{ color:'#1c1b1b' }}>€{r.deposit.amount.toFixed(2)}</strong>
+                        </span>
+                      )}
+                    </div>
+
+                    <p style={{ fontSize:11, color:'#b8b2ad', marginTop:10 }}>
+                      {new Date(r.createdAt).toLocaleDateString(t('de-DE','en-GB'), { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' })}{t(' Uhr','')} · {t('Miete','Rental')} {r.rentalId?.slice(0,8)}…
                     </p>
                   </div>
 
-                  {/* Aktionsbuttons */}
+                  {/* Aktionen */}
                   {isOpen && (
-                    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                    <div style={{ flex:'0 0 auto', padding:16, display:'flex', flexDirection:'column', gap:8, borderLeft:'1px solid #f1edec' }}>
                       <button onClick={() => openNoteModal(r.id, 'release')} disabled={processing === r.id}
-                        style={{ padding:'10px 20px', background:'#27500A', color:'#fff', border:'none', fontSize:12, fontWeight:600, textTransform:'uppercase', cursor:'pointer', display:'flex', alignItems:'center', gap:6, opacity:processing===r.id?0.5:1 }}>
+                        style={{ padding:'9px 16px', background:'#27500A', color:'#fff', border:'none', borderRadius:6, fontSize:11.5, fontWeight:600, textTransform:'uppercase', cursor:'pointer', display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap', opacity:processing===r.id?0.5:1 }}>
                         <Icon name="undo" style={{ fontSize:16 }} />
-                        ↩ {t('Kaution → Kunde zurück','Deposit → back to customer')}
+                        {t('Kaution zurück','Refund deposit')}
                       </button>
                       <button onClick={() => openNoteModal(r.id, 'retain')} disabled={processing === r.id}
-                        style={{ padding:'10px 20px', background:'#ba1a1a', color:'#fff', border:'none', fontSize:12, fontWeight:600, textTransform:'uppercase', cursor:'pointer', display:'flex', alignItems:'center', gap:6, opacity:processing===r.id?0.5:1 }}>
+                        style={{ padding:'9px 16px', background:'#ba1a1a', color:'#fff', border:'none', borderRadius:6, fontSize:11.5, fontWeight:600, textTransform:'uppercase', cursor:'pointer', display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap', opacity:processing===r.id?0.5:1 }}>
                         <Icon name="money_off" style={{ fontSize:16 }} />
-                        ✗ {t('Kaution einbehalten','Retain deposit')}
+                        {t('Einbehalten','Retain')}
+                      </button>
+                      <button onClick={() => openNoteModal(r.id, 'dismiss')} disabled={processing === r.id}
+                        style={{ padding:'9px 16px', background:'none', color:'#5e5e5b', border:'1px solid #c4c7c7', borderRadius:6, fontSize:11.5, fontWeight:600, textTransform:'uppercase', cursor:'pointer', display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap', opacity:processing===r.id?0.5:1 }}>
+                        <Icon name="close" style={{ fontSize:16 }} />
+                        {t('Schließen','Close')}
                       </button>
                     </div>
                   )}
                 </div>
 
-                {/* Beschreibung */}
-                <p style={{ fontSize:14, color:'#1c1b1b', lineHeight:1.6, marginBottom:14 }}>
-                  {r.description}
-                </p>
-
-                {/* Fotos */}
-                {r.photoUrls?.length > 0 && (
-                  <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:14 }}>
-                    {r.photoUrls.map((url: string, i: number) => (
-                      <a key={i} href={url} target="_blank" rel="noopener noreferrer" title={t('Foto vergrößern','Enlarge photo')}>
-                        <img src={url} alt={`${t('Beweisfoto','Proof photo')} ${i+1}`}
-                          style={{ width:100, height:100, objectFit:'cover', border:'1px solid #e8e3e1', cursor:'pointer' }} />
-                      </a>
-                    ))}
+                {/* Beschreibung / Fotos / Ergebnis */}
+                <div style={{ padding:'14px 20px 18px', borderTop:'1px solid #f4efec' }}>
+                  <div style={{ display:'flex', alignItems:'flex-start', gap:8, marginBottom: (r.photoUrls?.length || r.resolution) ? 14 : 0 }}>
+                    <Icon name="description" style={{ fontSize:16, color:'#c4b79e', marginTop:2 }} />
+                    <p style={{ fontSize:13.5, color:'#1c1b1b', lineHeight:1.6, margin:0 }}>
+                      {r.description || t('Keine Beschreibung','No description')}
+                    </p>
                   </div>
-                )}
 
-                {/* Ergebnis */}
-                {r.resolution && (
-                  <div style={{
-                    background: r.resolution.startsWith('✓') ? '#EAF3DE' : '#FCEBEB',
-                    padding:'10px 14px', fontSize:13,
-                    color: r.resolution.startsWith('✓') ? '#27500A' : '#791F1F',
-                    display:'flex', alignItems:'center', gap:8,
-                  }}>
-                    <Icon name={r.resolution?.startsWith('✓') ? 'check_circle' : r.resolution?.startsWith('↩') ? 'undo' : 'cancel'} style={{ fontSize:16 }} />
-                    {r.resolution}
-                  </div>
-                )}
+                  {/* Fotos */}
+                  {r.photoUrls?.length > 0 && (
+                    <div style={{ marginBottom: r.resolution ? 14 : 0 }}>
+                      <p style={{ fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', color:'#9e9e9b', marginBottom:6 }}>
+                        {t('Beweisfotos','Proof photos')} ({r.photoUrls.length})
+                      </p>
+                      <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                        {r.photoUrls.map((url: string, i: number) => (
+                          <a key={i} href={url} target="_blank" rel="noopener noreferrer" title={t('Foto vergrößern','Enlarge photo')}>
+                            <img src={url} alt={`${t('Beweisfoto','Proof photo')} ${i+1}`}
+                              style={{ width:92, height:92, objectFit:'cover', borderRadius:8, border:'1px solid #e8e3e1', cursor:'pointer' }} />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Ergebnis */}
+                  {r.resolution && (
+                    <div style={{
+                      background: r.resolution.startsWith('✓') ? '#EAF3DE' : '#FCEBEB',
+                      padding:'10px 14px', fontSize:13, borderRadius:8,
+                      color: r.resolution.startsWith('✓') ? '#27500A' : '#791F1F',
+                      display:'flex', alignItems:'center', gap:8,
+                    }}>
+                      <Icon name={r.resolution?.startsWith('✓') ? 'check_circle' : r.resolution?.startsWith('↩') ? 'undo' : 'cancel'} style={{ fontSize:16 }} />
+                      {r.resolution}
+                    </div>
+                  )}
+                </div>
               </div>
             )
           })}
@@ -191,12 +247,18 @@ export default function AdminDamageReportsPage() {
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
           <div style={{ background:'#fff', padding:28, maxWidth:440, width:'90%' }}>
             <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:20, fontWeight:700, marginBottom:8 }}>
-              {noteModal.action === 'release' ? t('↩ Kaution an Kunde zurückgeben','↩ Return deposit to customer') : t('✗ Kaution einbehalten', '✗ Retain deposit')}
+              {noteModal.action === 'release' ? t('↩ Kaution an Kunde zurückgeben','↩ Return deposit to customer')
+                : noteModal.action === 'dismiss' ? t('Meldung schließen','Close report')
+                : t('✗ Kaution einbehalten', '✗ Retain deposit')}
             </h2>
 
             {noteModal.action === 'release' ? (
               <div style={{ background:'#EAF3DE', padding:'10px 14px', fontSize:13, color:'#27500A', marginBottom:16 }}>
                 {t('Der Stripe-Hold wird storniert. Die reservierte Kaution wird auf der Karte des Kunden freigegeben.','The Stripe hold is cancelled. The reserved deposit is released on the customer\'s card.')}
+              </div>
+            ) : noteModal.action === 'dismiss' ? (
+              <div style={{ background:'#f7f3f2', border:'1px solid #e8e3e1', padding:'10px 14px', fontSize:13, color:'#5e5e5b', marginBottom:16, lineHeight:1.5 }}>
+                {t('Schließt diese Meldung OHNE Kautions-Aktion. Nutze das für Duplikate oder wenn die Kaution dieser Miete bereits über eine andere Meldung entschieden wurde.','Closes this report WITHOUT any deposit action. Use it for duplicates or when this rental\'s deposit was already decided via another report.')}
               </div>
             ) : (
               <>
@@ -236,10 +298,10 @@ export default function AdminDamageReportsPage() {
                 style={{
                   flex:1, border:'none', padding:'12px', fontSize:12, fontWeight:600,
                   textTransform:'uppercase' as const, cursor:'pointer',
-                  background: noteModal.action === 'release' ? '#27500A' : '#ba1a1a',
+                  background: noteModal.action === 'release' ? '#27500A' : noteModal.action === 'dismiss' ? '#5e5e5b' : '#ba1a1a',
                   color:'#fff', opacity: processing ? 0.5 : 1,
                 }}>
-                {processing ? t('Verarbeite...','Processing...') : noteModal.action === 'release' ? t('✓ Freigeben','✓ Release') : t('✗ Einbehalten', '✗ Retain')}
+                {processing ? t('Verarbeite...','Processing...') : noteModal.action === 'release' ? t('✓ Freigeben','✓ Release') : noteModal.action === 'dismiss' ? t('Schließen','Close') : t('✗ Einbehalten', '✗ Retain')}
               </button>
               <button onClick={() => setNoteModal(null)}
                 style={{ background:'none', border:'1px solid #c4c7c7', padding:'12px 20px', fontSize:12, cursor:'pointer', color:'#5e5e5b' }}>
