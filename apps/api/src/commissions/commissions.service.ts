@@ -46,8 +46,11 @@ export class CommissionsService {
   // Bestellung abgeschlossen ist — Kauf: geliefert; Miete: zurückgegeben.
   // Einnahmen aus noch laufenden Mieten sind NICHT auszahlbar (könnten noch
   // storniert/zurückerstattet werden).
+  // Reif = sofort auszahlbar. Kauf nach Lieferung, Miete nach Rückgabe.
+  // Verlängerungen (kind='extension') sind sofort verdient (kein Versand/keine
+  // Rückgabe) und haben keine eigene Miet-Zeile → direkt reif.
   private readonly MATURE_SQL =
-    `((o.type = 'purchase' AND o.status = 'delivered') OR (o.type = 'rental' AND r.status = 'returned'))`;
+    `((o.type = 'purchase' AND o.status = 'delivered') OR (o.type = 'rental' AND r.status = 'returned') OR c.kind = 'extension')`;
 
   // Eine Provision zählt NICHT als Einnahme, wenn die Bestellung storniert
   // oder erstattet wurde. Wichtig: eine normale Miet-RÜCKGABE setzt den

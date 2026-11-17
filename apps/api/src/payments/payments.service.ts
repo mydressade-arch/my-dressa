@@ -330,6 +330,10 @@ export class PaymentsService {
             platformAmount: extPlatform,
             merchantAmount: extMerchant,
             type: OrderType.RENTAL as any,
+            // Verlängerung ist sofort verdient (keine Rückgabe abzuwarten) →
+            // über kind='extension' wird die Provision direkt als auszahlbar
+            // gewertet (siehe MATURE_SQL), nicht als "ausstehend".
+            kind: 'extension',
           });
           await manager.getRepository(Commission).save(extCommission);
           await manager.getRepository(Order).update(orderId, {
